@@ -4,7 +4,6 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.exc import IntegrityError
 from werkzeug.security import generate_password_hash, check_password_hash
 
 
@@ -28,10 +27,8 @@ class Usuario(db.Model):
     username = db.Column(db.String(50), unique=True, nullable=False)
     rol = db.Column(db.String(20), nullable=False)
 
-
     def __repr__(self):
         return f'<Usuario {self.username}>'
-
 
 class SolicitudDescanso(db.Model):
     __tablename__ = 'solicitudDescanso'
@@ -44,9 +41,6 @@ class SolicitudDescanso(db.Model):
 
     def __repr__(self):
         return f'<SolicitudDescanso {self.id}>'
-
-
-
 
 # Función para crear la aplicación
 def create_app():
@@ -87,11 +81,59 @@ with app.app_context():
     db.create_all()
     crear_usuario_por_defecto()
 
-# Ejecutar la aplicación Flask
+@app.route("/registerRestRequest", methods=["POST"])
+def registrarSolicitudes():
+    data = request.get_json()
+    usuario_id = data.get("usuario_id")
+    fecha_inicio = data.get("fecha_inicio")
+    fecha_fin = data.get("fecha_fin")
+    fecha_solicitada = data.get("fecha_solicitada")
+    aprobado = data.get("aprobado")
+
+    if not all([usuario_id, fecha_inicio, fecha_fin, fecha_solicitada, aprobado]):
+        return {"error": "Faltan datos"}, 400
+
+    try:
+        fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d %H:%M:%S')
+        fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d %H:%M:%S')
+        fecha_solicitada = datetime.strptime(fecha_solicitada, '%Y-%m-%d %H:%M:%S')
+    except ValueError:
+        return {"error": "Formato de fecha incorrecto"}, 400
+    try:
+        nueva_solicitud = SolicitudDescanso(
+            usuario_id=usuario_id,
+            fecha_inicio=fecha_inicio,
+            fecha_fin=fecha_fin,
+            fecha_solicitada=fecha_solicitada,
+            aprobado=aprobado
+        )
+        db.session.add(nueva_solicitud)
+        db.session.commit()
+        return {"message": "Solicitud registrada correctamente"}, 201
+    except Exception:
+        return {"message": "Error al registrar su solicitud, porfavor intentelo denuevo."}, 500
+
+@app.route("/rejectRestRequest", methods=["POST"])
+def rechazarSolicitud():
+    data = request.get_json()
+    solicitud_id = data.get("solicitud_id")
+
+    if not solicitud_id:
+        return {"error": "Faltan datos"}, 400
+
+    try:
+        solicitud = SolicitudDescanso.query.get(solicitud_id)
+        if not solicitud:
+            return {"error": "Solicitud no encontrada"}, 404
+
+        db.session.delete(solicitud)
+        db.session.commit()
+        return {"message": "Solicitud rechazada correctamente"}, 200
+    except Exception:
+        return {"message": "Error al rechazar la solicitud, porfavor intentelo denuevo."}, 500
+
+# Ejecutar el servidor Flask
 if __name__ == '__main__':
-    # Crear la base de datos si no existe
     with app.app_context():
         db.create_all()
-
-    # Ejecutar el servidor Flask
     app.run(host="0.0.0.0", port=5000, debug=True)
