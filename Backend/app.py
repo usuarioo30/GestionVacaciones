@@ -89,7 +89,7 @@ def registrar_usuario():
     nuevo_usuario = Usuario(
         email=data['email'],
         nombreCompleto=data['nombreCompleto'],
-        password=generate_password_hash(data['password'], method='sha256'),
+        password=hashed_password,
         username=data['username'],
         rol=data['rol']
     )
@@ -115,7 +115,7 @@ def login():
         return jsonify({'message': 'Credenciales inválidas'}), 401
 
     access_token = create_access_token(identity={'username': usuario.username, 'rol': usuario.rol})
-    return jsonify({'access_token': access_token}),
+    return jsonify({'access_token': access_token}), 200
 
 @app.route("/registerRequest", methods=["POST"])
 def registrarSolicitudes():
@@ -148,7 +148,7 @@ def registrarSolicitudes():
     except Exception:
         return {"message": "Error al registrar su solicitud, porfavor intentelo denuevo."}, 500
       
-    @app.route('/request/manage/<int:id>', methods=['PUT'])
+@app.route('/request/manage/<int:id>', methods=['PUT'])
 def manageRequest(id):
     try:
         solicitud = SolicitudDescanso.query.get(id)

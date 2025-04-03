@@ -42,7 +42,7 @@ export class LoginComponent implements OnInit {
 
   private redirectIfAuthenticated(): void {
     if (localStorage.getItem('access_token')) {
-      this.router.navigate(['/reservas']);
+      this.router.navigate(['/solicitudes']);
     }
   }
 

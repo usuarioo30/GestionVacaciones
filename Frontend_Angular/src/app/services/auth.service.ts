@@ -28,7 +28,7 @@ export class AuthService {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ username: username, password: password })
+      body: JSON.stringify({ username, password })
     });
 
     return response
@@ -79,7 +79,7 @@ export class AuthService {
    * @param username El nombre de usuario del usuario
    * @returns El usuario al que pertenece ese username
    */
-  async getUserByUsername(username:string): Promise<any> {
+  async getUserByUsername(username: string): Promise<any> {
     const response = await fetch(`${this.apiUrl}/usuarios/username/${username}`);
     if (response.status === 404) {
       return true;
@@ -256,7 +256,7 @@ export class AuthService {
     return JSON.parse(jsonPayload);
   }
 
-  
+
   /**
    * Método para decodificar el token JWT
    * @param token El token de inicio de sesión
