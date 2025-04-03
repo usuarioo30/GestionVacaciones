@@ -13,7 +13,6 @@ class Config:
     SQLALCHEMY_DATABASE_URI = 'mysql://root:Usuario1234@localhost/gestionvacaciones'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SECRET_KEY = 'miClave'  # Clave secreta para JWT
-    JWT_SECRET_KEY = 'mi_secreto_jwt'  # Clave secreta para JWT
 
 # Inicializa la base de datos y JWT
 db = SQLAlchemy()
@@ -86,6 +85,60 @@ def crear_usuario_por_defecto():
 with app.app_context():
     db.create_all()
     crear_usuario_por_defecto()
+
+@app.route('/createUser', methods=['POST'])
+def registrar_usuario():
+    data = request.get_json()
+    hashed_password = generate_password_hash(data['password'], method='sha256')
+    nuevo_usuario = Usuario(
+        email=data['email'],
+        nombreCompleto=data['nombreCompleto'],
+        password=generate_password_hash(data['password'], method='sha256'),
+        username=data['username'],
+        rol=data['rol']
+    )
+
+    try:
+        db.session.add(nuevo_usuario)
+        db.session.commit()
+        return jsonify({'message': 'Usuario creado exitosamente'}), 201
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({'message': 'El usuario ya existe'}), 409
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'message': 'Error al crear el usuario', 'error': str(e)}), 500
+    
+
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    usuario = Usuario.query.filter_by(username=data['username']).first()
+
+    if not usuario or not check_password_hash(usuario.password, data['password']):
+        return jsonify({'message': 'Credenciales inválidas'}), 401
+
+    access_token = create_access_token(identity={'username': usuario.username, 'rol': usuario.rol})
+    return jsonify({'access_token': access_token}),
+
+
+@app.route('/deleteRequest/<int:id>', methods=['DELETE'])
+def eliminar_solicitud(id):
+    solicitud = SolicitudDescanso.query.get(id)
+    
+    if solicitud:
+        try:
+            db.session.delete(solicitud)
+            db.session.commit()
+            return jsonify({'message': 'Solicitud de descanso eliminada correctamente.'}), 200
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': 'Hubo un error al eliminar la solicitud.'}), 500
+    else:
+        return jsonify({'error': 'Solicitud no encontrada.'}), 404
+
+
+
 
 # Ejecutar la aplicación Flask
 if __name__ == '__main__':
