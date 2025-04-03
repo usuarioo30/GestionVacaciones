@@ -1,0 +1,53 @@
+<div class="container d-flex justify-content-center align-items-center vh-100">
+  <div class="card shadow-lg p-4" style="max-width: 400px; width: 100%;">
+    <h2 class="text-center mb-2 mt-4">Apeiroo Rooms</h2>
+    <h5 class="text-center mb-4 mt-4">Añadir usuario</h5>
+    <p class="text-center mb-4">Agrega un usuario nuevo</p>
+    <form [formGroup]="newuser" (ngSubmit)="submitForm()">
+      <div class="mb-3">
+        <label for="email" class="form-label">Correo electrónico</label>
+        <input id="email" formControlName="email" type="email" class="form-control"
+          placeholder="Ingresa tu correo electrónico" />
+        <div *ngIf="emailExistsError" class="text-danger">
+          {{ emailExistsError }}
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label for="username" class="form-label">Usuario</label>
+        <input id="username" formControlName="username" type="text" class="form-control"
+          placeholder="Ingresa tu usuario" />
+        <div *ngIf="usernameExistsError" class="text-danger">
+          {{ usernameExistsError }}
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label for="password" class="form-label">Contraseña</label>
+        <input id="password" formControlName="password" type="password" class="form-control"
+          placeholder="*****************" />
+      </div>
+
+      <div class="mb-3">
+        <label for="confirmpassword" class="form-label">Confirmar Contraseña</label>
+        <input id="confirmpassword" formControlName="confirmpassword" type="password" class="form-control"
+          placeholder="*****************" />
+      </div>
+
+      <div class="mb-3">
+        <label for="roles" class="form-label">Rol</label>
+        <select name="roles" id="roles" formControlName="roles" class="form-select">
+          <option value="admin">Administrador</option>
+          <option value="user">Usuario</option>
+        </select>
+      </div>
+
+      <div class="d-flex justify-content-between gap-2">
+        <button type="button" class="btn btn-secondary w-50" [routerLink]="['/reservas']">
+          Volver atrás
+        </button>
+        <button type="submit" class="btn btn-primary w-50">Ingresar</button>
+      </div>
+    </form>
+  </div>
+</div>

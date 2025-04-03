@@ -1,0 +1,259 @@
+/* Estilo para el enlace activo */
+.sala.active {
+  background-color: #007bff;
+}
+
+.hall {
+  transition: font-size 0.3s ease;
+}
+
+.hall:hover {
+  font-size: 20px;
+}
+
+.custom-alert {
+  width: 300px;
+  text-align: center;
+}
+
+#resto {
+  text-align: center;
+}
+
+#hora {
+  color: rgb(121, 117, 117);
+}
+
+#date {
+  color: rgb(121, 117, 117);
+}
+
+.email {
+  color: rgb(121, 117, 117);
+}
+
+/* Menú dropdown responsivo */
+@media (max-width: 576px) {
+  .responsive-dropdown {
+    min-width: 0 !important;
+    width: 100% !important;
+    overflow-x: hidden;
+  }
+
+  .responsive-dropdown .dropdown-item {
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    padding: 10px !important;
+  }
+
+  .responsive-dropdown .dropdown-divider {
+    margin: 0.5rem 0 !important;
+  }
+}
+
+.boton {
+  margin-bottom: 10px;
+}
+
+.proyecto {
+  margin-top: 10px;
+}
+
+.campos {
+  margin-right: 50px;
+}
+
+.icono-grande {
+  font-size: 2rem;
+  align-items: center;
+}
+
+
+.btn-transparent {
+  background: none !important;
+  border: none !important;
+  color: inherit !important;
+}
+
+#botonA.btn {
+  background: none !important;
+}
+
+#dropdownUser1 {
+  background: none !important;
+  border: none !important;
+  color: inherit !important;
+  overflow: hidden;
+}
+
+#dropdownUser1:focus,
+#dropdownUser1:active {
+  background: none !important;
+  box-shadow: none !important;
+  color: inherit !important;
+}
+
+.active-light {
+  background-color: #007bff;
+}
+
+.menu-button {
+  transition: opacity 0.3s ease-in-out;
+}
+
+.menu-button.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.menu-button {
+  transition: opacity 0.3s ease-in-out;
+}
+
+.menu-button.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Estilos generales */
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+/* Botón de apertura */
+.toggle-btn {
+  position: fixed;
+  top: 15px;
+  left: 15px;
+  font-size: 24px;
+  background: #333;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  cursor: pointer;
+  z-index: 1001;
+}
+
+/* Sidebar */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: -250px;
+  width: 250px;
+  height: 100vh;
+  background: #222;
+  color: white;
+  padding-top: 60px;
+  transition: 0.3s;
+  box-shadow: 2px 0px 10px rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+}
+
+
+.sidebar.open {
+  left: 0;
+}
+
+
+.close-btn {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+
+
+.sidebar ul li {
+  padding: 10px;
+  text-align: center;
+}
+
+.sidebar-dark a {
+  color: white;
+  text-decoration: none;
+  display: block;
+}
+
+.sidebar-light a {
+  color: black;
+  text-decoration: none;
+  display: block;
+}
+
+.sidebar-dark li:hover {
+  background: #444;
+}
+
+.sidebar-light li:hover {
+  background: #c6c6c6;
+}
+
+.content {
+  margin-left: 0;
+  padding: 20px;
+  transition: 0.3s;
+}
+
+
+.content.shift {
+  margin-left: 250px;
+}
+
+/* Responsivo */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 100%;
+    
+    left: -100%;
+  }
+
+  .sidebar.open {
+    left: 0;
+  }
+
+  .content.shift {
+    margin-left: 0;
+    
+  }
+}
+
+
+.toggle-btn {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  background-color: #007bff;
+  border: none;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  color: #fff;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  z-index: 1100;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.toggle-btn:hover {
+  background-color: #0056b3;
+  transform: scale(1.05);
+}
+
+.hall {
+  transition: transform 0.3s ease;
+}
+
+.hall:hover {
+  font-size: 20px;
+}
