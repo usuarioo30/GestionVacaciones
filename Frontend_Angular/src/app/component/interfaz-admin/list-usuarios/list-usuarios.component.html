@@ -1,0 +1,50 @@
+<div class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-10 col-lg-8">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h1 class="text-center mb-4">Lista de Usuarios</h1>
+
+          <div *ngIf="!tieneAcceso" class="alert alert-danger">
+            No tienes permisos para acceder a esta página.
+          </div>
+
+          <div *ngIf="usuarios.length === 0 && tieneAcceso" class="alert alert-primary custom-alert">
+            <b>No hay usuarios disponibles.</b>
+          </div>
+
+          <div *ngIf="usuarios.length > 0 && tieneAcceso" class="table-responsive"
+            style="max-height: 400px; overflow-y: auto;">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>Correo electrónico</th>
+                  <th style="white-space: nowrap; text-align: center;">Nombre de usuario</th>
+                  <!-- Centrado del encabezado -->
+                  <th>Rol</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let u of usuarios">
+                  <td>{{ u.email }}</td>
+                  <td style="text-align: center;">{{ u.username }}</td>
+                  <td>{{ u.roles }}</td>
+                  <td>
+                    <button *ngIf="u.email !== usuario.email" class="btn btn-danger btn-sm"
+                      (click)="eliminarUsuario(u.id)">
+                      Eliminar
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <button class="btn btn-secondary mb-3 mt-3" (click)="volverAReservas()">Volver a Reservas</button>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

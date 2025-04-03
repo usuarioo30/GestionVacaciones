@@ -1,0 +1,242 @@
+/* Tema Oscuro Global */
+body.dark-theme {
+  background-color: #121212 !important;
+  color: #ffffff !important;
+}
+
+/* Estilo general para botones, textos y fondos claros */
+body.dark-theme .bg-light,
+body.dark-theme .text-black {
+  background-color: #1f1f1f !important;
+  color: #ffffff !important;
+}
+
+/* Menús desplegables */
+body.dark-theme .dropdown-menu {
+  background-color: #333333 !important;
+  color: #ffffff !important;
+}
+
+/* Estilos generales y específicos para la tabla completa */
+body.dark-theme .table {
+  background-color: #212121 !important;
+  color: #ffffff !important;
+}
+
+body.dark-theme .table th,
+body.dark-theme .table td {
+  background-color: #212121 !important;
+  color: #ffffff !important;
+  border-color: #444444 !important; /* Bordes más oscuros claros para distinguir celdas */
+}
+
+body.dark-theme .table thead th {
+  background-color: #2c2c2c !important; /* Cabecera un poco más clara para diferenciarse */
+  color: #ffffff !important;
+  border-bottom: 2px solid #555555 !important; /* separación visual más marcada */
+}
+
+/* Filas alternadas o hover en tablas para mejor usabilidad visual */
+body.dark-theme .table-striped tbody tr:nth-of-type(odd) {
+  background-color: #1c1c1c !important;
+}
+
+body.dark-theme .table-hover tbody tr:hover {
+  background-color: #2e2e2e !important;
+}
+
+/* Formularios y campos editables (opcional pero recomendable) */
+body.dark-theme .form-control,
+body.dark-theme .form-select,
+body.dark-theme .input-group-text {
+  background-color: #2b2b2b !important;
+  color: #ffffff !important;
+  border-color: #444444 !important;
+}
+
+/* Botones y acciones en tablas (opcional) */
+body.dark-theme .btn-light,
+body.dark-theme .btn-outline-secondary {
+  background-color: #404040 !important;
+  color: #ffffff !important;
+  border-color: #555555 !important;
+}
+
+body.dark-theme .btn-light:hover,
+body.dark-theme .btn-outline-secondary:hover {
+  background-color: #505050 !important;
+}
+
+/* 🌙 Estilos adicionales para LOGIN en Tema Oscuro */
+
+/* Fondo del formulario y contenedor general */
+body.dark-theme .login-container,
+body.dark-theme .card {
+  background-color: #1e1e1e !important;
+  color: #ffffff !important;
+  border: 1px solid #444444;
+}
+
+/* Títulos, subtítulos y textos */
+body.dark-theme .login-container h1,
+body.dark-theme .login-container h2,
+body.dark-theme .login-container h3,
+body.dark-theme .login-container p,
+body.dark-theme .card-title {
+  color: #ffffff !important;
+}
+
+/* Inputs/Formularios del login */
+body.dark-theme .login-container .form-control,
+body.dark-theme .login-container input {
+  background-color: #2b2b2b !important;
+  color: #ffffff !important;
+  border-color: #555555 !important;
+}
+
+/* Placeholders más visibles en fondo oscuro */
+body.dark-theme .login-container .form-control::placeholder {
+  color: #bbbbbb !important;
+}
+
+/* Elementos agrupados como iconos o add-ons en campos (opcional) */
+body.dark-theme .input-group-text {
+  background-color: #343434 !important;
+  color: #ffffff !important;
+  border-color: #555555 !important;
+}
+
+/* Botón primario del formulario Login (por ejemplo: Inicio) */
+body.dark-theme .login-container .btn-primary {
+  background-color: #005cbf !important;
+  border-color: #004080 !important; /* Azul más oscuro */
+  color: #ffffff !important;
+}
+
+body.dark-theme .login-container .btn-primary:hover {
+  background-color: #004080 !important;
+  border-color: #003060 !important;
+}
+
+/* Enlaces o textos secundarios del login (como "Olvidé contraseña") */
+body.dark-theme .login-container a {
+  color: #4a90e2 !important;
+}
+
+body.dark-theme .login-container a:hover {
+  color: #217dbb !important;
+}
+
+/* Mensajes de error o validaciones en login */
+body.dark-theme .login-container .alert-danger,
+body.dark-theme .login-container .invalid-feedback {
+  background-color: #542626 !important;
+  color: #ffcccc !important;
+  border-color: #874747 !important;
+}
+
+/* Mensaje de alerta/info/success (por si lo utilizas) */
+body.dark-theme .alert-success {
+  background-color: #28542b !important;
+  color: #ccffcc !important;
+  border-color: #3c6f42 !important;
+}
+
+body.dark-theme .alert-warning {
+  background-color: #645d26 !important;
+  color: #ffffcc !important;
+  border-color: #8a813d !important;
+}
+
+body.dark-theme .alert-info {
+  background-color: #214f67 !important;
+  color: #cceeff !important;
+  border-color: #376a83 !important;
+}
+
+/* Estilos generales para tema oscuro en modales */
+
+.dark-theme .modal-content {
+  background-color: #212529; /* Fondo oscuro del modal */
+  color: #ffffff; /* Texto blanco */
+}
+
+.dark-theme .modal-header {
+  background-color: #1c1f23;
+  border-bottom: 1px solid #444;
+}
+
+.dark-theme .modal-footer {
+  background-color: #1c1f23;
+  border-top: 1px solid #444;
+}
+
+.dark-theme .modal .btn-close {
+  filter: invert(1);
+}
+
+.dark-theme .form-control {
+  background-color: #333;
+  border: 1px solid #555;
+  color: #fff;
+}
+
+.dark-theme .form-control:focus {
+  background-color: #3a3f44;
+  color: #fff;
+  border-color: #888;
+  box-shadow: 0 0 0 0.2rem rgba(255,255,255,0.2);
+}
+
+/* Placeholder color para inputs en theme oscuro */
+.dark-theme .form-control::placeholder {
+  color: #bbb;
+  opacity: 0.9;
+}
+
+/* Estilo específico para botones primarios/secundarios en tema oscuro */
+.dark-theme .btn-primary {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+}
+
+.dark-theme .btn-secondary {
+  background-color: #6c757d;
+  border-color: #6c757d;
+}
+
+.dark-theme .btn-outline-light {
+  color: #fff;
+  border-color: #fff;
+}
+
+.dark-theme .btn-success {
+  background-color: #198754;
+  border-color: #198754;
+}
+
+.dark-theme .btn-close {
+  opacity: 1;
+}
+
+/* Estilo para el enlace activo */
+.sala.active {
+  background-color: #007bff;
+}
+
+/* Estilo para el botón activo en modo oscuro */
+.active-dark {
+  background-color: #6c757d !important; /* gris medio */
+  color: #fff !important;
+}
+
+/* Estilo para el enlace activo */
+.sala.active {
+  background-color: #007bff;
+}
+
+/* Estilo para el botón activo en modo oscuro */
+.active-dark {
+  background-color: #6c757d !important; /* gris medio */
+  color: #fff !important;
+}

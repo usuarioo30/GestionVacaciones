@@ -1,0 +1,50 @@
+services:
+  # Backend Flask
+  flask:
+    build:
+      context: ./backend  # Cambia el path según la ubicación de tu proyecto Flask
+    container_name: flask-backend
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=development
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - mysql
+    networks:
+      - mired
+
+  # Frontend Angular con Nginx
+  angular:
+    build:
+      context: ./frontend  # Cambia el path según la ubicación de tu proyecto Angular
+    container_name: angular-frontend
+    ports:
+      - "80:80"  # Exponemos el puerto 80 de Nginx
+    depends_on:
+      - flask
+    networks:
+      - mired
+
+  # Base de datos MySQL
+  mysql:
+    image: mysql:5.7
+    container_name: mysql-db
+    environment:
+      MYSQL_ROOT_PASSWORD: root # No iba porque no era la contraseña indicada
+      MYSQL_USER: user
+      MYSQL_PASSWORD: userpassword
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - mired
+
+networks:
+  mired:
+    driver: bridge
+
+volumes:
+  mysql_data:
