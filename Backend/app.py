@@ -1,4 +1,5 @@
 from datetime import datetime
+from sqlite3 import IntegrityError
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -36,7 +37,7 @@ class SolicitudDescanso(db.Model):
     fecha_inicio = db.Column(db.DateTime, nullable=False)
     fecha_fin = db.Column(db.DateTime, nullable=False)
     fecha_solicitada = db.Column(db.DateTime, default=datetime.utcnow)
-    aprobado = db.Column(db.Boolean, nullable=True)
+    aprobado = db.Column(db.Boolean, nullable=True, default=None)
 
     def __repr__(self):
         return f'<SolicitudDescanso {self.id}>'
@@ -115,16 +116,16 @@ def login():
     access_token = create_access_token(identity={'username': usuario.username, 'rol': usuario.rol})
     return jsonify({'access_token': access_token}),
 
-@app.route("/registerRestRequest", methods=["POST"])
+@app.route("/registerRequest", methods=["POST"])
 def registrarSolicitudes():
     data = request.get_json()
     usuario_id = data.get("usuario_id")
     fecha_inicio = data.get("fecha_inicio")
     fecha_fin = data.get("fecha_fin")
     fecha_solicitada = data.get("fecha_solicitada")
-    aprobado = data.get("aprobado")
+    #aprobado = data.get("aprobado")
 
-    if not all([usuario_id, fecha_inicio, fecha_fin, fecha_solicitada, aprobado]):
+    if not all([usuario_id, fecha_inicio, fecha_fin, fecha_solicitada]):
         return {"error": "Faltan datos"}, 400
 
     try:
@@ -139,7 +140,6 @@ def registrarSolicitudes():
             fecha_inicio=fecha_inicio,
             fecha_fin=fecha_fin,
             fecha_solicitada=fecha_solicitada,
-            aprobado=aprobado
         )
         db.session.add(nueva_solicitud)
         db.session.commit()
@@ -161,6 +161,29 @@ def eliminar_solicitud(id):
             return jsonify({'error': 'Hubo un error al eliminar la solicitud.'}), 500
     else:
         return jsonify({'error': 'Solicitud no encontrada.'}), 404
+
+
+@app.route('/requests', methods=['GET'])
+def listar_solicitudes():
+    try:
+        solicitudes = SolicitudDescanso.query.all()
+        
+        solicitudes_data = []
+        for solicitud in solicitudes:
+            solicitud_info = {
+                "id": solicitud.id,
+                "usuario_id": solicitud.usuario_id,
+                "fecha_inicio": solicitud.fecha_inicio.strftime('%Y-%m-%d %H:%M:%S'),
+                "fecha_fin": solicitud.fecha_fin.strftime('%Y-%m-%d %H:%M:%S'),
+                "fecha_solicitada": solicitud.fecha_solicitada.strftime('%Y-%m-%d %H:%M:%S'),
+                "aprobado": solicitud.aprobado
+            }
+            solicitudes_data.append(solicitud_info)
+
+        return jsonify(solicitudes_data), 200
+    
+    except Exception as e:
+        return jsonify({"error": "Ocurrió un error al obtener las solicitudes.", "message": str(e)}), 500
 
 
 
