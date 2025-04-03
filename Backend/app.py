@@ -1,5 +1,6 @@
 from datetime import datetime
-
+from sqlite3 import IntegrityError
+from operator import truediv
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
@@ -12,6 +13,7 @@ class Config:
     SQLALCHEMY_DATABASE_URI = 'mysql://root:Usuario1234@localhost/gestionvacaciones'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SECRET_KEY = 'miClave'  # Clave secreta para JWT
+    JWT_SECRET_KEY = 'mi_secreto_jwt'  # Clave secreta para JWT
 
 # Inicializa la base de datos y JWT
 db = SQLAlchemy()
@@ -36,7 +38,7 @@ class SolicitudDescanso(db.Model):
     fecha_inicio = db.Column(db.DateTime, nullable=False)
     fecha_fin = db.Column(db.DateTime, nullable=False)
     fecha_solicitada = db.Column(db.DateTime, default=datetime.utcnow)
-    aprobado = db.Column(db.Boolean, nullable=True)
+    aprobado = db.Column(db.Boolean, nullable=True, default=None)
 
     def __repr__(self):
         return f'<SolicitudDescanso {self.id}>'
@@ -115,16 +117,16 @@ def login():
     access_token = create_access_token(identity={'username': usuario.username, 'rol': usuario.rol})
     return jsonify({'access_token': access_token}),
 
-@app.route("/registerRestRequest", methods=["POST"])
+@app.route("/registerRequest", methods=["POST"])
 def registrarSolicitudes():
     data = request.get_json()
     usuario_id = data.get("usuario_id")
     fecha_inicio = data.get("fecha_inicio")
     fecha_fin = data.get("fecha_fin")
     fecha_solicitada = data.get("fecha_solicitada")
-    aprobado = data.get("aprobado")
+    #aprobado = data.get("aprobado")
 
-    if not all([usuario_id, fecha_inicio, fecha_fin, fecha_solicitada, aprobado]):
+    if not all([usuario_id, fecha_inicio, fecha_fin, fecha_solicitada]):
         return {"error": "Faltan datos"}, 400
 
     try:
@@ -139,16 +141,14 @@ def registrarSolicitudes():
             fecha_inicio=fecha_inicio,
             fecha_fin=fecha_fin,
             fecha_solicitada=fecha_solicitada,
-            aprobado=aprobado
         )
         db.session.add(nueva_solicitud)
         db.session.commit()
         return {"message": "Solicitud registrada correctamente"}, 201
     except Exception:
         return {"message": "Error al registrar su solicitud, porfavor intentelo denuevo."}, 500
-  
-
-@app.route('/request/manage/<int:id>', methods=['PUT'])
+      
+    @app.route('/request/manage/<int:id>', methods=['PUT'])
 def manageRequest(id):
     try:
         solicitud = SolicitudDescanso.query.get(id)
@@ -165,26 +165,58 @@ def manageRequest(id):
             return jsonify({"message": "Solicitud no encontrada"}), 404
     except Exception as e:
         return jsonify({"message": "Error al editar la solicitud", "error": str(e)}), 500
+  
 
 @app.route('/deleteRequest/<int:id>', methods=['DELETE'])
 def eliminar_solicitud(id):
     solicitud = SolicitudDescanso.query.get(id)
+
+@app.route("/editRestRequest", methods=["PUT"])
+def editarSolicitudes():
+    data = request.get_json()
+    id = data.get("id")
+    fecha_inicio = data.get("fecha_inicio")
+    fecha_fin = data.get("fecha_fin")
+    aprobado = data.get("aprobado")
+
+@app.route('/requests', methods=['GET'])
+def listar_solicitudes():
+    try:
+        solicitudes = SolicitudDescanso.query.all()
+        
+        solicitudes_data = []
+        for solicitud in solicitudes:
+            solicitud_info = {
+                "id": solicitud.id,
+                "usuario_id": solicitud.usuario_id,
+                "fecha_inicio": solicitud.fecha_inicio.strftime('%Y-%m-%d %H:%M:%S'),
+                "fecha_fin": solicitud.fecha_fin.strftime('%Y-%m-%d %H:%M:%S'),
+                "fecha_solicitada": solicitud.fecha_solicitada.strftime('%Y-%m-%d %H:%M:%S'),
+                "aprobado": solicitud.aprobado
+            }
+            solicitudes_data.append(solicitud_info)
+
+        return jsonify(solicitudes_data), 200
     
-    if solicitud:
-        try:
-            db.session.delete(solicitud)
-            db.session.commit()
-            return jsonify({'message': 'Solicitud de descanso eliminada correctamente.'}), 200
-        except Exception as e:
-            db.session.rollback()
-            return jsonify({'error': 'Hubo un error al eliminar la solicitud.'}), 500
-    else:
-        return jsonify({'error': 'Solicitud no encontrada.'}), 404
+    except Exception as e:
+        return jsonify({"error": "Ocurrió un error al obtener las solicitudes.", "message": str(e)}), 500
 
 
+    try:
+        solicitud = SolicitudDescanso.query.filter_by(id=id).first()
+        if not solicitud:
+            return {"error": "Solicitud no encontrada"}, 404
 
+        solicitud.fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d %H:%M:%S')
+        solicitud.fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d %H:%M:%S')
+        solicitud.aprobado = aprobado
 
-# Ejecutar la aplicación Flask
+        db.session.commit()
+        return {"message": "Solicitud editada correctamente"}, 200
+    except Exception:
+        return {"message": "Error al editar la solicitud"}, 500
+
+# Ejecutar el servidor Flask
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
