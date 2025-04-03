@@ -4,7 +4,6 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.exc import IntegrityError
 from werkzeug.security import generate_password_hash, check_password_hash
 
 
@@ -27,10 +26,8 @@ class Usuario(db.Model):
     username = db.Column(db.String(50), unique=True, nullable=False)
     rol = db.Column(db.String(20), nullable=False)
 
-
     def __repr__(self):
         return f'<Usuario {self.username}>'
-
 
 class SolicitudDescanso(db.Model):
     __tablename__ = 'solicitudDescanso'
@@ -43,9 +40,6 @@ class SolicitudDescanso(db.Model):
 
     def __repr__(self):
         return f'<SolicitudDescanso {self.id}>'
-
-
-
 
 # Función para crear la aplicación
 def create_app():
@@ -121,7 +115,38 @@ def login():
     access_token = create_access_token(identity={'username': usuario.username, 'rol': usuario.rol})
     return jsonify({'access_token': access_token}),
 
+@app.route("/registerRestRequest", methods=["POST"])
+def registrarSolicitudes():
+    data = request.get_json()
+    usuario_id = data.get("usuario_id")
+    fecha_inicio = data.get("fecha_inicio")
+    fecha_fin = data.get("fecha_fin")
+    fecha_solicitada = data.get("fecha_solicitada")
+    aprobado = data.get("aprobado")
 
+    if not all([usuario_id, fecha_inicio, fecha_fin, fecha_solicitada, aprobado]):
+        return {"error": "Faltan datos"}, 400
+
+    try:
+        fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d %H:%M:%S')
+        fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d %H:%M:%S')
+        fecha_solicitada = datetime.strptime(fecha_solicitada, '%Y-%m-%d %H:%M:%S')
+    except ValueError:
+        return {"error": "Formato de fecha incorrecto"}, 400
+    try:
+        nueva_solicitud = SolicitudDescanso(
+            usuario_id=usuario_id,
+            fecha_inicio=fecha_inicio,
+            fecha_fin=fecha_fin,
+            fecha_solicitada=fecha_solicitada,
+            aprobado=aprobado
+        )
+        db.session.add(nueva_solicitud)
+        db.session.commit()
+        return {"message": "Solicitud registrada correctamente"}, 201
+    except Exception:
+        return {"message": "Error al registrar su solicitud, porfavor intentelo denuevo."}, 500
+  
 @app.route('/deleteRequest/<int:id>', methods=['DELETE'])
 def eliminar_solicitud(id):
     solicitud = SolicitudDescanso.query.get(id)
@@ -142,9 +167,6 @@ def eliminar_solicitud(id):
 
 # Ejecutar la aplicación Flask
 if __name__ == '__main__':
-    # Crear la base de datos si no existe
     with app.app_context():
         db.create_all()
-
-    # Ejecutar el servidor Flask
     app.run(host="0.0.0.0", port=5000, debug=True)
