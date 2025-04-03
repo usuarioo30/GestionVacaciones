@@ -2,7 +2,6 @@ import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { jwtDecode } from 'jwt-decode';
 import { Usuario } from '../interfaces/usuario';
-import { Proyecto } from '../interfaces/proyecto';
 import { firstValueFrom } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 
@@ -231,23 +230,7 @@ export class AuthService {
     return this.http.delete(`${this.apiUrl}/usuarios/${id}`).toPromise();
   }
 
-  async registerProject(project: Omit<Proyecto, "id">): Promise<Proyecto> {
-    console.log("He entrado aquí con", project);
-    const response = await fetch(`${this.apiUrl}/registrarProyecto`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(project),
-    });
 
-    if (!response.ok) {
-      throw new Error('Error al registrar el proyecto');
-    }
-
-    return await response.json();
-
-  }
 
   /**
    * Método para cerrar sesión y redirigir al login
