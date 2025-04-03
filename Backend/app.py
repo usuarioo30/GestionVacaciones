@@ -147,6 +147,25 @@ def registrarSolicitudes():
     except Exception:
         return {"message": "Error al registrar su solicitud, porfavor intentelo denuevo."}, 500
   
+
+@app.route('/request/manage/<int:id>', methods=['PUT'])
+def manageRequest(id):
+    try:
+        solicitud = SolicitudDescanso.query.get(id)
+        
+        data = request.get_json()
+        aprobado = data.get('aprobado')
+
+        if solicitud:
+            solicitud.aprobado = True if aprobado else False
+            db.session.commit()
+            message = "Solicitud "+"aprobada" if aprobado else "denegada"+" con éxito"
+            return jsonify({"message": message}), 200
+        else :
+            return jsonify({"message": "Solicitud no encontrada"}), 404
+    except Exception as e:
+        return jsonify({"message": "Error al editar la solicitud", "error": str(e)}), 500
+
 @app.route('/deleteRequest/<int:id>', methods=['DELETE'])
 def eliminar_solicitud(id):
     solicitud = SolicitudDescanso.query.get(id)
