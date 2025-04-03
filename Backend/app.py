@@ -80,14 +80,56 @@ with app.app_context():
     db.create_all()
     crear_usuario_por_defecto()
 
-@app.route('/createUser', methods=['POST'])
-def registrar_usuario():
+
+
+@app.route('/login', methods=['POST'])
+def login():
     data = request.get_json()
-    hashed_password = generate_password_hash(data['password'], method='sha256')
+    usuario = Usuario.query.filter_by(username=data['username']).first()
+
+    if not usuario or not check_password_hash(usuario.password, data['password']):
+        return jsonify({'message': 'Credenciales inválidas'}), 401
+
+    access_token = create_access_token(identity=str(usuario.id))
+    return jsonify({'access_token': access_token}), 200
+
+@app.route("/api/google-login", methods=["POST"])
+def google_login():
+    data = request.json
+    if "email" not in data:
+        return jsonify({"error": "Email is required"}), 400
+
+    user = Usuario.query.filter_by(email=data["email"]).first()
+
+    if not user:
+        return jsonify({"exists": False, "error": "User not found"}), 404
+
+    return jsonify({
+        "exists": True,
+        "message": f"Welcome {user.username}!",
+        "role": user.roles
+    }), 200
+
+
+@app.route('/createUser', methods=['POST'])
+@jwt_required()  # El usuario debe estar autenticado con JWT
+def registrar_usuario():
+    # Verificar que se está enviando JSON
+    data = request.get_json()
+    if not data:
+        return jsonify({'message': 'Datos JSON no proporcionados o mal formateados'}), 400
+
+    # Obtener la identidad del usuario autenticado
+    current_user = get_jwt_identity()
+    
+    # Hash de la contraseña
+    hashed_password = generate_password_hash(data['password'])
+
+    # Crear nuevo usuario
     nuevo_usuario = Usuario(
         email=data['email'],
         nombreCompleto=data['nombreCompleto'],
-        password=generate_password_hash(data['password'], method='sha256'),
+        password=hashed_password,
         username=data['username'],
         rol=data['rol']
     )
@@ -102,20 +144,8 @@ def registrar_usuario():
     except Exception as e:
         db.session.rollback()
         return jsonify({'message': 'Error al crear el usuario', 'error': str(e)}), 500
-    
 
-@app.route('/login', methods=['POST'])
-def login():
-    data = request.get_json()
-    usuario = Usuario.query.filter_by(username=data['username']).first()
-
-    if not usuario or not check_password_hash(usuario.password, data['password']):
-        return jsonify({'message': 'Credenciales inválidas'}), 401
-
-    access_token = create_access_token(identity={'username': usuario.username, 'rol': usuario.rol})
-    return jsonify({'access_token': access_token}),
-
-@app.route("/registerRestRequest", methods=["POST"])
+@app.route("/registerRequest", methods=["POST"])
 def registrarSolicitudes():
     data = request.get_json()
     usuario_id = data.get("usuario_id")
@@ -149,6 +179,7 @@ def registrarSolicitudes():
   
 
 @app.route('/request/manage/<int:id>', methods=['PUT'])
+@jwt_required()
 def manageRequest(id):
     try:
         solicitud = SolicitudDescanso.query.get(id)

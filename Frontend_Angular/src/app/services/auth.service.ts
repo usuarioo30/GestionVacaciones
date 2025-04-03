@@ -1,38 +1,69 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable, OnChanges, OnInit, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { jwtDecode } from 'jwt-decode';
 import { Usuario } from '../interfaces/usuario';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, tap, Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 
 @Injectable({
   providedIn: 'root',
 })
-export class AuthService {
-  //Url de la API
-  private apiUrl = 'http://localhost:5000';
+export class AuthService implements OnChanges{
 
-  constructor(private router: Router, private http: HttpClient) { }
+  private http: HttpClient = inject(HttpClient)
+  private router: Router = inject(Router)
+
+  //Url de la API
+  private apiUrl = 'http://localhost:5000/';
+  //Signal de inicio/cierre de sesión
+  private isLoguedSignal = signal<boolean>(false);
+  
+  //Getter de la signal de login
+  get isLogued() {
+    return this.isLoguedSignal.asReadonly();
+  }
+
+  //Función para obtener el valor puro de la signal
+  isLoggedF(): boolean {
+    if (this.isLogued()) {
+      return true;
+    } else {
+      this.router.navigateByUrl('/login');
+      return false;
+    }
+  }
+
+  ngOnChanges(): void {
+      const token: string | null = localStorage.getItem('access_token');
+
+      if (token) {
+        this.isLoguedSignal.set(true);
+      } else {
+        alert("Nope")
+      }
+
+  }
 
   /**
    * Método de iniciar sesión, es llamado cuando el formulario es válido
    * @param username Nombre del usuario
    * @param password Contraseña del usuario
-   * @returns El token de inicio de sesión
+   * Necesita subscripción en el componente en el que se usará
    */
-  async logIn(username: string, password: string) {
-
-    //Llamada a la api para iniciar sesión
-    const response = await fetch(`${this.apiUrl}/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ username: username, password: password })
-    });
-
-    return response
-
+  logIn(username: string, password: string): Observable<{access_token: string}> {
+    return this.http.post<{access_token: string}>(`${this.apiUrl}login`, {username, password})
+    .pipe( //Modifica o reacciona a los datos devueltos sin modificar la respuesta original
+      tap({ //Se usa para ejecutar acciones adicionales sin modificar los datos que fluyen por el Observable
+        next: response => {
+          const token = response.access_token;
+          console.log('Token: ', token)
+          if (token) {
+            localStorage.setItem('access_token', token)
+            this.isLoguedSignal.set(true);
+          }
+        }
+      })
+    )
   }
 
   /**
