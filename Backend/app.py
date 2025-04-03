@@ -1,6 +1,6 @@
 from datetime import datetime
 from sqlite3 import IntegrityError
-
+from operator import truediv
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
@@ -13,6 +13,7 @@ class Config:
     SQLALCHEMY_DATABASE_URI = 'mysql://root:Usuario1234@localhost/gestionvacaciones'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SECRET_KEY = 'miClave'  # Clave secreta para JWT
+    JWT_SECRET_KEY = 'mi_secreto_jwt'  # Clave secreta para JWT
 
 # Inicializa la base de datos y JWT
 db = SQLAlchemy()
@@ -146,22 +147,14 @@ def registrarSolicitudes():
         return {"message": "Solicitud registrada correctamente"}, 201
     except Exception:
         return {"message": "Error al registrar su solicitud, porfavor intentelo denuevo."}, 500
-  
-@app.route('/deleteRequest/<int:id>', methods=['DELETE'])
-def eliminar_solicitud(id):
-    solicitud = SolicitudDescanso.query.get(id)
-    
-    if solicitud:
-        try:
-            db.session.delete(solicitud)
-            db.session.commit()
-            return jsonify({'message': 'Solicitud de descanso eliminada correctamente.'}), 200
-        except Exception as e:
-            db.session.rollback()
-            return jsonify({'error': 'Hubo un error al eliminar la solicitud.'}), 500
-    else:
-        return jsonify({'error': 'Solicitud no encontrada.'}), 404
 
+@app.route("/editRestRequest", methods=["PUT"])
+def editarSolicitudes():
+    data = request.get_json()
+    id = data.get("id")
+    fecha_inicio = data.get("fecha_inicio")
+    fecha_fin = data.get("fecha_fin")
+    aprobado = data.get("aprobado")
 
 @app.route('/requests', methods=['GET'])
 def listar_solicitudes():
@@ -186,9 +179,21 @@ def listar_solicitudes():
         return jsonify({"error": "Ocurrió un error al obtener las solicitudes.", "message": str(e)}), 500
 
 
+    try:
+        solicitud = SolicitudDescanso.query.filter_by(id=id).first()
+        if not solicitud:
+            return {"error": "Solicitud no encontrada"}, 404
 
+        solicitud.fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d %H:%M:%S')
+        solicitud.fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d %H:%M:%S')
+        solicitud.aprobado = aprobado
 
-# Ejecutar la aplicación Flask
+        db.session.commit()
+        return {"message": "Solicitud editada correctamente"}, 200
+    except Exception:
+        return {"message": "Error al editar la solicitud"}, 500
+
+# Ejecutar el servidor Flask
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
