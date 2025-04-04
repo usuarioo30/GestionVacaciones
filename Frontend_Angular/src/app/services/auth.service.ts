@@ -50,6 +50,7 @@ export class AuthService implements OnChanges{
    * @param password Contraseña del usuario
    * Necesita subscripción en el componente en el que se usará
    */
+
   logIn(username: string, password: string): Observable<{access_token: string}> {
     return this.http.post<{access_token: string}>(`${this.apiUrl}login`, {username, password})
     .pipe( //Modifica o reacciona a los datos devueltos sin modificar la respuesta original
@@ -110,7 +111,7 @@ export class AuthService implements OnChanges{
    * @param username El nombre de usuario del usuario
    * @returns El usuario al que pertenece ese username
    */
-  async getUserByUsername(username:string): Promise<any> {
+  async getUserByUsername(username: string): Promise<any> {
     const response = await fetch(`${this.apiUrl}/usuarios/username/${username}`);
     if (response.status === 404) {
       return true;
@@ -287,7 +288,7 @@ export class AuthService implements OnChanges{
     return JSON.parse(jsonPayload);
   }
 
-  
+
   /**
    * Método para decodificar el token JWT
    * @param token El token de inicio de sesión
