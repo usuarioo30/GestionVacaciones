@@ -83,9 +83,19 @@ with app.app_context():
     crear_usuario_por_defecto()
 
 
-
+# 
+## POST: /login
+# Response: 200 OK {"access_token": token}
+# Response: 401 Unauthorized {"message": "Credenciales inválidas"}
 @app.route('/login', methods=['POST'])
 def login():
+    """
+    Endpoint para iniciar sesión y obtener un token JWT
+    POST: /login
+    Request Body: {"username": username, "password": password}
+    Response: 200 OK {"access_token": token}
+    Response: 401 Unauthorized {"message": "Credenciales inválidas"}
+    """
     data = request.get_json()
     # hashed_password = generate_password_hash(data['password'], method='sha256')
     usuario = Usuario.query.filter_by(username=data['username']).first()
@@ -98,6 +108,15 @@ def login():
 
 @app.route("/api/google-login", methods=["POST"])
 def google_login():
+    """
+    Endpoint para iniciar sesión con google y obtener un token JWT
+    POST: /api/google-login
+    Request Body: {"email": email}
+    Response: 200 OK {"access_token": token}
+    Response: 400 Bad Request {"error": "Email is required"}
+    Response: 404 Not Found {"exists": False, "error": "User not found"}
+    """
+
     data = request.json
     if "email" not in data:
         return jsonify({"error": "Email is required"}), 400
@@ -117,6 +136,23 @@ def google_login():
 @app.route('/createUser', methods=['POST'])
 @jwt_required()  # El usuario debe estar autenticado con JWT
 def registrar_usuario():
+
+    """
+    Endpoint para crear un nuevo usuario
+    POST: /createUser
+    Request Body: {
+        "email": email,
+        "nombreCompleto": nombreCompleto,
+        "password": password,
+        "username": username,
+        "rol": rol
+    }
+    Response: 201 OK {'message': 'Usuario creado exitosamente'}
+    Response: 400 Bad Request {'message': 'Datos JSON no proporcionados o mal formateados'}
+    Response: 409 Conflict {'message': 'El usuario ya existe'}
+    Response: 500 Internal Server Error {'message': 'Error al crear el usuario', 'error': str(e)}
+    """
+
     # Verificar que se está enviando JSON
     data = request.get_json()
     if not data:
@@ -150,6 +186,21 @@ def registrar_usuario():
 @app.route("/registerRequest", methods=["POST"])
 @jwt_required()
 def registrarSolicitudes():
+    """
+    Endpoint para crear un nuevo usuario
+    POST: /createUser
+    Request Body: {
+        "usuario_id": usuario_id,
+        "fecha_inicio": fecha_inicio,
+        "fecha_fin": fecha_fin,
+        "fecha_solicitada": fecha_solicitada
+    }
+    Response: 201 OK {"message": "Solicitud registrada correctamente"}, 201
+    Response: 400 Bad Request {"error": "Faltan datos"}
+    Response: 409 Conflict {'message': 'El usuario ya existe'}
+    Response: 500 Internal Server Error {"message": "Error al registrar su solicitud, porfavor intentelo denuevo."}
+    """
+
     data = request.get_json()
 
     usuario_id = data.get("usuario_id")
@@ -194,6 +245,19 @@ def registrarSolicitudes():
 @app.route('/request/manage/<int:id>', methods=['PUT'])
 @jwt_required()
 def manageRequest(id):
+    """
+    Endpoint para crear un nuevo usuario
+    POST: /createUser
+    Request Body: {
+        "aprobado": aprobado,
+    }
+    Response: 200 OK {"message": message}
+    Response: 400 Bad Request {"error": "Faltan datos"}
+    Response: 404 Not Found {"message": "Solicitud no encontrada"}
+    Response: 500 Internal Server Error {"message": "Error al editar la solicitud", "error": str(e)}
+    """
+
+
     try:
         solicitud = SolicitudDescanso.query.get(id)
         
@@ -215,6 +279,7 @@ def manageRequest(id):
 @jwt_required()
 def eliminar_solicitud(id):
     solicitud = SolicitudDescanso.query.get(id)
+
     
     if solicitud:
         try:
@@ -226,6 +291,7 @@ def eliminar_solicitud(id):
             return jsonify({'error': 'Hubo un error al eliminar la solicitud.'}), 500
     else:
         return jsonify({'error': 'Solicitud no encontrada.'}), 404
+
 
 @app.route("/editRequest/<int:id>", methods=["PUT"])
 @jwt_required()
