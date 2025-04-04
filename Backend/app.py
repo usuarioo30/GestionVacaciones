@@ -148,18 +148,6 @@ def registrar_usuario():
         return jsonify({'message': 'Error al crear el usuario', 'error': str(e)}), 500
 
 
-# @app.route('/login', methods=['POST'])
-# def login():
-#     data = request.get_json()
-#     usuario = Usuario.query.filter_by(username=data['username']).first()
-
-#     if not usuario or not check_password_hash(usuario.password, data['password']):
-#         return jsonify({'message': 'Credenciales inválidas'}), 401
-
-#     access_token = create_access_token(identity=str(usuario.username))
-#     return jsonify({'access_token': access_token}),
-
-
 @app.route("/registerRequest", methods=["POST"])
 def registrarSolicitudes():
     data = request.get_json()
@@ -224,6 +212,19 @@ def editarSolicitudes():
     fecha_inicio = data.get("fecha_inicio")
     fecha_fin = data.get("fecha_fin")
     aprobado = data.get("aprobado")
+    try:
+        solicitud = SolicitudDescanso.query.filter_by(id=id).first()
+        if not solicitud:
+            return {"error": "Solicitud no encontrada"}, 404
+
+        solicitud.fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d %H:%M:%S')
+        solicitud.fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d %H:%M:%S')
+        solicitud.aprobado = aprobado
+
+        db.session.commit()
+        return {"message": "Solicitud editada correctamente"}, 200
+    except Exception:
+        return {"message": "Error al editar la solicitud"}, 500
 
 @app.route('/requests', methods=['GET'])
 @jwt_required()
@@ -249,19 +250,7 @@ def listar_solicitudes():
         return jsonify({"error": "Ocurrió un error al obtener las solicitudes.", "message": str(e)}), 500
 
 
-    # try:
-    #     solicitud = SolicitudDescanso.query.filter_by(id=id).first()
-    #     if not solicitud:
-    #         return {"error": "Solicitud no encontrada"}, 404
 
-    #     solicitud.fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d %H:%M:%S')
-    #     solicitud.fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d %H:%M:%S')
-    #     solicitud.aprobado = aprobado
-
-    #     db.session.commit()
-    #     return {"message": "Solicitud editada correctamente"}, 200
-    # except Exception:
-    #     return {"message": "Error al editar la solicitud"}, 500
 
 # Ejecutar el servidor Flask
 if __name__ == '__main__':
