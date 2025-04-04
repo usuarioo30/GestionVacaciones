@@ -81,4 +81,20 @@ export class SolicitudDescansoService {
     }
     return "No hay token";
   }
+
+  getUsuarioIdToken(): number | null {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      try {
+        // Decodificar el token con jwt-decode
+        const decodedToken: any = jwtDecode(token);
+        return decodedToken.sub ? Number(decodedToken.sub) : null;  // Retorna el ID del usuario desde 'sub'
+      } catch (error) {
+        console.error('Error decodificando el token', error);
+        return null;
+      }
+    }
+    return null;
+  }
+
 }

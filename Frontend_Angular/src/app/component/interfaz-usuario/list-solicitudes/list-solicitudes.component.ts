@@ -17,6 +17,7 @@ export class ListSolicitudesComponent implements OnInit {
   mostrarModal: boolean = false;
   username: string | null = null;
   nombreCompleto: string | null = null;
+  usuario_id: number | null = null;
 
 
   constructor(
@@ -31,10 +32,13 @@ export class ListSolicitudesComponent implements OnInit {
     this.findAllSolicitudesDescanso();
 
     this.username = this.solicitudDescansoService.getUsernameToken();
+    console.log(this.username);
     this.nombreCompleto = this.solicitudDescansoService.getNombreCompletoToken();
+    this.usuario_id = this.solicitudDescansoService.getUsuarioIdToken()
 
     this.formSolicitudDescanso = this.fb.group({
       usuario: [{value: this.username, disabled: true}, [Validators.required]],
+      usuario_id: [{ value: this.usuario_id, disabled: true }, [Validators.required]],
       fecha_inicio: ['', [Validators.required]],
       fecha_fin: ['', [Validators.required]],
       fecha_solicitada: [{ value: this.getFechaActual(), disabled: true }, [Validators.required]],
@@ -53,11 +57,23 @@ export class ListSolicitudesComponent implements OnInit {
 
   guardarSolicitud() {
     if (this.formSolicitudDescanso.valid) {
-      const nuevaSolicitud: SolicitudDescanso = this.formSolicitudDescanso.value;
+      if (this.usuario_id === null) {
+        console.error('El usuario_id es nulo');
+        return; // O puedes mostrar una notificación o mensaje de error aquí
+      }
+
+      // Crear la nueva solicitud asegurándonos de que usuario_id es un número válido
+      const nuevaSolicitud: SolicitudDescanso = {
+        ...this.formSolicitudDescanso.value,
+        usuario_id: this.usuario_id,  // Aseguramos que el usuario_id se añada correctamente
+        fecha_solicitada: this.getFechaActual()  // También nos aseguramos de añadir la fecha solicitada
+      };
+
+      console.log(nuevaSolicitud);
+
       this.solicitudDescansoService.saveSolicitudDescanso(nuevaSolicitud).subscribe(
         (response) => {
           console.log('Solicitud guardada', response);
-
           this.findAllSolicitudesDescanso();
         },
         (error) => {
@@ -82,7 +98,7 @@ export class ListSolicitudesComponent implements OnInit {
   getFechaActual(): string {
     const today = new Date();
     const yyyy = today.getFullYear();
-    let mm: string | number = today.getMonth() + 1; // Enero es 0!
+    let mm: string | number = today.getMonth() + 1;
     let dd: string | number = today.getDate();
     if (mm < 10) mm = '0' + mm;
     if (dd < 10) dd = '0' + dd;

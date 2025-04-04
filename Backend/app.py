@@ -151,20 +151,25 @@ def registrar_usuario():
 @jwt_required()
 def registrarSolicitudes():
     data = request.get_json()
-    momento_actual = datetime.now().strftime('%Y-%m-%d')
+
     usuario_id = data.get("usuario_id")
     fecha_inicio = data.get("fecha_inicio")
     fecha_fin = data.get("fecha_fin")
-    fecha_solicitada = data.get(momento_actual)
+    fecha_solicitada = data.get("fecha_solicitada")
     motivo = data.get("motivo")
 
-    if not all([usuario_id, fecha_inicio, fecha_fin]):
+    if not all([usuario_id, fecha_inicio, fecha_fin, fecha_solicitada, motivo]):
         return {"error": "Faltan datos"}, 400
 
     try:
         fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d')
         fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d')
-        fecha_solicitada = datetime.strptime(fecha_solicitada, '%Y-%m-%d')
+        
+        if not fecha_solicitada:
+            fecha_solicitada = datetime.now()
+        else:
+            fecha_solicitada = datetime.strptime(fecha_solicitada, '%Y-%m-%d')
+            
     except ValueError:
         return {"error": "Formato de fecha incorrecto"}, 400
 
@@ -179,8 +184,10 @@ def registrarSolicitudes():
         db.session.add(nueva_solicitud)
         db.session.commit()
         return {"message": "Solicitud registrada correctamente"}, 201
-    except Exception:
-        return {"message": "Error al registrar su solicitud, porfavor intentelo denuevo."}, 500
+    except Exception as e:
+        print(f"Error al registrar la solicitud: {e}")
+        return {"message": "Error al registrar su solicitud, por favor intente de nuevo."}, 500
+
 
   
 
