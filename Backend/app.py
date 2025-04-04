@@ -12,8 +12,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 class Config:
     SQLALCHEMY_DATABASE_URI = 'mysql://root:Usuario1234@localhost/gestionvacaciones'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    SECRET_KEY = 'miClave'  # Clave secreta para JWT
-    JWT_SECRET_KEY = 'mi_secreto_jwt'  # Clave secreta para JWT
+    SECRET_KEY = 'miClave'
 
 # Inicializa la base de datos y JWT
 db = SQLAlchemy()
@@ -182,7 +181,6 @@ def registrar_usuario():
     except Exception as e:
         db.session.rollback()
         return jsonify({'message': 'Error al crear el usuario', 'error': str(e)}), 500
-
 
 @app.route("/registerRequest", methods=["POST"])
 @jwt_required()
