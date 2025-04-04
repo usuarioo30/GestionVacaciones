@@ -38,6 +38,7 @@ class SolicitudDescanso(db.Model):
     fecha_fin = db.Column(db.DateTime, nullable=False)
     fecha_solicitada = db.Column(db.DateTime, default=datetime.utcnow)
     aprobado = db.Column(db.Boolean, nullable=True, default=None)
+    motivo = db.Column(db.String(255), nullable=True)
 
     def __repr__(self):
         return f'<SolicitudDescanso {self.id}>'
@@ -96,12 +97,13 @@ def login():
     Response: 401 Unauthorized {"message": "Credenciales inválidas"}
     """
     data = request.get_json()
+    # hashed_password = generate_password_hash(data['password'], method='sha256')
     usuario = Usuario.query.filter_by(username=data['username']).first()
 
     if not usuario or not check_password_hash(usuario.password, data['password']):
         return jsonify({'message': 'Credenciales inválidas'}), 401
 
-    access_token = create_access_token(identity=str(usuario.id))
+    access_token = create_access_token(identity=str(usuario.id), additional_claims={"username": usuario.username, "nombreCompleto": usuario.nombreCompleto, "rol": usuario.rol})
     return jsonify({'access_token': access_token}), 200
 
 @app.route("/api/google-login", methods=["POST"])
@@ -126,8 +128,8 @@ def google_login():
 
     return jsonify({
         "exists": True,
-        "message": f"Welcome {user.username}!",
-        "role": user.roles
+        "message": f"Welcome {usuario.username}!",
+        "role": usuario.rol
     }), 200
 
 
@@ -162,11 +164,10 @@ def registrar_usuario():
     # Hash de la contraseña
     hashed_password = generate_password_hash(data['password'])
 
-    # Crear nuevo usuario
     nuevo_usuario = Usuario(
         email=data['email'],
         nombreCompleto=data['nombreCompleto'],
-        password=hashed_password,
+        password=data['password'],
         username=data['username'],
         rol=data['rol']
     )
@@ -201,33 +202,43 @@ def registrarSolicitudes():
     """
 
     data = request.get_json()
+
     usuario_id = data.get("usuario_id")
     fecha_inicio = data.get("fecha_inicio")
     fecha_fin = data.get("fecha_fin")
     fecha_solicitada = data.get("fecha_solicitada")
-    #aprobado = data.get("aprobado")
+    motivo = data.get("motivo")
 
-    if not all([usuario_id, fecha_inicio, fecha_fin, fecha_solicitada]):
+    if not all([usuario_id, fecha_inicio, fecha_fin, fecha_solicitada, motivo]):
         return {"error": "Faltan datos"}, 400
 
     try:
-        fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d %H:%M:%S')
-        fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d %H:%M:%S')
-        fecha_solicitada = datetime.strptime(fecha_solicitada, '%Y-%m-%d %H:%M:%S')
+        fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d')
+        fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d')
+        
+        if not fecha_solicitada:
+            fecha_solicitada = datetime.now()
+        else:
+            fecha_solicitada = datetime.strptime(fecha_solicitada, '%Y-%m-%d')
+            
     except ValueError:
         return {"error": "Formato de fecha incorrecto"}, 400
+
     try:
         nueva_solicitud = SolicitudDescanso(
             usuario_id=usuario_id,
             fecha_inicio=fecha_inicio,
             fecha_fin=fecha_fin,
             fecha_solicitada=fecha_solicitada,
+            motivo=motivo,
         )
         db.session.add(nueva_solicitud)
         db.session.commit()
         return {"message": "Solicitud registrada correctamente"}, 201
-    except Exception:
-        return {"message": "Error al registrar su solicitud, porfavor intentelo denuevo."}, 500
+    except Exception as e:
+        print(f"Error al registrar la solicitud: {e}")
+        return {"message": "Error al registrar su solicitud, por favor intente de nuevo."}, 500
+
 
   
 
@@ -265,17 +276,34 @@ def manageRequest(id):
   
 
 @app.route('/deleteRequest/<int:id>', methods=['DELETE'])
+@jwt_required()
 def eliminar_solicitud(id):
     solicitud = SolicitudDescanso.query.get(id)
 
-@app.route("/editRequest", methods=["PUT"])
+    
+    if solicitud:
+        try:
+            db.session.delete(solicitud)
+            db.session.commit()
+            return jsonify({'message': 'Solicitud de descanso eliminada correctamente.'}), 200
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': 'Hubo un error al eliminar la solicitud.'}), 500
+    else:
+        return jsonify({'error': 'Solicitud no encontrada.'}), 404
+
+
+@app.route("/editRequest/<int:id>", methods=["PUT"])
 @jwt_required()
-def editarSolicitudes():
+def editarSolicitudes(id):
     data = request.get_json()
-    id = data.get("id")
     fecha_inicio = data.get("fecha_inicio")
     fecha_fin = data.get("fecha_fin")
-    aprobado = data.get("aprobado")
+    motivo = data.get("motivo")
+
+    if not all([fecha_inicio, fecha_fin]):
+        return {"error": "Faltan datos"}, 400
+
     try:
         solicitud = SolicitudDescanso.query.filter_by(id=id).first()
         if not solicitud:
@@ -283,7 +311,7 @@ def editarSolicitudes():
 
         solicitud.fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d %H:%M:%S')
         solicitud.fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d %H:%M:%S')
-        solicitud.aprobado = aprobado
+        solicitud.motivo = motivo
 
         db.session.commit()
         return {"message": "Solicitud editada correctamente"}, 200
@@ -294,6 +322,7 @@ def editarSolicitudes():
 @jwt_required()
 def listar_solicitudes():
     try:
+
         solicitudes = SolicitudDescanso.query.all()
         
         solicitudes_data = []
@@ -304,7 +333,8 @@ def listar_solicitudes():
                 "fecha_inicio": solicitud.fecha_inicio.strftime('%Y-%m-%d %H:%M:%S'),
                 "fecha_fin": solicitud.fecha_fin.strftime('%Y-%m-%d %H:%M:%S'),
                 "fecha_solicitada": solicitud.fecha_solicitada.strftime('%Y-%m-%d %H:%M:%S'),
-                "aprobado": solicitud.aprobado
+                "aprobado": solicitud.aprobado,
+                "motivo": solicitud.motivo
             }
             solicitudes_data.append(solicitud_info)
 
@@ -312,9 +342,6 @@ def listar_solicitudes():
     
     except Exception as e:
         return jsonify({"error": "Ocurrió un error al obtener las solicitudes.", "message": str(e)}), 500
-
-
-
 
 # Ejecutar el servidor Flask
 if __name__ == '__main__':

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { SolicitudDescanso } from '../interfaces/solicitud-descanso';
 import { jwtDecode } from 'jwt-decode';
 
@@ -14,31 +14,87 @@ export class SolicitudDescansoService {
   constructor(private http: HttpClient) { }
 
   getAllSolicitudesDescanso(): Observable<SolicitudDescanso[]> {
-    return this.http.get<SolicitudDescanso[]>(`${this.urlApi}/requests`);
+    const token = localStorage.getItem('access_token');
+
+    if (!token) {
+      throw new Error('Token no encontrado');
+    }
+
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+
+    return this.http.get<SolicitudDescanso[]>(`${this.urlApi}/requests`, { headers });
   }
 
   saveSolicitudDescanso(solicitudDescanso: SolicitudDescanso) {
-    return this.http.post<void>(`${this.urlApi}/registerRequest`, solicitudDescanso);
+    const token = localStorage.getItem('access_token');
+
+    if (!token) {
+      throw new Error('Token no encontrado');
+    }
+
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+
+
+    return this.http.post<void>(`${this.urlApi}/registerRequest`, solicitudDescanso, { headers });
   }
 
-  getToken(): string | null {
-    return localStorage.getItem('access_token');
+  deleteSolicitudDescanso(id: number) {
+    const token = localStorage.getItem('access_token');
+
+    if (!token) {
+      throw new Error('Token no encontrado');
+    }
+
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+
+    return this.http.delete<void>(`${this.urlApi}/deleteRequest/${id}`, { headers });
   }
 
-  getUserNameFromToken(): string {
-    const token = this.getToken();
+  getUsernameToken(): string {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      // Decodificar el token para obtener los claims
+      interface DecodedToken {
+        username: string;
+        exp: number;
+        iat: number;
+      }
+      const decodedToken = jwtDecode<DecodedToken>(token);
+
+      return decodedToken.username;
+    }
+    return "No hay token";
+  }
+
+  getNombreCompletoToken(): string {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      // Decodificar el token para obtener los claims
+      interface DecodedToken {
+        nombreCompleto: string;
+        exp: number;
+        iat: number;
+      }
+      const decodedToken = jwtDecode<DecodedToken>(token);
+
+      return decodedToken.nombreCompleto;
+    }
+    return "No hay token";
+  }
+
+  getUsuarioIdToken(): number | null {
+    const token = localStorage.getItem('access_token');
     if (token) {
       try {
-        const decoded: any = jwtDecode(token);
-        
-        console.log('Token Decodificado:', decoded);
-        
-        return decoded.sub.username;
+        // Decodificar el token con jwt-decode
+        const decodedToken: any = jwtDecode(token);
+        return decodedToken.sub ? Number(decodedToken.sub) : null;  // Retorna el ID del usuario desde 'sub'
       } catch (error) {
-        console.error('Error al decodificar el token', error);
-        return " ";
+        console.error('Error decodificando el token', error);
+        return null;
       }
     }
-    return " ";
+    return null;
   }
+
 }
