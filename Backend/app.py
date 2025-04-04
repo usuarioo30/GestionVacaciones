@@ -38,6 +38,7 @@ class SolicitudDescanso(db.Model):
     fecha_fin = db.Column(db.DateTime, nullable=False)
     fecha_solicitada = db.Column(db.DateTime, default=datetime.utcnow)
     aprobado = db.Column(db.Boolean, nullable=True, default=None)
+    motivo = db.Column(db.String(255), nullable=True)
 
     def __repr__(self):
         return f'<SolicitudDescanso {self.id}>'
@@ -92,7 +93,7 @@ def login():
     if not usuario or not check_password_hash(usuario.password, data['password']):
         return jsonify({'message': 'Credenciales inválidas'}), 401
 
-    access_token = create_access_token(identity=str(usuario.id))
+    access_token = create_access_token(identity=str(usuario.id), additional_claims={"username": usuario.username, "nombreCompleto": usuario.nombreCompleto, "rol": usuario.rol})
     return jsonify({'access_token': access_token}), 200
 
 @app.route("/api/google-login", methods=["POST"])
@@ -108,8 +109,8 @@ def google_login():
 
     return jsonify({
         "exists": True,
-        "message": f"Welcome {user.username}!",
-        "role": user.roles
+        "message": f"Welcome {usuario.username}!",
+        "role": usuario.rol
     }), 200
 
 
@@ -147,30 +148,33 @@ def registrar_usuario():
         return jsonify({'message': 'Error al crear el usuario', 'error': str(e)}), 500
 
 @app.route("/registerRequest", methods=["POST"])
+@jwt_required()
 def registrarSolicitudes():
     data = request.get_json()
-    momento_actual = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    momento_actual = datetime.now().strftime('%Y-%m-%d')
     usuario_id = data.get("usuario_id")
     fecha_inicio = data.get("fecha_inicio")
     fecha_fin = data.get("fecha_fin")
-    fecha_solicitada = momento_actual
-    #aprobado = data.get("aprobado")
+    fecha_solicitada = data.get(momento_actual)
+    motivo = data.get("motivo")
 
-    if not all([usuario_id, fecha_inicio, fecha_fin, fecha_solicitada]):
+    if not all([usuario_id, fecha_inicio, fecha_fin]):
         return {"error": "Faltan datos"}, 400
 
     try:
-        fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d %H:%M:%S')
-        fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d %H:%M:%S')
-        fecha_solicitada = datetime.strptime(fecha_solicitada, '%Y-%m-%d %H:%M:%S')
+        fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d')
+        fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d')
+        fecha_solicitada = datetime.strptime(fecha_solicitada, '%Y-%m-%d')
     except ValueError:
         return {"error": "Formato de fecha incorrecto"}, 400
+
     try:
         nueva_solicitud = SolicitudDescanso(
             usuario_id=usuario_id,
             fecha_inicio=fecha_inicio,
             fecha_fin=fecha_fin,
             fecha_solicitada=fecha_solicitada,
+            motivo=motivo,
         )
         db.session.add(nueva_solicitud)
         db.session.commit()
@@ -201,6 +205,7 @@ def manageRequest(id):
   
 
 @app.route('/deleteRequest/<int:id>', methods=['DELETE'])
+@jwt_required()
 def eliminar_solicitud(id):
     solicitud = SolicitudDescanso.query.get(id)
     
@@ -216,10 +221,12 @@ def eliminar_solicitud(id):
         return jsonify({'error': 'Solicitud no encontrada.'}), 404
 
 @app.route("/editRequest/<int:id>", methods=["PUT"])
+@jwt_required()
 def editarSolicitudes(id):
     data = request.get_json()
     fecha_inicio = data.get("fecha_inicio")
     fecha_fin = data.get("fecha_fin")
+    motivo = data.get("motivo")
 
     if not all([fecha_inicio, fecha_fin]):
         return {"error": "Faltan datos"}, 400
@@ -231,6 +238,7 @@ def editarSolicitudes(id):
 
         solicitud.fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d %H:%M:%S')
         solicitud.fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d %H:%M:%S')
+        solicitud.motivo = motivo
 
         db.session.commit()
         return {"message": "Solicitud editada correctamente"}, 200
@@ -241,6 +249,7 @@ def editarSolicitudes(id):
 @jwt_required()
 def listar_solicitudes():
     try:
+
         solicitudes = SolicitudDescanso.query.all()
         
         solicitudes_data = []
@@ -251,7 +260,8 @@ def listar_solicitudes():
                 "fecha_inicio": solicitud.fecha_inicio.strftime('%Y-%m-%d %H:%M:%S'),
                 "fecha_fin": solicitud.fecha_fin.strftime('%Y-%m-%d %H:%M:%S'),
                 "fecha_solicitada": solicitud.fecha_solicitada.strftime('%Y-%m-%d %H:%M:%S'),
-                "aprobado": solicitud.aprobado
+                "aprobado": solicitud.aprobado,
+                "motivo": solicitud.motivo
             }
             solicitudes_data.append(solicitud_info)
 
