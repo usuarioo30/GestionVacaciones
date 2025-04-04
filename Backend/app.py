@@ -84,11 +84,11 @@ with app.app_context():
 @app.route('/createUser', methods=['POST'])
 def registrar_usuario():
     data = request.get_json()
-    hashed_password = generate_password_hash(data['password'], method='sha256')
+    # hashed_password = generate_password_hash(data['password'], method='sha256')
     nuevo_usuario = Usuario(
         email=data['email'],
         nombreCompleto=data['nombreCompleto'],
-        password=hashed_password,
+        password=data['password'],
         username=data['username'],
         rol=data['rol']
     )
@@ -119,10 +119,11 @@ def login():
 @app.route("/registerRequest", methods=["POST"])
 def registrarSolicitudes():
     data = request.get_json()
+    momento_actual = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     usuario_id = data.get("usuario_id")
     fecha_inicio = data.get("fecha_inicio")
     fecha_fin = data.get("fecha_fin")
-    fecha_solicitada = data.get("fecha_solicitada")
+    fecha_solicitada = momento_actual
     #aprobado = data.get("aprobado")
 
     if not all([usuario_id, fecha_inicio, fecha_fin, fecha_solicitada]):
@@ -169,14 +170,39 @@ def manageRequest(id):
 @app.route('/deleteRequest/<int:id>', methods=['DELETE'])
 def eliminar_solicitud(id):
     solicitud = SolicitudDescanso.query.get(id)
+    
+    if solicitud:
+        try:
+            db.session.delete(solicitud)
+            db.session.commit()
+            return jsonify({'message': 'Solicitud de descanso eliminada correctamente.'}), 200
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': 'Hubo un error al eliminar la solicitud.'}), 500
+    else:
+        return jsonify({'error': 'Solicitud no encontrada.'}), 404
 
-@app.route("/editRestRequest", methods=["PUT"])
-def editarSolicitudes():
+@app.route("/editRequest/<int:id>", methods=["PUT"])
+def editarSolicitudes(id):
     data = request.get_json()
-    id = data.get("id")
     fecha_inicio = data.get("fecha_inicio")
     fecha_fin = data.get("fecha_fin")
-    aprobado = data.get("aprobado")
+
+    if not all([fecha_inicio, fecha_fin]):
+        return {"error": "Faltan datos"}, 400
+
+    try:
+        solicitud = SolicitudDescanso.query.filter_by(id=id).first()
+        if not solicitud:
+            return {"error": "Solicitud no encontrada"}, 404
+
+        solicitud.fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d %H:%M:%S')
+        solicitud.fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d %H:%M:%S')
+
+        db.session.commit()
+        return {"message": "Solicitud editada correctamente"}, 200
+    except Exception:
+        return {"message": "Error al editar la solicitud"}, 500
 
 @app.route('/requests', methods=['GET'])
 def listar_solicitudes():
@@ -199,21 +225,6 @@ def listar_solicitudes():
     
     except Exception as e:
         return jsonify({"error": "Ocurrió un error al obtener las solicitudes.", "message": str(e)}), 500
-
-
-    try:
-        solicitud = SolicitudDescanso.query.filter_by(id=id).first()
-        if not solicitud:
-            return {"error": "Solicitud no encontrada"}, 404
-
-        solicitud.fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d %H:%M:%S')
-        solicitud.fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d %H:%M:%S')
-        solicitud.aprobado = aprobado
-
-        db.session.commit()
-        return {"message": "Solicitud editada correctamente"}, 200
-    except Exception:
-        return {"message": "Error al editar la solicitud"}, 500
 
 # Ejecutar el servidor Flask
 if __name__ == '__main__':
