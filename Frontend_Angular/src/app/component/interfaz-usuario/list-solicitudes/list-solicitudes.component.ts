@@ -5,6 +5,7 @@ import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } 
 import { ActivatedRoute, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { SolicitudDescanso } from '../../../interfaces/solicitud-descanso';
 import Swal from 'sweetalert2';
+import { Token } from '@angular/compiler';
 
 @Component({
   selector: 'app-list-solicitudes',
@@ -30,6 +31,10 @@ export class ListSolicitudesComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      this.router.navigateByUrl('/login');
+    }
     this.findAllSolicitudesDescanso();
 
     this.username = this.solicitudDescansoService.getUsernameToken();
