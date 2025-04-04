@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { SolicitudDescanso } from '../../../interfaces/solicitud-descanso';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-list-solicitudes',
@@ -32,12 +33,11 @@ export class ListSolicitudesComponent implements OnInit {
     this.findAllSolicitudesDescanso();
 
     this.username = this.solicitudDescansoService.getUsernameToken();
-    console.log(this.username);
     this.nombreCompleto = this.solicitudDescansoService.getNombreCompletoToken();
     this.usuario_id = this.solicitudDescansoService.getUsuarioIdToken()
 
     this.formSolicitudDescanso = this.fb.group({
-      usuario: [{value: this.username, disabled: true}, [Validators.required]],
+      usuario: [{ value: this.username, disabled: true }, [Validators.required]],
       usuario_id: [{ value: this.usuario_id, disabled: true }, [Validators.required]],
       fecha_inicio: ['', [Validators.required]],
       fecha_fin: ['', [Validators.required]],
@@ -59,14 +59,13 @@ export class ListSolicitudesComponent implements OnInit {
     if (this.formSolicitudDescanso.valid) {
       if (this.usuario_id === null) {
         console.error('El usuario_id es nulo');
-        return; // O puedes mostrar una notificación o mensaje de error aquí
+        return;
       }
 
-      // Crear la nueva solicitud asegurándonos de que usuario_id es un número válido
       const nuevaSolicitud: SolicitudDescanso = {
         ...this.formSolicitudDescanso.value,
-        usuario_id: this.usuario_id,  // Aseguramos que el usuario_id se añada correctamente
-        fecha_solicitada: this.getFechaActual()  // También nos aseguramos de añadir la fecha solicitada
+        usuario_id: this.usuario_id,
+        fecha_solicitada: this.getFechaActual()
       };
 
       console.log(nuevaSolicitud);
@@ -74,25 +73,83 @@ export class ListSolicitudesComponent implements OnInit {
       this.solicitudDescansoService.saveSolicitudDescanso(nuevaSolicitud).subscribe(
         (response) => {
           console.log('Solicitud guardada', response);
-          this.findAllSolicitudesDescanso();
+
+          // Mostrar la alerta de éxito
+          Swal.fire({
+            icon: 'success',
+            title: '¡Solicitud registrada!',
+            text: 'Tu solicitud de descanso ha sido registrada con éxito.',
+            confirmButtonText: 'Aceptar'
+          }).then(() => {
+            // Solo resetear los campos que quieres actualizar
+            this.formSolicitudDescanso.patchValue({
+              fecha_inicio: '',
+              fecha_fin: '',
+              motivo: ''
+            });
+
+            // Refrescar la lista de solicitudes
+            this.findAllSolicitudesDescanso();
+          });
         },
         (error) => {
           console.error('Error al guardar la solicitud', error);
+
+          // Mostrar una alerta de error
+          Swal.fire({
+            icon: 'error',
+            title: '¡Error!',
+            text: 'Hubo un error al registrar tu solicitud. Por favor, inténtalo nuevamente.',
+            confirmButtonText: 'Aceptar'
+          });
         }
       );
     }
   }
 
   eliminarSolicitud(id: number) {
-    this.solicitudDescansoService.deleteSolicitudDescanso(id).subscribe(
-      (response) => {
-        console.log('Solicitud eliminada', response);
-        this.findAllSolicitudesDescanso();
-      },
-      (error) => {
-        console.error('Error al eliminar la solicitud', error);
+    // Mostrar la alerta de confirmación antes de eliminar
+    Swal.fire({
+      title: '¿Estás seguro?',
+      text: 'Esta acción no se puede deshacer.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      reverseButtons: true // Para invertir los botones
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // Si el usuario confirma, eliminar la solicitud
+        this.solicitudDescansoService.deleteSolicitudDescanso(id).subscribe(
+          (response) => {
+            console.log('Solicitud eliminada', response);
+
+            // Mostrar mensaje de éxito
+            Swal.fire(
+              'Eliminado',
+              'La solicitud ha sido eliminada.',
+              'success'
+            );
+
+            // Refrescar la lista de solicitudes
+            this.findAllSolicitudesDescanso();
+          },
+          (error) => {
+            console.error('Error al eliminar la solicitud', error);
+
+            // Mostrar mensaje de error
+            Swal.fire(
+              'Error',
+              'Hubo un problema al eliminar la solicitud.',
+              'error'
+            );
+          }
+        );
+      } else {
+        // Si el usuario cancela, no hacer nada
+        console.log('Eliminación cancelada');
       }
-    );
+    });
   }
 
   getFechaActual(): string {
