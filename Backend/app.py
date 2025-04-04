@@ -148,16 +148,16 @@ def registrar_usuario():
         return jsonify({'message': 'Error al crear el usuario', 'error': str(e)}), 500
 
 
-@app.route('/login', methods=['POST'])
-def login():
-    data = request.get_json()
-    usuario = Usuario.query.filter_by(username=data['username']).first()
+# @app.route('/login', methods=['POST'])
+# def login():
+#     data = request.get_json()
+#     usuario = Usuario.query.filter_by(username=data['username']).first()
 
-    if not usuario or not check_password_hash(usuario.password, data['password']):
-        return jsonify({'message': 'Credenciales inválidas'}), 401
+#     if not usuario or not check_password_hash(usuario.password, data['password']):
+#         return jsonify({'message': 'Credenciales inválidas'}), 401
 
-    access_token = create_access_token(identity={'username': usuario.username, 'rol': usuario.rol})
-    return jsonify({'access_token': access_token}),
+#     access_token = create_access_token(identity=str(usuario.username))
+#     return jsonify({'access_token': access_token}),
 
 
 @app.route("/registerRequest", methods=["POST"])
@@ -226,6 +226,7 @@ def editarSolicitudes():
     aprobado = data.get("aprobado")
 
 @app.route('/requests', methods=['GET'])
+@jwt_required()
 def listar_solicitudes():
     try:
         solicitudes = SolicitudDescanso.query.all()
