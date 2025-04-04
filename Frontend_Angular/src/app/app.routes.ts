@@ -3,6 +3,7 @@ import { LoginComponent } from './component/auth/login/login.component';
 import { CrearUsuarioComponent } from './component/interfaz-admin/crear-usuario/crear-usuario.component';
 import { ListUsuariosComponent } from './component/interfaz-admin/list-usuarios/list-usuarios.component';
 import { EditprofileComponent } from './component/interfaz-usuario/editprofile/editprofile.component';
+import { CalendarComponent } from './component/calendar/calendar.component';
 
 
 export const appRoutes: Routes = [
@@ -18,6 +19,9 @@ export const appRoutes: Routes = [
 
   //Usuario
   {path: 'profile', component: EditprofileComponent},
+
+  //Calendario
+  {path: 'calendario', component: CalendarComponent},
 
   { path: '**', redirectTo: '/login' }, // Redirige a login si la ruta no existe
 ];
