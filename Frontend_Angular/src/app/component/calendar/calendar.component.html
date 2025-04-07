@@ -1,20 +1,24 @@
 <div>
-    <button (click)="onPreviousMonth()">Mes Anterior</button>
-    <span>{{calendar.getMonthName(monthNumber)}} &nbsp; {{year}}</span>
-    <button (click)="onNextMonth()">Siguiente</button>
+  <button (click)="onPreviousMonth()">Mes Anterior</button>
+  <span>{{ calendar.getMonthName(monthNumber) }} &nbsp; {{ year }}</span>
+  <button (click)="onNextMonth()">Siguiente</button>
 </div>
-Número del mes{{monthNumber}}
-Año: {{year}}
-<br>
+Número del mes: {{ monthNumber }}<br>
+Año: {{ year }}<br>
 
 <div>
-    <span *ngFor="let weekDay of weeksDaysName">
-        {{weekDay}}
+  <!-- Cabecera con los nombres de los días de la semana -->
+  <span *ngFor="let weekDay of weeksDaysName">
+        {{ weekDay }}
     </span>
+  <br>
+  <!-- Mostrar cada semana en una nueva línea -->
+  <ng-container *ngFor="let week of fullCalendarWeeks">
+        <span *ngFor="let day of week" [ngStyle]="{'color': day.isCurrentMonth ? 'black' : 'grey'}">
+            {{ day.number }}
+        </span>
     <br>
-    <span *ngFor="let day of monthDays">
-        {{day.number}}
-    </span>
+  </ng-container>
 </div>
 
 <input type="date" name="" id="">
