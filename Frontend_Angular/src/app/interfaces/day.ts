@@ -1,4 +1,5 @@
 export interface Day {
+  isToday: boolean;
   isCurrentMonth: boolean;
     number: number;
     year: number;

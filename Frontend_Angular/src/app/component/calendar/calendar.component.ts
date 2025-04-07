@@ -1,11 +1,11 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CreateCalendarService } from '../../services/createcalendar.service';
 import { Day } from '../../interfaces/day';
-import {NgFor, NgStyle} from '@angular/common';
+import {CommonModule, NgFor, NgStyle} from '@angular/common';
 
 @Component({
   selector: 'app-calendar',
-  imports: [NgFor, NgStyle],
+  imports: [NgFor, CommonModule],
   templateUrl: './calendar.component.html',
   styleUrls: ['./calendar.component.css']
 })

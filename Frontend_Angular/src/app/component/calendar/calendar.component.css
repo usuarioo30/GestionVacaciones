@@ -1,8 +1,37 @@
-.calendar {
-  width: 210px;
+.calendar-container {
+  background-color: #ffffff;
+  border: 1px solid #dee2e6;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  max-width: 1500px; /* Ancho máximo */
+  margin: auto;
+  padding: 1rem;
+}
 
-  .day {
-    width: 30px;
-    display: inline-block;
+.calendar-day {
+  padding: 80px 0;  /* Aumenta el padding vertical para celdas más altas */
+  font-size: 1.30rem;
+  border-radius: 5px;
+  transition: background-color 0.3s ease;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.calendar-day:hover {
+  background-color: #e9ecef;
+}
+
+/* Opcional: ajustar el color de fondo para el día actual */
+.bg-light {
+  background-color: #d9f1ff !important;
+}
+
+/* Media query para dispositivos móviles */
+@media (max-width: 576px) {
+  .calendar-day {
+    padding: 40px 0;
+    font-size: 1rem;
   }
 }
