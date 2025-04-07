@@ -7,10 +7,16 @@
 
         <!-- Card Body -->
         <div class="card-body">
-            <div class="mb-3 d-flex justify-content-between align-items-center">
-                <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#createSolicitudModal">
-                    <b>Crear solicitud</b>
-                </button>
+            <div class="mb-3 d-flex justify-content-center align-items-end flex-column">
+                <div class="statusFilter">
+                    <label for="status" class="form-label">Estado de la solicitud</label>
+                    <select id="status" class="form-control" [(ngModel)]="status" (change)="filterRequest(status)">
+                        <option value="true">Sin filtrar</option>
+                        <option value="1">Aprobado</option>
+                        <option value="0">Rechazado</option>
+                        <option value="null">Pendiente</option>
+                    </select>
+                </div>
             </div>
 
             <div *ngIf="solicitudesService.solicitudes().length === 0" class="alert alert-info text- w-50 text-center mx-auto">
@@ -27,27 +33,23 @@
                             <th>Fecha Fin</th>
                             <th>Fecha Solicitada</th>
                             <th>Estado</th>
-                            <th>Acciones</th>
+                            <th>Motivo</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr *ngFor="let solicitud of solicitudesService.solicitudes()">
+                        <tr *ngFor="let solicitud of solicitudesService.filteredData()">
                             <td style="white-space: nowrap;">{{ solicitud.id }}</td>
                             <td style="white-space: nowrap;">{{ solicitud.fecha_inicio | date: 'short' }}</td>
                             <td style="white-space: nowrap;">{{ solicitud.fecha_fin | date: 'short' }}</td>
                             <td style="white-space: nowrap;">{{ solicitud.fecha_solicitada | date: 'short' }}</td>
                             <td style="white-space: nowrap;">
-                                <span [ngClass]="{
-                                    'badge': true,
-                                    'badge-success text-white': solicitud.estado === true,
-                                    'badge-danger text-white': solicitud.estado === false,
-                                    'badge-secondary text-black': solicitud.estado === null
-                                }">
+                                <span>
                                     {{ solicitud.estado === true ? 'Aprobada' :
                                     solicitud.estado === false ? 'Rechazada' :
                                     solicitud.estado === null ? 'Pendiente' : '' }}
                                 </span>
                             </td>
+                            <td style="white-space: nowrap;">{{ solicitud.motivo ? solicitud.motivo : 'No se dado una razón concreta' }}</td>
                         </tr>
                     </tbody>
                 </table>

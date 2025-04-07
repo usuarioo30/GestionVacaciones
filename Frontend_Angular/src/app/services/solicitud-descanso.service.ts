@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+import { computed, Injectable, signal } from '@angular/core';
 import { Observable, pipe, tap } from 'rxjs';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { SolicitudDescanso } from '../interfaces/solicitud-descanso';
@@ -13,7 +13,30 @@ export class SolicitudDescansoService {
 
   private solicitudesSignal= signal<SolicitudDescanso[]>([])
 
+  private filterSignal = signal<any>('');
+
   constructor(private http: HttpClient) { }
+
+
+  setFilter(value: any) {
+    this.filterSignal.set(value);
+  }
+
+  filteredData = computed(() => {
+    const statusMap: Record<string, any> = {
+      "1": true,
+      "0": false,
+      "null": null
+    }
+
+    
+    if (this.filterSignal() !== 'true') {
+      
+      const filteredStatus = statusMap[this.filterSignal() as keyof typeof statusMap];
+      return this.solicitudesSignal().filter(request => request.estado == filteredStatus);
+    }
+    return this.solicitudesSignal();
+  })
 
   //Getter de la signal
   get solicitudes() {

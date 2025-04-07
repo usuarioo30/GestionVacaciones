@@ -1,13 +1,14 @@
-import { CommonModule, NgClass, NgFor, NgIf } from '@angular/common';
-import { Component, inject, OnInit } from '@angular/core';
+import { CommonModule, NgFor, NgIf } from '@angular/common';
+import { Component, inject, NgModule, OnChanges, OnInit, SimpleChanges } from '@angular/core';
 import { SolicitudDescansoService } from '../../../services/solicitud-descanso.service';
 import { Router } from '@angular/router';
 import { jwtDecode } from 'jwt-decode';
-
+import { FormsModule, NgModel, ReactiveFormsModule } from '@angular/forms';
+import { SolicitudDescanso } from '../../../interfaces/solicitud-descanso';
 
 @Component({
   selector: 'app-historial',
-  imports: [NgIf, NgClass, NgFor, CommonModule],
+  imports: [NgIf, NgFor, CommonModule, ReactiveFormsModule, FormsModule],
   templateUrl: './historial.component.html',
   styleUrl: './historial.component.css'
 })
@@ -17,8 +18,10 @@ export class HistorialComponent implements OnInit{
   private router: Router = inject(Router)
   private auth: string = '';
   private userId: number = 0;
+  requests: SolicitudDescanso[] = [];
+  status: string = 'true';
 
-  ngOnInit(): void {
+  ngOnInit() {
 
     const token = localStorage.getItem('access_token');
 
@@ -29,16 +32,23 @@ export class HistorialComponent implements OnInit{
       if(decodedToken.sub) {
         this.userId = Number.parseInt(decodedToken.sub);
         this.solicitudesService.getUsersSolicitudDescanso(this.userId, this.auth);
+        this.solicitudesService.setFilter(this.status);
+
       }
     } else {
       this.router.navigate(['/login']);
     }
 
-    this.solicitudesService.getUsersSolicitudDescanso
+    
   }
 
-  get authorization() {
-    return jwtDecode(this.auth);
+  filterRequest(status?: string, date?: Date) {
+
+    this.solicitudesService.setFilter(status);
+
   }
+
+
+
 
 }
