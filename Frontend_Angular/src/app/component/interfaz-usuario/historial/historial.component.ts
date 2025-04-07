@@ -1,4 +1,4 @@
-import { NgIf } from '@angular/common';
+import { CommonModule, NgClass, NgFor, NgIf } from '@angular/common';
 import { Component, inject, OnInit } from '@angular/core';
 import { SolicitudDescansoService } from '../../../services/solicitud-descanso.service';
 import { Router } from '@angular/router';
@@ -7,7 +7,7 @@ import { jwtDecode } from 'jwt-decode';
 
 @Component({
   selector: 'app-historial',
-  imports: [],
+  imports: [NgIf, NgClass, NgFor, CommonModule],
   templateUrl: './historial.component.html',
   styleUrl: './historial.component.css'
 })
@@ -17,7 +17,6 @@ export class HistorialComponent implements OnInit{
   private router: Router = inject(Router)
   private auth: string = '';
   private userId: number = 0;
-
 
   ngOnInit(): void {
 

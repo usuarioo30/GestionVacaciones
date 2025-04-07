@@ -4,6 +4,6 @@ export interface SolicitudDescanso {
     fecha_inicio: Date;
     fecha_fin: Date
     fecha_solicitada: Date
-    aprobado: boolean
+    estado: boolean
     motivo: string;
 }

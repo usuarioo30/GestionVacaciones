@@ -1,3 +1,57 @@
-@for (solicitud of solicitudesService.solicitudes(); track $index) {
-    {{solicitud}}
-}
+<div class="container mt-5">
+    <div class="card shadow-lg">
+        <!-- Card Header -->
+        <div class="card-header text-center bg-primary text-white">
+            <h3 class="mb-0">Mis solicitudes</h3>
+        </div>
+
+        <!-- Card Body -->
+        <div class="card-body">
+            <div class="mb-3 d-flex justify-content-between align-items-center">
+                <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#createSolicitudModal">
+                    <b>Crear solicitud</b>
+                </button>
+            </div>
+
+            <div *ngIf="solicitudesService.solicitudes().length === 0" class="alert alert-info text- w-50 text-center mx-auto">
+                <strong>No hay solicitudes registradas.</strong>
+            </div>
+
+            <div class="table-responsive" *ngIf="solicitudesService.solicitudes().length > 0">
+                <table class="table table-striped table-bordered table-hover">
+                    <thead class="thead-dark">
+                        <tr>
+                            <th>#</th>
+
+                            <th>Fecha Inicio</th>
+                            <th>Fecha Fin</th>
+                            <th>Fecha Solicitada</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let solicitud of solicitudesService.solicitudes()">
+                            <td style="white-space: nowrap;">{{ solicitud.id }}</td>
+                            <td style="white-space: nowrap;">{{ solicitud.fecha_inicio | date: 'short' }}</td>
+                            <td style="white-space: nowrap;">{{ solicitud.fecha_fin | date: 'short' }}</td>
+                            <td style="white-space: nowrap;">{{ solicitud.fecha_solicitada | date: 'short' }}</td>
+                            <td style="white-space: nowrap;">
+                                <span [ngClass]="{
+                                    'badge': true,
+                                    'badge-success text-white': solicitud.estado === true,
+                                    'badge-danger text-white': solicitud.estado === false,
+                                    'badge-secondary text-black': solicitud.estado === null
+                                }">
+                                    {{ solicitud.estado === true ? 'Aprobada' :
+                                    solicitud.estado === false ? 'Rechazada' :
+                                    solicitud.estado === null ? 'Pendiente' : '' }}
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
