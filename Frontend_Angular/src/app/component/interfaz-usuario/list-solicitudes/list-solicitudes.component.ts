@@ -20,6 +20,8 @@ export class ListSolicitudesComponent implements OnInit {
   username: string | null = null;
   nombreCompleto: string | null = null;
   usuario_id: number | null = null;
+  solicitudAEditar: SolicitudDescanso | null = null;
+  fechaMinima: string = this.getFechaActual();
 
 
   constructor(
@@ -50,6 +52,47 @@ export class ListSolicitudesComponent implements OnInit {
       motivo: ['', [Validators.required]],
     }
     )
+
+    this.formSolicitudDescanso.get('fecha_inicio')?.valueChanges.subscribe(fechaInicio => {
+      if (fechaInicio) {
+        this.formSolicitudDescanso.get('fecha_fin')?.setValidators([
+          Validators.required,
+          (control) => this.fechaFinValidator(control, fechaInicio)
+        ]);
+        this.formSolicitudDescanso.get('fecha_fin')?.updateValueAndValidity();
+      }
+    });
+
+  }
+
+  fechaFinValidator(control: any, fechaInicio: string) {
+    const fechaFin = control.value;
+    if (fechaFin && new Date(fechaFin) < new Date(fechaInicio)) {
+      return { 'fechaFinInvalid': true };
+    }
+    return null;
+  }
+
+  getFechaActual(): string {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    let mm: string | number = today.getMonth() + 1;
+    let dd: string | number = today.getDate();
+    if (mm < 10) mm = '0' + mm;
+    if (dd < 10) dd = '0' + dd;
+    return yyyy + '-' + mm + '-' + dd;
+  }
+
+  abrirModalCrear() {
+    this.formSolicitudDescanso.reset({
+      fecha_solicitada: this.getFechaActual(),
+      usuario: this.username,
+      usuario_id: this.usuario_id,
+      fecha_inicio: '',
+      fecha_fin: '',
+      motivo: ''
+    });
+    this.mostrarModal = true;
   }
 
   findAllSolicitudesDescanso() {
@@ -124,25 +167,21 @@ export class ListSolicitudesComponent implements OnInit {
       reverseButtons: true // Para invertir los botones
     }).then((result) => {
       if (result.isConfirmed) {
-        // Si el usuario confirma, eliminar la solicitud
         this.solicitudDescansoService.deleteSolicitudDescanso(id).subscribe(
           (response) => {
             console.log('Solicitud eliminada', response);
 
-            // Mostrar mensaje de éxito
             Swal.fire(
               'Eliminado',
               'La solicitud ha sido eliminada.',
               'success'
             );
 
-            // Refrescar la lista de solicitudes
             this.findAllSolicitudesDescanso();
           },
           (error) => {
             console.error('Error al eliminar la solicitud', error);
 
-            // Mostrar mensaje de error
             Swal.fire(
               'Error',
               'Hubo un problema al eliminar la solicitud.',
@@ -150,20 +189,64 @@ export class ListSolicitudesComponent implements OnInit {
             );
           }
         );
-      } else {
-        // Si el usuario cancela, no hacer nada
-        console.log('Eliminación cancelada');
       }
     });
   }
 
-  getFechaActual(): string {
-    const today = new Date();
-    const yyyy = today.getFullYear();
-    let mm: string | number = today.getMonth() + 1;
-    let dd: string | number = today.getDate();
-    if (mm < 10) mm = '0' + mm;
-    if (dd < 10) dd = '0' + dd;
-    return yyyy + '-' + mm + '-' + dd;
+  editarSolicitud(solicitud: SolicitudDescanso) {
+    this.solicitudAEditar = solicitud;
+
+    this.formSolicitudDescanso.patchValue({
+      fecha_inicio: this.formatDate(solicitud.fecha_inicio),
+      fecha_fin: this.formatDate(solicitud.fecha_fin),
+      motivo: solicitud.motivo,
+    });
   }
+
+  formatDate(date: string | Date): string {
+    const d = new Date(date);
+    const year = d.getFullYear();
+    let month: string | number = d.getMonth() + 1;
+    let day: string | number = d.getDate();
+
+    if (month < 10) month = '0' + month;
+    if (day < 10) day = '0' + day;
+
+    return `${year}-${month}-${day}`;
+  }
+
+  guardarEdicion() {
+    if (this.formSolicitudDescanso.valid && this.solicitudAEditar) {
+      const solicitudEditada: SolicitudDescanso = {
+        ...this.solicitudAEditar,
+        ...this.formSolicitudDescanso.value
+      };
+
+      this.solicitudDescansoService.editSolicitudDescanso(solicitudEditada).subscribe(
+        (response) => {
+          Swal.fire({
+            icon: 'success',
+            title: '¡Solicitud editada!',
+            text: 'Tu solicitud de descanso ha sido actualizada con éxito.',
+            confirmButtonText: 'Aceptar'
+          }).then(() => {
+            // Cerrar el modal y actualizar la lista de solicitudes
+            this.mostrarModal = false;
+            this.findAllSolicitudesDescanso();
+          });
+        },
+        (error) => {
+          console.error('Error al editar la solicitud', error);
+          Swal.fire({
+            icon: 'error',
+            title: '¡Error!',
+            text: 'Hubo un error al editar la solicitud. Intenta de nuevo.',
+            confirmButtonText: 'Aceptar'
+          });
+        }
+      );
+    }
+  }
+
+
 }

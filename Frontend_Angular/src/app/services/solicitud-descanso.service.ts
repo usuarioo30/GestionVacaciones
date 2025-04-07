@@ -9,7 +9,7 @@ import { jwtDecode } from 'jwt-decode';
 })
 export class SolicitudDescansoService {
 
-  private urlApi = "http://localhost:5000";
+  private urlApi = "http://localhost:5000/request";
 
   constructor(private http: HttpClient) { }
 
@@ -22,7 +22,7 @@ export class SolicitudDescansoService {
 
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
 
-    return this.http.get<SolicitudDescanso[]>(`${this.urlApi}/requests`, { headers });
+    return this.http.get<SolicitudDescanso[]>(`${this.urlApi}/list`, { headers });
   }
 
   saveSolicitudDescanso(solicitudDescanso: SolicitudDescanso) {
@@ -35,7 +35,7 @@ export class SolicitudDescansoService {
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
 
 
-    return this.http.post<void>(`${this.urlApi}/registerRequest`, solicitudDescanso, { headers });
+    return this.http.post<void>(`${this.urlApi}/register`, solicitudDescanso, { headers });
   }
 
   deleteSolicitudDescanso(id: number) {
@@ -47,7 +47,20 @@ export class SolicitudDescansoService {
 
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
 
-    return this.http.delete<void>(`${this.urlApi}/deleteRequest/${id}`, { headers });
+    return this.http.delete<void>(`${this.urlApi}/delete/${id}`, { headers });
+  }
+
+  editSolicitudDescanso(solicitud: SolicitudDescanso): Observable<any> {
+    const token = localStorage.getItem('access_token');
+
+    if (!token) {
+      throw new Error('Token no encontrado');
+    }
+
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+
+    // Aquí enviamos el objeto completo (con los datos de la solicitud) al backend
+    return this.http.put<any>(`${this.urlApi}/edit/${solicitud.id}`, solicitud, { headers });
   }
 
   getUsernameToken(): string {
