@@ -3,6 +3,7 @@ import { Observable, pipe, tap } from 'rxjs';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { SolicitudDescanso } from '../interfaces/solicitud-descanso';
 import { jwtDecode } from 'jwt-decode';
+import { Usuario } from '../interfaces/usuario';
 
 @Injectable({
   providedIn: 'root'
@@ -18,7 +19,6 @@ export class SolicitudDescansoService {
   private orderSignal = signal<any>('');
 
   constructor(private http: HttpClient) { }
-
 
   setFilter(value: any) {
     this.filterSignal.set(value);
@@ -70,6 +70,17 @@ export class SolicitudDescansoService {
         return array.sort((r1, r2) => r1.id - r2.id);
         
     }
+
+  getAllSolicitudesDescansoAdmin(): Observable<SolicitudDescanso[]> {
+    const token = localStorage.getItem('access_token');
+
+    if (!token) {
+      throw new Error('Token no encontrado');
+    }
+
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+
+    return this.http.get<SolicitudDescanso[]>(`${this.urlApi}/list-admin`, { headers });
   }
 
   getAllSolicitudesDescanso(): Observable<SolicitudDescanso[]> {
@@ -84,13 +95,24 @@ export class SolicitudDescansoService {
     return this.http.get<SolicitudDescanso[]>(`${this.urlApi}/list`, { headers });
   }
 
+
   getUsersSolicitudDescanso(id: number, token: string): any {
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`)
     return this.http.get<SolicitudDescanso[]>(`${this.urlApi}/${id}`, {headers})
     .subscribe({
       next: response => this.solicitudesSignal.set(response),
       error: err => console.log(err)
-    })
+    })   
+  }
+  
+  getUserById(userId: number): Observable<Usuario> {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      throw new Error('Token no encontrado');
+    }
+
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+    return this.http.get<Usuario>(`http://localhost:5000/user/${userId}`, { headers });
   }
 
   saveSolicitudDescanso(solicitudDescanso: SolicitudDescanso) {

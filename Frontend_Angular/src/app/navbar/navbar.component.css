@@ -1,0 +1,47 @@
+/* Estilo para resaltar el enlace activo */
+.active-link {
+  background-color: grey;
+  color: white !important;
+  font-weight: bold;
+  border-radius: 5px;
+}
+
+/* Estilo para la navbar */
+.navbar-nav .nav-item {
+  position: relative;
+  transition: all 0.3s ease-in-out;
+}
+
+/* Efecto de expansión de los elementos */
+.navbar-nav .nav-item:hover {
+  transform: scale(1.1);
+}
+
+/* Efecto para los íconos dentro del nav */
+.navbar-nav .nav-item a {
+  display: flex;
+  align-items: center;
+  transition: all 0.3s ease-in-out;
+}
+
+/* Aumentar tamaño de los iconos cuando se pasa el ratón */
+.navbar-nav .nav-item:hover a i {
+  font-size: 1.5rem;
+  color: #007bff;
+  /* Cambiar color al pasar el ratón */
+}
+
+/* Mantener el color y tamaño cuando está activo */
+.navbar-nav .nav-item.active a i {
+  font-size: 1.5rem;
+  color: #007bff;
+  /* Color activo */
+}
+
+/* Asegurar que el ícono no cambie cuando está activo y se pasa el ratón */
+.navbar-nav .nav-item.active:hover a i {
+  font-size: 1.5rem;
+  /* Mantener tamaño */
+  color: #007bff;
+  /* Mantener color */
+}

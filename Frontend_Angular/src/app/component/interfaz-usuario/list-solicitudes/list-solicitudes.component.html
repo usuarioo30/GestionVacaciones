@@ -1,5 +1,5 @@
 <div class="container mt-5">
-    <div class="card shadow-lg">
+    <div class="card shadow-lg" *ngIf="esUsuario">
         <!-- Card Header -->
         <div class="card-header text-center bg-primary text-white">
             <h3 class="mb-0">Solicitudes de Descanso</h3>
@@ -69,6 +69,10 @@
                 </table>
             </div>
         </div>
+    </div>
+
+    <div *ngIf="!esUsuario" class="alert alert-warning text- w-50 text-center mx-auto">
+        <strong>No puedes ver esta lista de solicitudes</strong>
     </div>
 </div>
 <!-- Modal for Creating Solicitud -->

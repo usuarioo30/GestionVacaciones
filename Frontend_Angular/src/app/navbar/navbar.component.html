@@ -13,12 +13,16 @@
       </li>
     </ul>
   </div>
+<div class="container-fluid mt-5" *ngIf="mostrarNavbar">
   <div class="row">
     <div class="col">
+      <!-- Navbar -->
       <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-lg p-3">
         <div class="container-fluid">
-          <!-- Logo de la marca, siempre visible -->
-          <a class="navbar-brand text-dark" href="#"><b>Apeiroo Vacations</b></a>
+          <!-- Logo de la marca -->
+          <a class="navbar-brand text-dark" href="#">
+            <b>Apeiroo Vacations</b>
+          </a>
 
           <!-- Botón de colapso para dispositivos móviles -->
           <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
@@ -37,10 +41,18 @@
               </li>
 
               <!-- Mis solicitudes -->
-              <li class="nav-item me-3">
+              <li class="nav-item me-3" *ngIf="mostrarMisSolicitudes" [routerLinkActive]="'active-link'"
+                [routerLinkActiveOptions]="{ exact: true }">
                 <a class="nav-link text-dark" [routerLink]="['/solicitudes']" routerLinkActive="router-link-active"
                   aria-label="Mis Solicitudes">
-                  <i class="bi bi-clipboard-check fs-4"></i> Mis Solicitudes
+                  <i class="bi bi-clipboard-check fs-4"></i>&nbsp; Mis Solicitudes
+                </a>
+              </li>
+
+              <!-- Solicitudes -->
+              <li class="nav-item me-3" *ngIf="!mostrarMisSolicitudes" [routerLinkActive]="'active-link'">
+                <a class="nav-link text-dark" [routerLink]="['/solicitudes-admin']" routerLinkActive="router-link-active" href="#" aria-label="Solicitudes">
+                  <i class="bi bi-clipboard-check fs-4"></i>&nbsp; Solicitudes
                 </a>
               </li>
 
@@ -48,6 +60,12 @@
               <li class="nav-item me-5 ms-5" [routerLink]="['/historial']" routerLinkActive="router-link-active" >
                 <a class="nav-link text-dark" aria-label="Historial">
                   <i class="bi bi-clock fs-4"></i>
+              </li>
+
+              <!-- Crear usuario -->
+              <li class="nav-item me-3" *ngIf="mostrarCrearUsuario" [routerLinkActive]="'active-link'">
+                <a class="nav-link text-dark" [routerLink]="['/crearUsuario']" routerLinkActive="router-link-active" aria-label="Crear Usuario">
+                  <i class="bi bi-person-plus fs-4"></i>&nbsp; Crear usuario
                 </a>
               </li>
             </ul>

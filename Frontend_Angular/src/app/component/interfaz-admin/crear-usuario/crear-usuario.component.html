@@ -1,4 +1,4 @@
-<div class="container d-flex justify-content-center align-items-center vh-100">
+<div class="container d-flex justify-content-center align-items-center vh-100" *ngIf="isAdmin">
   <div class="card shadow-lg p-4" style="max-width: 400px; width: 100%;">
     <h2 class="text-center mb-2 mt-4">Apeiroo Rooms</h2>
     <h5 class="text-center mb-4 mt-4">Añadir usuario</h5>
@@ -8,8 +8,18 @@
         <label for="email" class="form-label">Correo electrónico</label>
         <input id="email" formControlName="email" type="email" class="form-control"
           placeholder="Ingresa tu correo electrónico" />
-        <div *ngIf="emailExistsError" class="text-danger">
-          {{ emailExistsError }}
+        <div *ngIf="newuser.get('email')?.invalid && newuser.get('email')?.touched" class="text-danger">
+          Ingrese un correo electrónico válido.
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label for="nombreCompleto" class="form-label">Nombre completo</label>
+        <input id="nombreCompleto" formControlName="nombreCompleto" type="text" class="form-control"
+          placeholder="Ingresa el nombre completo" />
+        <div *ngIf="newuser.get('nombreCompleto')?.invalid && newuser.get('nombreCompleto')?.touched"
+          class="text-danger">
+          El nombre es requerido.
         </div>
       </div>
 
@@ -17,8 +27,8 @@
         <label for="username" class="form-label">Usuario</label>
         <input id="username" formControlName="username" type="text" class="form-control"
           placeholder="Ingresa tu usuario" />
-        <div *ngIf="usernameExistsError" class="text-danger">
-          {{ usernameExistsError }}
+        <div *ngIf="newuser.get('username')?.invalid && newuser.get('username')?.touched" class="text-danger">
+          El nombre de usuario es requerido.
         </div>
       </div>
 
@@ -26,27 +36,34 @@
         <label for="password" class="form-label">Contraseña</label>
         <input id="password" formControlName="password" type="password" class="form-control"
           placeholder="*****************" />
+        <div *ngIf="newuser.get('password')?.invalid && newuser.get('password')?.touched" class="text-danger">
+          La contraseña debe tener al menos 3 caracteres.
+        </div>
       </div>
 
       <div class="mb-3">
         <label for="confirmpassword" class="form-label">Confirmar Contraseña</label>
         <input id="confirmpassword" formControlName="confirmpassword" type="password" class="form-control"
           placeholder="*****************" />
+        <div *ngIf="newuser.hasError('passwordsDoNotMatch') && newuser.get('confirmpassword')?.touched"
+          class="text-danger">
+          Las contraseñas no coinciden.
+        </div>
       </div>
 
       <div class="mb-3">
-        <label for="roles" class="form-label">Rol</label>
-        <select name="roles" id="roles" formControlName="roles" class="form-select">
+        <label for="rol" class="form-label">Rol</label>
+        <select name="rol" id="rol" formControlName="rol" class="form-select">
           <option value="admin">Administrador</option>
           <option value="user">Usuario</option>
         </select>
       </div>
 
       <div class="d-flex justify-content-between gap-2">
-        <button type="button" class="btn btn-secondary w-50" [routerLink]="['/reservas']">
+        <button type="button" class="btn btn-secondary w-50" [routerLink]="['/solicitudes-admin']">
           Volver atrás
         </button>
-        <button type="submit" class="btn btn-primary w-50">Ingresar</button>
+        <button type="submit" class="btn btn-primary w-50" [disabled]="isSubmitting">Ingresar</button>
       </div>
     </form>
   </div>
