@@ -186,7 +186,7 @@ def registrar_usuario():
         db.session.rollback()
         return jsonify({'message': 'Error al crear el usuario', 'error': str(e)}), 500
 
-@app.route("/registerRequest", methods=["POST"])
+@app.route("/request/register", methods=["POST"])
 @jwt_required()
 def registrarSolicitudes():
     """
@@ -278,7 +278,7 @@ def manageRequest(id):
         return jsonify({"message": "Error al editar la solicitud", "error": str(e)}), 500
   
 
-@app.route('/deleteRequest/<int:id>', methods=['DELETE'])
+@app.route('/request/delete/<int:id>', methods=['DELETE'])
 @jwt_required()
 def eliminar_solicitud(id):
     solicitud = SolicitudDescanso.query.get(id)
@@ -296,32 +296,34 @@ def eliminar_solicitud(id):
         return jsonify({'error': 'Solicitud no encontrada.'}), 404
 
 
-@app.route("/editRequest/<int:id>", methods=["PUT"])
+@app.route("/request/edit/<int:id>", methods=["PUT"])
 @jwt_required()
 def editarSolicitudes(id):
+    # Obtener los datos completos del cuerpo de la solicitud
     data = request.get_json()
-    fecha_inicio = data.get("fecha_inicio")
-    fecha_fin = data.get("fecha_fin")
-    motivo = data.get("motivo")
 
-    if not all([fecha_inicio, fecha_fin]):
-        return {"error": "Faltan datos"}, 400
+    # Comprobar si la solicitud contiene los campos necesarios
+    if "fecha_inicio" not in data or "fecha_fin" not in data or "motivo" not in data:
+        return jsonify({"error": "Faltan datos"}), 400
 
     try:
         solicitud = SolicitudDescanso.query.filter_by(id=id).first()
+        
         if not solicitud:
-            return {"error": "Solicitud no encontrada"}, 404
+            return jsonify({"error": "Solicitud no encontrada"}), 404
 
-        solicitud.fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d %H:%M:%S')
-        solicitud.fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d %H:%M:%S')
-        solicitud.motivo = motivo
+        solicitud.fecha_inicio = datetime.strptime(data["fecha_inicio"], '%Y-%m-%d')
+        solicitud.fecha_fin = datetime.strptime(data["fecha_fin"], '%Y-%m-%d')
+        solicitud.motivo = data["motivo"]
 
         db.session.commit()
-        return {"message": "Solicitud editada correctamente"}, 200
-    except Exception:
-        return {"message": "Error al editar la solicitud"}, 500
 
-@app.route('/requests', methods=['GET'])
+        return jsonify({"message": "Solicitud editada correctamente"}), 200
+    except Exception as e:
+        print(e)
+        return jsonify({"message": "Error al editar la solicitud"}), 500
+
+@app.route('/request/list', methods=['GET'])
 @jwt_required()
 def listar_solicitudes():
     try:

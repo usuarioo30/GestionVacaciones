@@ -11,62 +11,6 @@ body.dark-theme .text-black {
   color: #ffffff !important;
 }
 
-/* Menús desplegables */
-body.dark-theme .dropdown-menu {
-  background-color: #333333 !important;
-  color: #ffffff !important;
-}
-
-/* Estilos generales y específicos para la tabla completa */
-body.dark-theme .table {
-  background-color: #212121 !important;
-  color: #ffffff !important;
-}
-
-body.dark-theme .table th,
-body.dark-theme .table td {
-  background-color: #212121 !important;
-  color: #ffffff !important;
-  border-color: #444444 !important; /* Bordes más oscuros claros para distinguir celdas */
-}
-
-body.dark-theme .table thead th {
-  background-color: #2c2c2c !important; /* Cabecera un poco más clara para diferenciarse */
-  color: #ffffff !important;
-  border-bottom: 2px solid #555555 !important; /* separación visual más marcada */
-}
-
-/* Filas alternadas o hover en tablas para mejor usabilidad visual */
-body.dark-theme .table-striped tbody tr:nth-of-type(odd) {
-  background-color: #1c1c1c !important;
-}
-
-body.dark-theme .table-hover tbody tr:hover {
-  background-color: #2e2e2e !important;
-}
-
-/* Formularios y campos editables (opcional pero recomendable) */
-body.dark-theme .form-control,
-body.dark-theme .form-select,
-body.dark-theme .input-group-text {
-  background-color: #2b2b2b !important;
-  color: #ffffff !important;
-  border-color: #444444 !important;
-}
-
-/* Botones y acciones en tablas (opcional) */
-body.dark-theme .btn-light,
-body.dark-theme .btn-outline-secondary {
-  background-color: #404040 !important;
-  color: #ffffff !important;
-  border-color: #555555 !important;
-}
-
-body.dark-theme .btn-light:hover,
-body.dark-theme .btn-outline-secondary:hover {
-  background-color: #505050 !important;
-}
-
 /* 🌙 Estilos adicionales para LOGIN en Tema Oscuro */
 
 /* Fondo del formulario y contenedor general */
@@ -230,13 +174,115 @@ body.dark-theme .alert-info {
   color: #fff !important;
 }
 
-/* Estilo para el enlace activo */
-.sala.active {
-  background-color: #007bff;
-}
-
 /* Estilo para el botón activo en modo oscuro */
 .active-dark {
   background-color: #6c757d !important; /* gris medio */
   color: #fff !important;
+}
+
+/* Adaptación de la vista de calendario al tema oscuro */
+body.dark-theme .calendar-container {
+  background-color: #1e1e1e !important;
+  color: #ffffff !important;
+  padding: 1rem;
+  border: 1px solid #444444;
+}
+
+/* Encabezado del calendario (por ejemplo, barra de navegación o título) */
+body.dark-theme .calendar-header {
+  background-color: #2b2b2b !important;
+  border-bottom: 1px solid #444444 !important;
+  padding: 0.5rem 1rem;
+  color: #ffffff !important;
+}
+
+/* Días individuales o celdas del calendario */
+body.dark-theme .calendar-day {
+  background-color: #121212 !important;
+  border: 1px solid #333333 !important;
+  color: #ffffff !important;
+  min-height: 100px;
+  position: relative;
+}
+
+/* Efecto hover sobre los días */
+body.dark-theme .calendar-day:hover {
+  background-color: #2b2b2b !important;
+}
+
+/* Evento dentro del calendario */
+body.dark-theme .calendar-event {
+  background-color: #005cbf !important;
+  border: 1px solid #004080 !important;
+  color: #ffffff !important;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  margin: 0.1rem 0;
+}
+
+/* Hover para eventos */
+body.dark-theme .calendar-event:hover {
+  background-color: #004080 !important;
+}
+
+/* Resaltado del día actual */
+body.dark-theme .calendar-today {
+  border: 2px solid #ffffff !important;
+}
+
+/* Estilos para el Navbar en Tema Oscuro */
+body.dark-theme .navbar {
+  background-color: #1f1f1f !important;
+  border-bottom: 1px solid #444444 !important;
+}
+
+body.dark-theme .navbar .navbar-brand,
+body.dark-theme .navbar .nav-link {
+  color: #ffffff !important;
+}
+
+body.dark-theme .navbar .nav-link:hover {
+  color: #4a90e2 !important;
+}
+
+body.dark-theme .navbar .dropdown-menu {
+  background-color: #1e1e1e !important;
+  border: 1px solid #444444 !important;
+}
+
+body.dark-theme .navbar .dropdown-menu .dropdown-item {
+  color: #ffffff !important;
+}
+
+body.dark-theme .navbar .dropdown-menu .dropdown-item:hover {
+  background-color: #2b2b2b !important;
+}
+
+/* Estilos generales y específicos para la tabla completa */
+body.dark-theme .table {
+  background-color: #212121 !important;
+  color: #ffffff !important;
+}
+
+body.dark-theme .table th,
+body.dark-theme .table td {
+  background-color: #212121 !important;
+  color: #ffffff !important;
+  border-color: #444444 !important; /* Bordes más oscuros claros para distinguir celdas */
+}
+
+body.dark-theme .table thead th {
+  background-color: #2c2c2c !important; /* Cabecera un poco más clara para diferenciarse */
+  color: #ffffff !important;
+  border-bottom: 2px solid #555555 !important; /* separación visual más marcada */
+}
+
+/* Filas alternadas o hover en tablas para mejor usabilidad visual */
+body.dark-theme .table-striped tbody tr:nth-of-type(odd) {
+  background-color: #1c1c1c !important;
+}
+
+body.dark-theme .table-hover tbody tr:hover {
+  background-color: #2e2e2e !important;
 }

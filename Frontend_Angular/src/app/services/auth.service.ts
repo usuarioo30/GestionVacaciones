@@ -8,7 +8,7 @@ import { HttpClient } from '@angular/common/http';
 @Injectable({
   providedIn: 'root',
 })
-export class AuthService implements OnChanges{
+export class AuthService implements OnChanges {
 
   private http: HttpClient = inject(HttpClient)
   private router: Router = inject(Router)
@@ -17,7 +17,7 @@ export class AuthService implements OnChanges{
   private apiUrl = 'http://localhost:5000/';
   //Signal de inicio/cierre de sesión
   private isLoguedSignal = signal<boolean>(false);
-  
+
   //Getter de la signal de login
   get isLogued() {
     return this.isLoguedSignal.asReadonly();
@@ -34,13 +34,13 @@ export class AuthService implements OnChanges{
   }
 
   ngOnChanges(): void {
-      const token: string | null = localStorage.getItem('access_token');
+    const token: string | null = localStorage.getItem('access_token');
 
-      if (token) {
-        this.isLoguedSignal.set(true);
-      } else {
-        alert("Nope")
-      }
+    if (token) {
+      this.isLoguedSignal.set(true);
+    } else {
+      alert("Nope")
+    }
 
   }
 
@@ -51,20 +51,20 @@ export class AuthService implements OnChanges{
    * Necesita subscripción en el componente en el que se usará
    */
 
-  logIn(username: string, password: string): Observable<{access_token: string}> {
-    return this.http.post<{access_token: string}>(`${this.apiUrl}login`, {username, password})
-    .pipe( //Modifica o reacciona a los datos devueltos sin modificar la respuesta original
-      tap({ //Se usa para ejecutar acciones adicionales sin modificar los datos que fluyen por el Observable
-        next: response => {
-          const token = response.access_token;
-          console.log('Token: ', token)
-          if (token) {
-            localStorage.setItem('access_token', token)
-            this.isLoguedSignal.set(true);
+  logIn(username: string, password: string): Observable<{ access_token: string }> {
+    return this.http.post<{ access_token: string }>(`${this.apiUrl}login`, { username, password })
+      .pipe( //Modifica o reacciona a los datos devueltos sin modificar la respuesta original
+        tap({ //Se usa para ejecutar acciones adicionales sin modificar los datos que fluyen por el Observable
+          next: response => {
+            const token = response.access_token;
+            console.log('Token: ', token)
+            if (token) {
+              localStorage.setItem('access_token', token)
+              this.isLoguedSignal.set(true);
+            }
           }
-        }
-      })
-    )
+        })
+      )
   }
 
   /**
@@ -296,5 +296,10 @@ export class AuthService implements OnChanges{
    */
   decodeToken(token: string): any {
     return jwtDecode(token);
+  }
+
+  isAuthenticated(): boolean {
+    const token = localStorage.getItem('access_token');
+    return !!token;
   }
 }
