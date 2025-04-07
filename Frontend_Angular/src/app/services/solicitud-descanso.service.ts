@@ -3,6 +3,7 @@ import { Observable } from 'rxjs';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { SolicitudDescanso } from '../interfaces/solicitud-descanso';
 import { jwtDecode } from 'jwt-decode';
+import { Usuario } from '../interfaces/usuario';
 
 @Injectable({
   providedIn: 'root'
@@ -12,6 +13,18 @@ export class SolicitudDescansoService {
   private urlApi = "http://localhost:5000/request";
 
   constructor(private http: HttpClient) { }
+
+  getAllSolicitudesDescansoAdmin(): Observable<SolicitudDescanso[]> {
+    const token = localStorage.getItem('access_token');
+
+    if (!token) {
+      throw new Error('Token no encontrado');
+    }
+
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+
+    return this.http.get<SolicitudDescanso[]>(`${this.urlApi}/list-admin`, { headers });
+  }
 
   getAllSolicitudesDescanso(): Observable<SolicitudDescanso[]> {
     const token = localStorage.getItem('access_token');
@@ -23,6 +36,16 @@ export class SolicitudDescansoService {
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
 
     return this.http.get<SolicitudDescanso[]>(`${this.urlApi}/list`, { headers });
+  }
+
+  getUserById(userId: number): Observable<Usuario> {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      throw new Error('Token no encontrado');
+    }
+
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+    return this.http.get<Usuario>(`http://localhost:5000/user/${userId}`, { headers });
   }
 
   saveSolicitudDescanso(solicitudDescanso: SolicitudDescanso) {

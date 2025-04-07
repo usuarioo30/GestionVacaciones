@@ -3,7 +3,7 @@ from sqlite3 import IntegrityError
 from operator import truediv
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+from flask_jwt_extended import JWTManager, create_access_token, get_jwt, jwt_required, get_jwt_identity
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -133,41 +133,34 @@ def google_login():
     }), 200
 
 
-@app.route('/createUser', methods=['POST'])
+@app.route('/user/create', methods=['POST'])
 @jwt_required()  # El usuario debe estar autenticado con JWT
 def registrar_usuario():
-
     """
     Endpoint para crear un nuevo usuario
     POST: /createUser
-    Request Body: {
-        "email": email,
-        "nombreCompleto": nombreCompleto,
-        "password": password,
-        "username": username,
-        "rol": rol
-    }
-    Response: 201 OK {'message': 'Usuario creado exitosamente'}
-    Response: 400 Bad Request {'message': 'Datos JSON no proporcionados o mal formateados'}
-    Response: 409 Conflict {'message': 'El usuario ya existe'}
-    Response: 500 Internal Server Error {'message': 'Error al crear el usuario', 'error': str(e)}
     """
-
     # Verificar que se está enviando JSON
     data = request.get_json()
     if not data:
         return jsonify({'message': 'Datos JSON no proporcionados o mal formateados'}), 400
 
-    # Obtener la identidad del usuario autenticado
-    current_user = get_jwt_identity()
-    
+    # Obtener los claims del JWT, que contienen el rol del usuario
+    claims = get_jwt()
+    rol = claims.get('rol')
+
+    # Verificar si el usuario tiene el rol de 'admin'
+    if rol != 'admin':
+        return jsonify({'message': 'No tienes permisos para crear usuarios'}), 403
+
     # Hash de la contraseña
     hashed_password = generate_password_hash(data['password'])
 
+    # Crear el nuevo usuario
     nuevo_usuario = Usuario(
         email=data['email'],
         nombreCompleto=data['nombreCompleto'],
-        password=data['password'],
+        password=hashed_password,
         username=data['username'],
         rol=data['rol']
     )
@@ -176,68 +169,131 @@ def registrar_usuario():
         db.session.add(nuevo_usuario)
         db.session.commit()
         return jsonify({'message': 'Usuario creado exitosamente'}), 201
-    except IntegrityError:
+    except IntegrityError as e:
         db.session.rollback()
-        return jsonify({'message': 'El usuario ya existe'}), 409
+        return jsonify({'message': 'El usuario ya existe', 'error': str(e)}), 409
     except Exception as e:
         db.session.rollback()
         return jsonify({'message': 'Error al crear el usuario', 'error': str(e)}), 500
 
+@app.route('/user/<int:user_id>', methods=['GET'])
+@jwt_required()
+def getUserById(user_id):
+    try:
+        # Obtener el usuario de la base de datos
+        usuario = Usuario.query.get_or_404(user_id)
+
+        # Si el usuario no existe
+        if not usuario:
+            return jsonify({"message": "Usuario no encontrado"}), 404
+
+        # Devolver los datos del usuario
+        return jsonify({
+            'id': usuario.id,
+            'username': usuario.username,
+            'nombreCompleto': usuario.nombreCompleto
+        }), 200
+
+    except Exception as e:
+        return jsonify({"error": "Ocurrió un error al obtener la información del usuario", "message": str(e)}), 500
+
+
+@app.route('/request/edit/<int:id>', methods=['PUT'])
+@jwt_required()
+def editar_solicitud(id):
+    """
+    Endpoint para editar una solicitud de descanso.
+    PUT: /request/edit/{id}
+    Request Body: {"fecha_inicio": "YYYY-MM-DD", "fecha_fin": "YYYY-MM-DD", "motivo": "string"}
+    Response: 200 OK {"message": "Solicitud editada correctamente"}
+    Response: 400 Bad Request {"error": "Faltan datos"}
+    Response: 404 Not Found {"error": "Solicitud no encontrada"}
+    Response: 403 Forbidden {"error": "No tienes permisos para editar esta solicitud"}
+    Response: 500 Internal Server Error {"error": "Hubo un error al editar la solicitud"}
+    """
+    try:
+        # Obtener el usuario autenticado
+        claims = get_jwt()
+        rol = claims.get('rol')
+
+        # Buscar la solicitud por ID
+        solicitud = SolicitudDescanso.query.get(id)
+
+        if not solicitud:
+            return jsonify({'error': 'Solicitud no encontrada'}), 404
+
+        if solicitud.aprobado is not None:
+            return jsonify({'error': 'Solo se puede editar una solicitud pendiente'}), 403
+
+        if rol not in ['admin', 'user']:
+            return jsonify({'error': 'No tienes permisos para editar esta solicitud'}), 403
+
+        data = request.get_json()
+
+        fecha_inicio = data.get("fecha_inicio")
+        fecha_fin = data.get("fecha_fin")
+        motivo = data.get("motivo")
+
+        if not all([fecha_inicio, fecha_fin, motivo]):
+            return jsonify({"error": "Faltan datos"}), 400
+
+        try:
+            fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d')
+            fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d')
+        except ValueError:
+            return jsonify({"error": "Formato de fecha inválido. Usa 'YYYY-MM-DD'."}), 400
+
+        solicitud.fecha_inicio = fecha_inicio
+        solicitud.fecha_fin = fecha_fin
+        solicitud.motivo = motivo
+
+        db.session.commit()
+
+        return jsonify({'message': 'Solicitud editada correctamente'}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Hubo un error al editar la solicitud', 'message': str(e)}), 500
+
+
 @app.route("/request/register", methods=["POST"])
 @jwt_required()
 def registrarSolicitudes():
-    """
-    Endpoint para crear un nuevo usuario
-    POST: /createUser
-    Request Body: {
-        "usuario_id": usuario_id,
-        "fecha_inicio": fecha_inicio,
-        "fecha_fin": fecha_fin,
-        "fecha_solicitada": fecha_solicitada
-    }
-    Response: 201 OK {"message": "Solicitud registrada correctamente"}, 201
-    Response: 400 Bad Request {"error": "Faltan datos"}
-    Response: 409 Conflict {'message': 'El usuario ya existe'}
-    Response: 500 Internal Server Error {"message": "Error al registrar su solicitud, porfavor intentelo denuevo."}
-    """
+
+    usuario_id = get_jwt_identity()
+
+    claims = get_jwt()
+
+    rol = claims.get('rol')
+
+    if rol != 'user':
+        return jsonify({"error": "Un admin no puede crear una solicitud"}), 403
 
     data = request.get_json()
 
-    usuario_id = data.get("usuario_id")
     fecha_inicio = data.get("fecha_inicio")
     fecha_fin = data.get("fecha_fin")
-    fecha_solicitada = data.get("fecha_solicitada")
     motivo = data.get("motivo")
 
-    if not all([usuario_id, fecha_inicio, fecha_fin, fecha_solicitada, motivo]):
-        return {"error": "Faltan datos"}, 400
+    if not all([fecha_inicio, fecha_fin, motivo]):
+        return jsonify({"error": "Faltan datos"}), 400
 
     try:
         fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d')
         fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d')
-        
-        if not fecha_solicitada:
-            fecha_solicitada = datetime.now()
-        else:
-            fecha_solicitada = datetime.strptime(fecha_solicitada, '%Y-%m-%d')
-            
-    except ValueError:
-        return {"error": "Formato de fecha incorrecto"}, 400
 
-    try:
         nueva_solicitud = SolicitudDescanso(
             usuario_id=usuario_id,
             fecha_inicio=fecha_inicio,
             fecha_fin=fecha_fin,
-            fecha_solicitada=fecha_solicitada,
-            motivo=motivo,
+            motivo=motivo
         )
         db.session.add(nueva_solicitud)
         db.session.commit()
-        return {"message": "Solicitud registrada correctamente"}, 201
+        return jsonify({"message": "Solicitud registrada correctamente"}), 201
+
     except Exception as e:
-        print(f"Error al registrar la solicitud: {e}")
-        return {"message": "Error al registrar su solicitud, por favor intente de nuevo."}, 500
+        return jsonify({"error": "Error al registrar su solicitud", "message": str(e)}), 500
 
 
   
@@ -246,30 +302,38 @@ def registrarSolicitudes():
 @jwt_required()
 def manageRequest(id):
     """
-    Endpoint para crear un nuevo usuario
-    POST: /createUser
-    Request Body: {
-        "aprobado": aprobado,
-    }
+    Endpoint para aceptar o rechazar una solicitud
+    PUT: /request/manage/{id}
+    Request Body: {"aprobado": True/False}
     Response: 200 OK {"message": message}
-    Response: 400 Bad Request {"error": "Faltan datos"}
     Response: 404 Not Found {"message": "Solicitud no encontrada"}
     Response: 500 Internal Server Error {"message": "Error al editar la solicitud", "error": str(e)}
     """
-
-
     try:
+        # Obtener el usuario autenticado
+        usuario_actual = get_jwt_identity()
+
+        # Verificar si el usuario es admin
+        if usuario_actual['rol'] != 'admin':
+            return jsonify({"error": "No tienes permisos para gestionar solicitudes"}), 403
+
         solicitud = SolicitudDescanso.query.get(id)
         
-        data = request.get_json()
-        aprobado = data.get('aprobado')
-
         if solicitud:
-            solicitud.aprobado = True if aprobado else False
+            # Obtener el dato de aprobación del cuerpo de la solicitud
+            data = request.get_json()
+            aprobado = data.get('aprobado')
+
+            if aprobado is None:
+                return jsonify({"error": "Falta el parámetro 'aprobado'"}), 400
+
+            # Actualizar la solicitud con la aprobación
+            solicitud.aprobado = aprobado
             db.session.commit()
-            message = "Solicitud "+"aprobada" if aprobado else "denegada"+" con éxito"
+            
+            message = "Solicitud " + ("aprobada" if aprobado else "rechazada") + " con éxito"
             return jsonify({"message": message}), 200
-        else :
+        else:
             return jsonify({"message": "Solicitud no encontrada"}), 404
     except Exception as e:
         return jsonify({"message": "Error al editar la solicitud", "error": str(e)}), 500
@@ -278,55 +342,59 @@ def manageRequest(id):
 @app.route('/request/delete/<int:id>', methods=['DELETE'])
 @jwt_required()
 def eliminar_solicitud(id):
-    solicitud = SolicitudDescanso.query.get(id)
+    """
+    Endpoint para eliminar una solicitud.
+    DELETE: /request/delete/{id}
+    Response: 200 OK {"message": "Solicitud eliminada correctamente"}
+    Response: 404 Not Found {"error": "Solicitud no encontrada"}
+    Response: 403 Forbidden {"error": "No tienes permisos para eliminar esta solicitud"}
+    Response: 500 Internal Server Error {"error": "Hubo un error al eliminar la solicitud"}
+    """
+    try:
+        # Obtener el usuario autenticado (ID del usuario desde el JWT)
+        claims = get_jwt()  # Obtenemos los claims del JWT
+        rol = claims.get('rol')  # Obtener el rol del usuario desde los claims
 
-    
-    if solicitud:
-        try:
+        # Buscar la solicitud por ID
+        solicitud = SolicitudDescanso.query.get(id)
+
+        # Verificar si la solicitud existe
+        if not solicitud:
+            return jsonify({'error': 'Solicitud no encontrada'}), 404
+
+        # Verificar si el rol es 'admin' o 'user'
+        if rol in ['admin', 'user']:
+            # Si es admin o user, puede eliminar la solicitud sin importar el creador
             db.session.delete(solicitud)
             db.session.commit()
-            return jsonify({'message': 'Solicitud de descanso eliminada correctamente.'}), 200
-        except Exception as e:
-            db.session.rollback()
-            return jsonify({'error': 'Hubo un error al eliminar la solicitud.'}), 500
-    else:
-        return jsonify({'error': 'Solicitud no encontrada.'}), 404
 
+            return jsonify({'message': 'Solicitud eliminada correctamente'}), 200
+        else:
+            # Si el rol no es 'admin' ni 'user', no tiene permisos para eliminar
+            return jsonify({'error': 'No tienes permisos para eliminar esta solicitud'}), 403
 
-@app.route("/request/edit/<int:id>", methods=["PUT"])
-@jwt_required()
-def editarSolicitudes(id):
-    # Obtener los datos completos del cuerpo de la solicitud
-    data = request.get_json()
-
-    # Comprobar si la solicitud contiene los campos necesarios
-    if "fecha_inicio" not in data or "fecha_fin" not in data or "motivo" not in data:
-        return jsonify({"error": "Faltan datos"}), 400
-
-    try:
-        solicitud = SolicitudDescanso.query.filter_by(id=id).first()
-        
-        if not solicitud:
-            return jsonify({"error": "Solicitud no encontrada"}), 404
-
-        solicitud.fecha_inicio = datetime.strptime(data["fecha_inicio"], '%Y-%m-%d')
-        solicitud.fecha_fin = datetime.strptime(data["fecha_fin"], '%Y-%m-%d')
-        solicitud.motivo = data["motivo"]
-
-        db.session.commit()
-
-        return jsonify({"message": "Solicitud editada correctamente"}), 200
     except Exception as e:
-        print(e)
-        return jsonify({"message": "Error al editar la solicitud"}), 500
+        # En caso de error, revertir cualquier cambio en la base de datos
+        db.session.rollback()
+        return jsonify({'error': 'Hubo un error al eliminar la solicitud', 'message': str(e)}), 500
+
+
+
 
 @app.route('/request/list', methods=['GET'])
 @jwt_required()
 def listar_solicitudes():
     try:
+        usuario_id = get_jwt_identity()
+        claims = get_jwt()
 
-        solicitudes = SolicitudDescanso.query.all()
-        
+        rol = claims.get('rol')
+
+        if rol != 'user':
+            return jsonify({"error": "No tienes permisos para acceder a esta lista de solicitudes."}), 403
+
+        solicitudes = SolicitudDescanso.query.filter_by(usuario_id=usuario_id).all()
+
         solicitudes_data = []
         for solicitud in solicitudes:
             solicitud_info = {
@@ -341,9 +409,45 @@ def listar_solicitudes():
             solicitudes_data.append(solicitud_info)
 
         return jsonify(solicitudes_data), 200
-    
+
     except Exception as e:
         return jsonify({"error": "Ocurrió un error al obtener las solicitudes.", "message": str(e)}), 500
+
+@app.route('/request/list-admin', methods=['GET'])
+@jwt_required()
+def listar_solicitudes_admin():
+    try:
+        # Obtener la identidad del usuario autenticado
+        claims = get_jwt()
+
+        rol = claims.get('rol')
+
+        if rol != 'admin':
+            # Si no es admin, se retorna un error
+            return jsonify({"error": "No tienes permisos para acceder a esta lista de solicitudes."}), 403
+
+        # Si el rol es 'admin', se devuelven todas las solicitudes
+        solicitudes = SolicitudDescanso.query.all()
+
+        # Formatear las solicitudes para la respuesta JSON
+        solicitudes_data = []
+        for solicitud in solicitudes:
+            solicitud_info = {
+                "id": solicitud.id,
+                "usuario_id": solicitud.usuario_id,
+                "fecha_inicio": solicitud.fecha_inicio.strftime('%Y-%m-%d %H:%M:%S'),
+                "fecha_fin": solicitud.fecha_fin.strftime('%Y-%m-%d %H:%M:%S'),
+                "fecha_solicitada": solicitud.fecha_solicitada.strftime('%Y-%m-%d %H:%M:%S'),
+                "aprobado": solicitud.aprobado,
+                "motivo": solicitud.motivo
+            }
+            solicitudes_data.append(solicitud_info)
+
+        return jsonify(solicitudes_data), 200
+
+    except Exception as e:
+        return jsonify({"error": "Ocurrió un error al obtener las solicitudes.", "message": str(e)}), 500
+    
 
 # Ejecutar el servidor Flask
 if __name__ == '__main__':

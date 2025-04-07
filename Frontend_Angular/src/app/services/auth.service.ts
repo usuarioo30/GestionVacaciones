@@ -195,28 +195,7 @@ export class AuthService implements OnChanges {
     return fetchResponse.json();
   }
 
-  /**
-   * Método para registrar un usuario
-   * @param user El usuario a registrar sin id asignado
-   * @returns Promise<Usuario> El usuario con un id ya asignado
-   */
-  async registerUser(user: Omit<Usuario, "id">): Promise<Usuario> {
-    const response = await fetch(`${this.apiUrl}/register`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(user),
-    });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message);
-    }
-
-    return await response.json();
-
-  }
 
   /**
    * Método para crear un usuario
@@ -301,5 +280,20 @@ export class AuthService implements OnChanges {
   isAuthenticated(): boolean {
     const token = localStorage.getItem('access_token');
     return !!token;
+  }
+
+  getUserRole(): string {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      return '';
+    }
+
+    try {
+      const decodedToken: any = jwtDecode(token);
+      return decodedToken.rol || '';
+    } catch (error) {
+      console.error('Error al decodificar el token', error);
+      return '';
+    }
   }
 }

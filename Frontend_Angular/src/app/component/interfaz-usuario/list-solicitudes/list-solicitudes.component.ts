@@ -6,6 +6,7 @@ import { ActivatedRoute, Router, RouterLink, RouterOutlet } from '@angular/route
 import { SolicitudDescanso } from '../../../interfaces/solicitud-descanso';
 import Swal from 'sweetalert2';
 import { Token } from '@angular/compiler';
+import { AuthService } from '../../../services/auth.service';
 
 @Component({
   selector: 'app-list-solicitudes',
@@ -22,13 +23,15 @@ export class ListSolicitudesComponent implements OnInit {
   usuario_id: number | null = null;
   solicitudAEditar: SolicitudDescanso | null = null;
   fechaMinima: string = this.getFechaActual();
+  esUsuario: boolean = false;
 
 
   constructor(
     private solicitudDescansoService: SolicitudDescansoService,
     private router: Router,
     private route: ActivatedRoute,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private authService: AuthService
   ) {
   }
 
@@ -36,6 +39,12 @@ export class ListSolicitudesComponent implements OnInit {
     const token = localStorage.getItem('access_token');
     if (!token) {
       this.router.navigateByUrl('/login');
+    }
+
+    this.esUsuario = this.authService.getUserRole() === 'user';
+
+    if (this.esUsuario) {
+      this.findAllSolicitudesDescanso();
     }
     this.findAllSolicitudesDescanso();
 
