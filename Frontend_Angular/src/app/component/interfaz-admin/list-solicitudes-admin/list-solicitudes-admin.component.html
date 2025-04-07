@@ -1,15 +1,15 @@
-<div *ngIf="isLoading && isAdmin" class="loading text-center mt-5">
+<div *ngIf="isLoading" class="loading text-center mt-5">
     <p>Cargando solicitudes...</p>
 </div>
 
-<div *ngIf="isAdmin && !isLoading && solicitudes.length > 0">
+<div *ngIf="isAdmin && !isLoading">
     <h2 class="text-center my-4">Lista de Solicitudes</h2>
 
     <div *ngIf="solicitudes.length === 0" class="alert alert-info text-center">
         No hay solicitudes disponibles.
     </div>
 
-    <div class="card shadow-lg p-3 mb-5 bg-white rounded">
+    <div class="card shadow-lg p-3 mb-5 bg-white rounded" *ngIf="solicitudes.length > 0">
         <div class="card-body">
             <div *ngIf="solicitudes.length > 0">
                 <div class="table-responsive">
