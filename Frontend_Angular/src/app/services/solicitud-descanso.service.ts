@@ -15,11 +15,17 @@ export class SolicitudDescansoService {
 
   private filterSignal = signal<any>('');
 
+  private orderSignal = signal<any>('');
+
   constructor(private http: HttpClient) { }
 
 
   setFilter(value: any) {
     this.filterSignal.set(value);
+  }
+
+  setOrder(field: any) {
+    this.orderSignal.set(field);
   }
 
   filteredData = computed(() => {
@@ -33,14 +39,37 @@ export class SolicitudDescansoService {
     if (this.filterSignal() !== 'true') {
       
       const filteredStatus = statusMap[this.filterSignal() as keyof typeof statusMap];
-      return this.solicitudesSignal().filter(request => request.estado == filteredStatus);
+      return this.orderData(this.solicitudesSignal().filter(request => request.estado == filteredStatus));
     }
-    return this.solicitudesSignal();
+    return this.orderData(this.solicitudesSignal());
   })
 
-  //Getter de la signal
-  get solicitudes() {
-    return this.solicitudesSignal;
+  orderData = (array: SolicitudDescanso[]) =>  {
+    switch (this.orderSignal()) {
+      case 'id_asc':
+        return array.sort((r1, r2) => r1.id - r2.id);
+    
+      case 'id_desc':
+        return array.sort((r1, r2) => r2.id - r1.id);
+        
+      case 'date_asc':
+        
+        return array.sort((r1, r2) => {
+          
+          return Date.parse(r1.fecha_inicio) - Date.parse(r2.fecha_inicio);
+        });
+      
+      case 'date_desc':
+
+      return array.sort((r1, r2) => {
+        
+        return Date.parse(r2.fecha_inicio) - Date.parse(r1.fecha_inicio);
+      });
+      
+      default:
+        return array.sort((r1, r2) => r1.id - r2.id);
+        
+    }
   }
 
   getAllSolicitudesDescanso(): Observable<SolicitudDescanso[]> {
@@ -57,7 +86,7 @@ export class SolicitudDescansoService {
 
   getUsersSolicitudDescanso(id: number, token: string): any {
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`)
-    return this.http.get<SolicitudDescanso[]>(`${this.urlApi}/request/${id}`, {headers})
+    return this.http.get<SolicitudDescanso[]>(`${this.urlApi}/${id}`, {headers})
     .subscribe({
       next: response => this.solicitudesSignal.set(response),
       error: err => console.log(err)
