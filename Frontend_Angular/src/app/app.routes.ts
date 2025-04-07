@@ -7,6 +7,7 @@ import { EditprofileComponent } from './component/interfaz-usuario/editprofile/e
 import { CalendarComponent } from './component/calendar/calendar.component';
 
 import { ListSolicitudesComponent } from './component/interfaz-usuario/list-solicitudes/list-solicitudes.component';
+import { HistorialComponent } from './component/interfaz-usuario/historial/historial.component';
 import { ListSolicitudesAdminComponent } from './component/interfaz-admin/list-solicitudes-admin/list-solicitudes-admin.component';
 
 
@@ -28,6 +29,9 @@ export const appRoutes: Routes = [
 
   //Calendario
   { path: 'calendario', component: CalendarComponent },
+
+  //Historial
+  {path: 'historial', component: HistorialComponent},
 
   { path: '**', redirectTo: '/login' }, // Redirige a login si la ruta no existe
 ];

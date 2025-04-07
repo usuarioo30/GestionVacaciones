@@ -64,7 +64,7 @@ export class LoginComponent implements OnInit {
     document.body.appendChild(script);
   }
 
-  async onSubmit() {
+  onSubmit() {
     if (this.loginForm.invalid) return;
 
     const { username, password } = this.loginForm.value;
@@ -78,7 +78,8 @@ export class LoginComponent implements OnInit {
             text: "Has iniciado sesión",
             icon: 'success',
             confirmButtonText: 'Aceptar'
-          })
+          });
+
         },
         error: err => Swal.fire({
           title: 'Error!',
@@ -88,13 +89,8 @@ export class LoginComponent implements OnInit {
 
         })
       });
-      // if (!response.ok) throw new Error('Credenciales incorrectas');
 
-      // const { access_token } = await response.json();
-      // localStorage.setItem('access_token', JSON.stringify(access_token));
-      // Swal.fire('Éxito', 'Sesión iniciada con éxito. Redirigiendo...', 'success');
-
-      setTimeout(() => this.router.navigate(['/reservas']), 2000);
+      setTimeout(() => this.redirectIfAuthenticated(), 2000);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Error desconocido';
       Swal.fire('Error', message, 'error');

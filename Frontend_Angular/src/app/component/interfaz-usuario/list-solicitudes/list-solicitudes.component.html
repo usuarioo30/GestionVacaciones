@@ -26,7 +26,7 @@
                             <th>Fecha Inicio</th>
                             <th>Fecha Fin</th>
                             <th>Motivo</th>
-                            <th>Fecha cuando se solicitó</th>
+                            <th>Fecha Solicitada</th>
                             <th>Estado</th>
                             <th>Acciones</th>
                         </tr>
@@ -44,17 +44,19 @@
                             <td style="white-space: nowrap;">
                                 <span [ngClass]="{
                                     'badge': true,
-                                    'badge-success text-white': solicitud.aprobado === true,
-                                    'badge-danger text-white': solicitud.aprobado === false,
-                                    'badge-secondary text-black': solicitud.aprobado === null
+                                    'badge-success text-white': solicitud.estado === true,
+                                    'badge-danger text-white': solicitud.estado === false,
+                                    'badge-secondary text-black': solicitud.estado === null
                                 }">
-                                    {{ solicitud.aprobado === true ? 'Aprobada' :
-                                    solicitud.aprobado === false ? 'Rechazada' :
-                                    solicitud.aprobado === null ? 'Pendiente' : '' }}
+                                    {{ solicitud.estado === true ? 'Aprobada' :
+                                    solicitud.estado === false ? 'Rechazada' :
+                                    solicitud.estado === null ? 'Pendiente' : '' }}
                                 </span>
                             </td>
-                            <td style="white-space: nowrap;" *ngIf="!solicitud.aprobado">
-                                <button class="btn btn-danger btn-sm" (click)="eliminarSolicitud(solicitud.id)">
+                            <td style="white-space: nowrap;">
+                                <button class="btn btn-danger btn-sm" *ngIf="!solicitud.estado"
+                                    (click)="eliminarSolicitud(solicitud.id)">
+
                                     <i class="bi bi-trash"></i>
                                 </button> &nbsp;
                                 <button class="btn btn-warning btn-sm" (click)="editarSolicitud(solicitud)"

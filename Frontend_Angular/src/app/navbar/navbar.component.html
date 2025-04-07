@@ -1,3 +1,18 @@
+<div class="container-fluid mt-5 w-" *ngIf="mostrarNavbar">
+  <!-- Topbar: Configuración de tema -->
+  <div class="dropdown position-absolute top-0 end-0 p-3">
+    <a href="#" class="text-black text-decoration-none dropdown-toggle" id="dropdownTheme" data-bs-toggle="dropdown"
+       aria-expanded="false">
+      <i class="bi bi-gear fs-5"></i>
+    </a>
+    <ul class="dropdown-menu dropdown-menu-dark shadow">
+      <li>
+        <a class="dropdown-item" href="#" (click)="toggleTheme()">
+          {{ isDarkTheme ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro' }}
+        </a>
+      </li>
+    </ul>
+  </div>
 <div class="container-fluid mt-5" *ngIf="mostrarNavbar">
   <div class="row">
     <div class="col">
@@ -20,8 +35,8 @@
             <ul class="navbar-nav mx-auto">
               <!-- Calendario -->
               <li class="nav-item me-3">
-                <a class="nav-link text-dark" href="#" aria-label="Calendario">
-                  <i class="bi bi-calendar-month fs-4"></i>&nbsp; Calendario
+                <a class="nav-link text-dark" [routerLink]="['/calendario']" aria-label="Calendario">
+                  <i class="bi bi-calendar-month fs-4"></i> Calendario
                 </a>
               </li>
 
@@ -42,10 +57,9 @@
               </li>
 
               <!-- Historial -->
-              <li class="nav-item me-3">
-                <a class="nav-link text-dark" href="#" aria-label="Historial">
-                  <i class="bi bi-clock fs-4"></i>&nbsp; Historial
-                </a>
+              <li class="nav-item me-5 ms-5" [routerLink]="['/historial']" routerLinkActive="router-link-active" >
+                <a class="nav-link text-dark" aria-label="Historial">
+                  <i class="bi bi-clock fs-4"></i>
               </li>
 
               <!-- Crear usuario -->

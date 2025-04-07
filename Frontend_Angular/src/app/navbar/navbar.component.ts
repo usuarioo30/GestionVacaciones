@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import {Component, OnInit, Renderer2} from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 import { AuthService } from '../services/auth.service';
 import { RouterLink, RouterModule } from '@angular/router';
@@ -12,14 +12,34 @@ import { RouterLink, RouterModule } from '@angular/router';
 })
 export class NavbarComponent implements OnInit {
   mostrarNavbar: boolean = false;
+  isDarkTheme = false;
   mostrarMisSolicitudes: boolean = false;
   mostrarCrearUsuario: boolean = true;
 
-  constructor(private authService: AuthService) { }
+  constructor(private authService: AuthService,
+              private renderer: Renderer2) { }
 
   ngOnInit(): void {
     this.mostrarNavbar = this.authService.isAuthenticated();
+    this.applySavedTheme();
+    this.mostrarNavbar = this.authService.isAuthenticated();
     this.mostrarMisSolicitudes = this.authService.getUserRole() === 'user';
     this.mostrarCrearUsuario = this.authService.getUserRole() === 'admin';
+  }
+
+  private applySavedTheme(): void {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+      this.isDarkTheme = true;
+      this.renderer.addClass(document.body, 'dark-theme');
+    }
+  }
+
+  toggleTheme(): void {
+    this.isDarkTheme = !this.isDarkTheme;
+    localStorage.setItem('theme', this.isDarkTheme ? 'dark' : 'light');
+    this.isDarkTheme
+      ? this.renderer.addClass(document.body, 'dark-theme')
+      : this.renderer.removeClass(document.body, 'dark-theme');
   }
 }
