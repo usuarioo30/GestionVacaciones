@@ -6,7 +6,7 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
-
+from datetime import timedelta
 
 # Configuración de la base de datos y otros parámetros
 class Config:
@@ -37,7 +37,7 @@ class SolicitudDescanso(db.Model):
     fecha_inicio = db.Column(db.DateTime, nullable=False)
     fecha_fin = db.Column(db.DateTime, nullable=False)
     fecha_solicitada = db.Column(db.DateTime, default=datetime.utcnow)
-    aprobado = db.Column(db.Boolean, nullable=True, default=None)
+    estado = db.Column(db.Boolean, nullable=True, default=None)
     motivo = db.Column(db.String(255), nullable=True)
 
     def __repr__(self):
@@ -84,7 +84,7 @@ with app.app_context():
 
 
 # 
-## POST: /login
+# POST: /login
 # Response: 200 OK {"access_token": token}
 # Response: 401 Unauthorized {"message": "Credenciales inválidas"}
 @app.route('/login', methods=['POST'])
@@ -103,7 +103,10 @@ def login():
     if not usuario or not check_password_hash(usuario.password, data['password']):
         return jsonify({'message': 'Credenciales inválidas'}), 401
 
-    access_token = create_access_token(identity=str(usuario.id), additional_claims={"username": usuario.username, "nombreCompleto": usuario.nombreCompleto, "rol": usuario.rol})
+    access_token = create_access_token(
+        identity=str(usuario.id), 
+        additional_claims={"username": usuario.username, "nombreCompleto": usuario.nombreCompleto, "rol": usuario.rol},
+        expires_delta=timedelta(hours=24)),
     return jsonify({'access_token': access_token}), 200
 
 @app.route("/api/google-login", methods=["POST"])
@@ -335,7 +338,7 @@ def listar_solicitudes():
                 "fecha_inicio": solicitud.fecha_inicio.strftime('%Y-%m-%d %H:%M:%S'),
                 "fecha_fin": solicitud.fecha_fin.strftime('%Y-%m-%d %H:%M:%S'),
                 "fecha_solicitada": solicitud.fecha_solicitada.strftime('%Y-%m-%d %H:%M:%S'),
-                "aprobado": solicitud.aprobado,
+                "estado": solicitud.estado,
                 "motivo": solicitud.motivo
             }
             solicitudes_data.append(solicitud_info)
@@ -344,6 +347,32 @@ def listar_solicitudes():
     
     except Exception as e:
         return jsonify({"error": "Ocurrió un error al obtener las solicitudes.", "message": str(e)}), 500
+
+# Obtener todas las solicitudes de un usuario
+@app.route('/request/<int:user>', methods=['GET'])
+@jwt_required()
+def getUserRequest(user):
+    try:
+        solicitudes = SolicitudDescanso.query.filter(user==SolicitudDescanso.usuario_id)
+
+        solicitudes_data = []
+        for solicitud in solicitudes:
+            solicitud_info = {
+                "id": solicitud.id,
+                "usuario_id": solicitud.usuario_id,
+                "fecha_inicio": solicitud.fecha_inicio.strftime('%Y-%m-%d %H:%M:%S'),
+                "fecha_fin": solicitud.fecha_fin.strftime('%Y-%m-%d %H:%M:%S'),
+                "fecha_solicitada": solicitud.fecha_solicitada.strftime('%Y-%m-%d %H:%M:%S'),
+                "estado": solicitud.estado,
+                "motivo": solicitud.motivo
+            }
+            solicitudes_data.append(solicitud_info)
+
+        return jsonify(solicitudes_data), 200
+
+    except Exception as e:
+        return jsonify({"error": "Ocurrió un error al obtener las solicitudes.", "message": str(e)}), 500
+
 
 # Ejecutar el servidor Flask
 if __name__ == '__main__':
