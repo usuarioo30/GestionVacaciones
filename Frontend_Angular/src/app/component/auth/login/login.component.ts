@@ -1,4 +1,4 @@
-import { Component, OnInit, Renderer2 } from '@angular/core';
+import { Component, computed, inject, OnInit, Renderer2 } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
@@ -16,10 +16,12 @@ import Swal from 'sweetalert2';
 export class LoginComponent implements OnInit {
   loginForm!: FormGroup;
   isDarkTheme = false;
+  isLogged = computed(() => this.authService.isLogued());
+  private authService: AuthService = inject(AuthService);
 
   constructor(
       private fb: FormBuilder,
-      private authService: AuthService,
+      
       private router: Router,
       private renderer: Renderer2
   ) {
@@ -42,7 +44,7 @@ export class LoginComponent implements OnInit {
 
   private redirectIfAuthenticated(): void {
     if (localStorage.getItem('access_token')) {
-      this.router.navigate(['/reservas']);
+      this.router.navigate(['/solicitudes']);
     }
   }
 
@@ -67,12 +69,30 @@ export class LoginComponent implements OnInit {
 
     const { username, password } = this.loginForm.value;
     try {
-      const response = await this.authService.logIn(username, password);
-      if (!response.ok) throw new Error('Credenciales incorrectas');
+      
+      this.authService.logIn(username, password)
+      .subscribe({
+        next: response => {
+          Swal.fire({
+            title: "Login correcto",
+            text: "Has iniciado sesión",
+            icon: 'success',
+            confirmButtonText: 'Aceptar'
+          })
+        },
+        error: err => Swal.fire({
+          title: 'Error!',
+          text: "Credenciales incorrectas",
+          icon: 'error',
+          confirmButtonText: 'Aceptar',
 
-      const { access_token } = await response.json();
-      localStorage.setItem('access_token', JSON.stringify(access_token));
-      Swal.fire('Éxito', 'Sesión iniciada con éxito. Redirigiendo...', 'success');
+        })
+      });
+      // if (!response.ok) throw new Error('Credenciales incorrectas');
+
+      // const { access_token } = await response.json();
+      // localStorage.setItem('access_token', JSON.stringify(access_token));
+      // Swal.fire('Éxito', 'Sesión iniciada con éxito. Redirigiendo...', 'success');
 
       setTimeout(() => this.router.navigate(['/reservas']), 2000);
     } catch (error) {

@@ -4,6 +4,11 @@ import { CrearUsuarioComponent } from './component/interfaz-admin/crear-usuario/
 import { ListUsuariosComponent } from './component/interfaz-admin/list-usuarios/list-usuarios.component';
 import { EditprofileComponent } from './component/interfaz-usuario/editprofile/editprofile.component';
 
+import { CalendarComponent } from './component/calendar/calendar.component';
+
+import { ListSolicitudesComponent } from './component/interfaz-usuario/list-solicitudes/list-solicitudes.component';
+
+
 
 export const appRoutes: Routes = [
 
@@ -13,11 +18,14 @@ export const appRoutes: Routes = [
   { path: 'login', component: LoginComponent }, // Ruta para el login
 
   // Admin
-  {path: 'createuser', component: CrearUsuarioComponent},
   {path: 'listusers', component: ListUsuariosComponent},
 
   //Usuario
+  {path: 'solicitudes', component: ListSolicitudesComponent},
   {path: 'profile', component: EditprofileComponent},
+
+  //Calendario
+  {path: 'calendario', component: CalendarComponent},
 
   { path: '**', redirectTo: '/login' }, // Redirige a login si la ruta no existe
 ];

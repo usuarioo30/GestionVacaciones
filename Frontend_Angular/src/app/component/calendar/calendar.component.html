@@ -1,0 +1,20 @@
+<div>
+    <button (click)="onPreviousMonth()">Mes Anterior</button>
+    <span>{{calendar.getMonthName(monthNumber)}} &nbsp; {{year}}</span>
+    <button (click)="onNextMonth()">Siguiente</button>
+</div>
+Número del mes{{monthNumber}}
+Año: {{year}}
+<br>
+
+<div>
+    <span *ngFor="let weekDay of weeksDaysName">
+        {{weekDay}}
+    </span>
+    <br>
+    <span *ngFor="let day of monthDays">
+        {{day.number}}
+    </span>
+</div>
+
+<input type="date" name="" id="">

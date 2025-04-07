@@ -1,6 +1,6 @@
 from datetime import datetime
+from sqlite3 import IntegrityError
 from operator import truediv
-
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
@@ -12,8 +12,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 class Config:
     SQLALCHEMY_DATABASE_URI = 'mysql://root:Usuario1234@localhost/gestionvacaciones'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    SECRET_KEY = 'miClave'  # Clave secreta para JWT
-    JWT_SECRET_KEY = 'mi_secreto_jwt'  # Clave secreta para JWT
+    SECRET_KEY = 'miClave'
 
 # Inicializa la base de datos y JWT
 db = SQLAlchemy()
@@ -39,6 +38,7 @@ class SolicitudDescanso(db.Model):
     fecha_fin = db.Column(db.DateTime, nullable=False)
     fecha_solicitada = db.Column(db.DateTime, default=datetime.utcnow)
     aprobado = db.Column(db.Boolean, nullable=True, default=None)
+    motivo = db.Column(db.String(255), nullable=True)
 
     def __repr__(self):
         return f'<SolicitudDescanso {self.id}>'
@@ -82,62 +82,268 @@ with app.app_context():
     db.create_all()
     crear_usuario_por_defecto()
 
-@app.route("/registerRestRequest", methods=["POST"])
-def registrarSolicitudes():
+
+# 
+## POST: /login
+# Response: 200 OK {"access_token": token}
+# Response: 401 Unauthorized {"message": "Credenciales inválidas"}
+@app.route('/login', methods=['POST'])
+def login():
+    """
+    Endpoint para iniciar sesión y obtener un token JWT
+    POST: /login
+    Request Body: {"username": username, "password": password}
+    Response: 200 OK {"access_token": token}
+    Response: 401 Unauthorized {"message": "Credenciales inválidas"}
+    """
     data = request.get_json()
+    # hashed_password = generate_password_hash(data['password'], method='sha256')
+    usuario = Usuario.query.filter_by(username=data['username']).first()
+
+    if not usuario or not check_password_hash(usuario.password, data['password']):
+        return jsonify({'message': 'Credenciales inválidas'}), 401
+
+    access_token = create_access_token(identity=str(usuario.id), additional_claims={"username": usuario.username, "nombreCompleto": usuario.nombreCompleto, "rol": usuario.rol})
+    return jsonify({'access_token': access_token}), 200
+
+@app.route("/api/google-login", methods=["POST"])
+def google_login():
+    """
+    Endpoint para iniciar sesión con google y obtener un token JWT
+    POST: /api/google-login
+    Request Body: {"email": email}
+    Response: 200 OK {"access_token": token}
+    Response: 400 Bad Request {"error": "Email is required"}
+    Response: 404 Not Found {"exists": False, "error": "User not found"}
+    """
+
+    data = request.json
+    if "email" not in data:
+        return jsonify({"error": "Email is required"}), 400
+
+    user = Usuario.query.filter_by(email=data["email"]).first()
+
+    if not user:
+        return jsonify({"exists": False, "error": "User not found"}), 404
+
+    return jsonify({
+        "exists": True,
+        "message": f"Welcome {user.username}!",
+        "role": user.rol
+    }), 200
+
+
+@app.route('/createUser', methods=['POST'])
+@jwt_required()  # El usuario debe estar autenticado con JWT
+def registrar_usuario():
+
+    """
+    Endpoint para crear un nuevo usuario
+    POST: /createUser
+    Request Body: {
+        "email": email,
+        "nombreCompleto": nombreCompleto,
+        "password": password,
+        "username": username,
+        "rol": rol
+    }
+    Response: 201 OK {'message': 'Usuario creado exitosamente'}
+    Response: 400 Bad Request {'message': 'Datos JSON no proporcionados o mal formateados'}
+    Response: 409 Conflict {'message': 'El usuario ya existe'}
+    Response: 500 Internal Server Error {'message': 'Error al crear el usuario', 'error': str(e)}
+    """
+
+    # Verificar que se está enviando JSON
+    data = request.get_json()
+    if not data:
+        return jsonify({'message': 'Datos JSON no proporcionados o mal formateados'}), 400
+
+    # Obtener la identidad del usuario autenticado
+    current_user = get_jwt_identity()
+    
+    # Hash de la contraseña
+    hashed_password = generate_password_hash(data['password'])
+
+    nuevo_usuario = Usuario(
+        email=data['email'],
+        nombreCompleto=data['nombreCompleto'],
+        password=data['password'],
+        username=data['username'],
+        rol=data['rol']
+    )
+
+    try:
+        db.session.add(nuevo_usuario)
+        db.session.commit()
+        return jsonify({'message': 'Usuario creado exitosamente'}), 201
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({'message': 'El usuario ya existe'}), 409
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'message': 'Error al crear el usuario', 'error': str(e)}), 500
+
+@app.route("/request/register", methods=["POST"])
+@jwt_required()
+def registrarSolicitudes():
+    """
+    Endpoint para crear un nuevo usuario
+    POST: /createUser
+    Request Body: {
+        "usuario_id": usuario_id,
+        "fecha_inicio": fecha_inicio,
+        "fecha_fin": fecha_fin,
+        "fecha_solicitada": fecha_solicitada
+    }
+    Response: 201 OK {"message": "Solicitud registrada correctamente"}, 201
+    Response: 400 Bad Request {"error": "Faltan datos"}
+    Response: 409 Conflict {'message': 'El usuario ya existe'}
+    Response: 500 Internal Server Error {"message": "Error al registrar su solicitud, porfavor intentelo denuevo."}
+    """
+
+    data = request.get_json()
+
     usuario_id = data.get("usuario_id")
     fecha_inicio = data.get("fecha_inicio")
     fecha_fin = data.get("fecha_fin")
     fecha_solicitada = data.get("fecha_solicitada")
-    aprobado = data.get("aprobado")
+    motivo = data.get("motivo")
 
-    if not all([usuario_id, fecha_inicio, fecha_fin, fecha_solicitada, aprobado]):
+    if not all([usuario_id, fecha_inicio, fecha_fin, fecha_solicitada, motivo]):
         return {"error": "Faltan datos"}, 400
 
     try:
-        fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d %H:%M:%S')
-        fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d %H:%M:%S')
-        fecha_solicitada = datetime.strptime(fecha_solicitada, '%Y-%m-%d %H:%M:%S')
+        fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d')
+        fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d')
+        
+        if not fecha_solicitada:
+            fecha_solicitada = datetime.now()
+        else:
+            fecha_solicitada = datetime.strptime(fecha_solicitada, '%Y-%m-%d')
+            
     except ValueError:
         return {"error": "Formato de fecha incorrecto"}, 400
+
     try:
         nueva_solicitud = SolicitudDescanso(
             usuario_id=usuario_id,
             fecha_inicio=fecha_inicio,
             fecha_fin=fecha_fin,
             fecha_solicitada=fecha_solicitada,
-            aprobado=aprobado
+            motivo=motivo,
         )
         db.session.add(nueva_solicitud)
         db.session.commit()
         return {"message": "Solicitud registrada correctamente"}, 201
-    except Exception:
-        return {"message": "Error al registrar su solicitud, porfavor intentelo denuevo."}, 500
+    except Exception as e:
+        print(f"Error al registrar la solicitud: {e}")
+        return {"message": "Error al registrar su solicitud, por favor intente de nuevo."}, 500
 
-@app.route("/editRestRequest", methods=["PUT"])
-def editarSolicitudes():
+
+  
+
+@app.route('/request/manage/<int:id>', methods=['PUT'])
+@jwt_required()
+def manageRequest(id):
+    """
+    Endpoint para crear un nuevo usuario
+    POST: /createUser
+    Request Body: {
+        "aprobado": aprobado,
+    }
+    Response: 200 OK {"message": message}
+    Response: 400 Bad Request {"error": "Faltan datos"}
+    Response: 404 Not Found {"message": "Solicitud no encontrada"}
+    Response: 500 Internal Server Error {"message": "Error al editar la solicitud", "error": str(e)}
+    """
+
+
+    try:
+        solicitud = SolicitudDescanso.query.get(id)
+        
+        data = request.get_json()
+        aprobado = data.get('aprobado')
+
+        if solicitud:
+            solicitud.aprobado = True if aprobado else False
+            db.session.commit()
+            message = "Solicitud "+"aprobada" if aprobado else "denegada"+" con éxito"
+            return jsonify({"message": message}), 200
+        else :
+            return jsonify({"message": "Solicitud no encontrada"}), 404
+    except Exception as e:
+        return jsonify({"message": "Error al editar la solicitud", "error": str(e)}), 500
+  
+
+@app.route('/request/delete/<int:id>', methods=['DELETE'])
+@jwt_required()
+def eliminar_solicitud(id):
+    solicitud = SolicitudDescanso.query.get(id)
+
+    
+    if solicitud:
+        try:
+            db.session.delete(solicitud)
+            db.session.commit()
+            return jsonify({'message': 'Solicitud de descanso eliminada correctamente.'}), 200
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': 'Hubo un error al eliminar la solicitud.'}), 500
+    else:
+        return jsonify({'error': 'Solicitud no encontrada.'}), 404
+
+
+@app.route("/request/edit/<int:id>", methods=["PUT"])
+@jwt_required()
+def editarSolicitudes(id):
+    # Obtener los datos completos del cuerpo de la solicitud
     data = request.get_json()
-    id = data.get("id")
-    fecha_inicio = data.get("fecha_inicio")
-    fecha_fin = data.get("fecha_fin")
-    aprobado = data.get("aprobado")
 
-    if not all([fecha_inicio, fecha_fin, aprobado]):
-        return {"error": "Faltan datos"}, 400
+    # Comprobar si la solicitud contiene los campos necesarios
+    if "fecha_inicio" not in data or "fecha_fin" not in data or "motivo" not in data:
+        return jsonify({"error": "Faltan datos"}), 400
 
     try:
         solicitud = SolicitudDescanso.query.filter_by(id=id).first()
+        
         if not solicitud:
-            return {"error": "Solicitud no encontrada"}, 404
+            return jsonify({"error": "Solicitud no encontrada"}), 404
 
-        solicitud.fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d %H:%M:%S')
-        solicitud.fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d %H:%M:%S')
-        solicitud.aprobado = aprobado
+        solicitud.fecha_inicio = datetime.strptime(data["fecha_inicio"], '%Y-%m-%d')
+        solicitud.fecha_fin = datetime.strptime(data["fecha_fin"], '%Y-%m-%d')
+        solicitud.motivo = data["motivo"]
 
         db.session.commit()
-        return {"message": "Solicitud editada correctamente"}, 200
-    except Exception:
-        return {"message": "Error al editar la solicitud"}, 500
+
+        return jsonify({"message": "Solicitud editada correctamente"}), 200
+    except Exception as e:
+        print(e)
+        return jsonify({"message": "Error al editar la solicitud"}), 500
+
+@app.route('/request/list', methods=['GET'])
+@jwt_required()
+def listar_solicitudes():
+    try:
+
+        solicitudes = SolicitudDescanso.query.all()
+        
+        solicitudes_data = []
+        for solicitud in solicitudes:
+            solicitud_info = {
+                "id": solicitud.id,
+                "usuario_id": solicitud.usuario_id,
+                "fecha_inicio": solicitud.fecha_inicio.strftime('%Y-%m-%d %H:%M:%S'),
+                "fecha_fin": solicitud.fecha_fin.strftime('%Y-%m-%d %H:%M:%S'),
+                "fecha_solicitada": solicitud.fecha_solicitada.strftime('%Y-%m-%d %H:%M:%S'),
+                "aprobado": solicitud.aprobado,
+                "motivo": solicitud.motivo
+            }
+            solicitudes_data.append(solicitud_info)
+
+        return jsonify(solicitudes_data), 200
+    
+    except Exception as e:
+        return jsonify({"error": "Ocurrió un error al obtener las solicitudes.", "message": str(e)}), 500
 
 # Ejecutar el servidor Flask
 if __name__ == '__main__':
