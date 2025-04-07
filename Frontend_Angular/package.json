@@ -23,6 +23,7 @@
     "angular-calendar": "^0.31.1",
     "bootstrap": "^5.3.3",
     "bootstrap-icons": "^1.11.3",
+    "date-fns": "^4.1.0",
     "gapi-script": "^1.2.0",
     "igniteui-angular": "^19.1.6",
     "jwt-decode": "^4.0.0",
