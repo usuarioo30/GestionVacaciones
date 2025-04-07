@@ -37,7 +37,7 @@ class SolicitudDescanso(db.Model):
     fecha_inicio = db.Column(db.DateTime, nullable=False)
     fecha_fin = db.Column(db.DateTime, nullable=False)
     fecha_solicitada = db.Column(db.DateTime, default=datetime.utcnow)
-    aprobado = db.Column(db.Boolean, nullable=True, default=None)
+    estado = db.Column(db.Boolean, nullable=True, default=None)
     motivo = db.Column(db.String(255), nullable=True)
 
     def __repr__(self):
@@ -128,8 +128,8 @@ def google_login():
 
     return jsonify({
         "exists": True,
-        "message": f"Welcome {usuario.username}!",
-        "role": usuario.rol
+        "message": f"Welcome {user.username}!",
+        "role": user.rol
     }), 200
 
 
@@ -342,6 +342,32 @@ def listar_solicitudes():
     
     except Exception as e:
         return jsonify({"error": "Ocurrió un error al obtener las solicitudes.", "message": str(e)}), 500
+
+# Obtener todas las solicitudes de un usuario
+@app.route('/request/<int:user>', methods=['GET'])
+@jwt_required()
+def getUserRequest(user):
+    try:
+        solicitudes = SolicitudDescanso.query.filter_by(user==SolicitudDescanso.usuario_id)
+
+        solicitudes_data = []
+        for solicitud in solicitudes:
+            solicitud_info = {
+                "id": solicitud.id,
+                "usuario_id": solicitud.usuario_id,
+                "fecha_inicio": solicitud.fecha_inicio.strftime('%Y-%m-%d %H:%M:%S'),
+                "fecha_fin": solicitud.fecha_fin.strftime('%Y-%m-%d %H:%M:%S'),
+                "fecha_solicitada": solicitud.fecha_solicitada.strftime('%Y-%m-%d %H:%M:%S'),
+                "aprobado": solicitud.aprobado,
+                "motivo": solicitud.motivo
+            }
+            solicitudes_data.append(solicitud_info)
+
+        return jsonify(solicitudes_data), 200
+
+    except Exception as e:
+        return jsonify({"error": "Ocurrió un error al obtener las solicitudes.", "message": str(e)}), 500
+
 
 # Ejecutar el servidor Flask
 if __name__ == '__main__':

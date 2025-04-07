@@ -48,10 +48,10 @@ export class ListSolicitudesComponent implements OnInit {
   }
 
   findAllSolicitudesDescanso() {
-    this.solicitudDescansoService.getAllSolicitudesDescanso().subscribe(
-      result => { this.solicitudesDescanso = result; },
-      error => { console.log(error) }
-    );
+    this.solicitudDescansoService.getAllSolicitudesDescanso().subscribe({
+      next: result => { this.solicitudesDescanso = result; },
+      error: error => { console.log(error) }
+    });
   }
 
 
