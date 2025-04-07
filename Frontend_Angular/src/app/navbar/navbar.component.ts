@@ -1,4 +1,3 @@
-import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {Component, OnInit, Renderer2} from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';

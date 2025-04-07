@@ -20,6 +20,8 @@ export class HistorialComponent implements OnInit{
   private userId: number = 0;
   requests: SolicitudDescanso[] = [];
   status: string = 'true';
+  order: string = '';
+
 
   ngOnInit() {
 
@@ -33,6 +35,8 @@ export class HistorialComponent implements OnInit{
         this.userId = Number.parseInt(decodedToken.sub);
         this.solicitudesService.getUsersSolicitudDescanso(this.userId, this.auth);
         this.solicitudesService.setFilter(this.status);
+        
+  
 
       }
     } else {
@@ -42,13 +46,16 @@ export class HistorialComponent implements OnInit{
     
   }
 
-  filterRequest(status?: string, date?: Date) {
+  orderRequest(field: string) {
+    this.solicitudesService.setOrder(field);
+  }
 
+  filterRequest(status?: string) {
     this.solicitudesService.setFilter(status);
 
   }
 
-
+  
 
 
 }
