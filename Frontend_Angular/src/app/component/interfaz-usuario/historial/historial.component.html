@@ -11,7 +11,7 @@
                 <div class="mx-2">
                     <label for="status" class="form-label">Ordenar</label>
                     <select id="status" class="form-control" [(ngModel)]="order" (change)="orderRequest(order)">
-                        <option value="#">Orden por defecto</option>
+                        <option value="#" >Orden por defecto</option>
                         <option value="id_asc">Código Ascendente</option>
                         <option value="id_desc">Código Descendente</option>
                         <option value="date_asc">Fecha incial Ascendente</option>
@@ -23,7 +23,7 @@
                 <div class="mx-2">
                     <label for="status" class="form-label">Estado de la solicitud</label>
                     <select id="status" class="form-control" [(ngModel)]="status" (change)="filterRequest(status)">
-                        <option value="true" selected>Sin filtrar</option>
+                        <option value="true">Sin filtrar</option>
                         <option value="1">Aprobado</option>
                         <option value="0">Rechazado</option>
                         <option value="null">Pendiente</option>
