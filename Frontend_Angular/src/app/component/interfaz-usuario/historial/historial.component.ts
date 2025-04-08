@@ -20,7 +20,7 @@ export class HistorialComponent implements OnInit{
   private userId: number = 0;
   requests: SolicitudDescanso[] = [];
   status: string = 'true';
-  order: string = '';
+  order: string = '#';
 
 
   ngOnInit() {

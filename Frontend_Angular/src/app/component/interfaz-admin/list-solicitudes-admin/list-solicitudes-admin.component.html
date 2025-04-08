@@ -37,13 +37,13 @@
                                 <td>{{ solicitud.motivo }}</td>
                                 <td>
                                     <span class="badge text-black" [ngClass]="{
-                                        'badge-warning': solicitud.aprobado === null,
-                                        'badge-success': solicitud.aprobado === true,
-                                        'badge-danger': solicitud.aprobado === false
+                                        'badge-warning': solicitud.estado === null,
+                                        'badge-success': solicitud.estado === true,
+                                        'badge-danger': solicitud.estado === false
                                     }">
                                         {{
-                                        solicitud.aprobado === null ? 'Pendiente' :
-                                        solicitud.aprobado === true ? 'Aprobada' : 'Rechazada'
+                                        solicitud.estado === null ? 'Pendiente' :
+                                        solicitud.estado === true ? 'Aprobada' : 'Rechazada'
                                         }}
                                     </span>
                                 </td>

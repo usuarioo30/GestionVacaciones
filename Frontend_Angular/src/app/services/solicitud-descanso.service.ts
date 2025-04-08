@@ -1,5 +1,5 @@
 import { computed, Injectable, signal } from '@angular/core';
-import { Observable, pipe, tap } from 'rxjs';
+import { Observable } from 'rxjs';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { SolicitudDescanso } from '../interfaces/solicitud-descanso';
 import { jwtDecode } from 'jwt-decode';
@@ -61,16 +61,16 @@ export class SolicitudDescansoService {
       
       case 'date_desc':
 
-      return array.sort((r1, r2) => {
-        
-        return Date.parse(r2.fecha_inicio) - Date.parse(r1.fecha_inicio);
-      });
+        return array.sort((r1, r2) => {
+          
+          return Date.parse(r2.fecha_inicio) - Date.parse(r1.fecha_inicio);
+        });
       
       default:
         return array.sort((r1, r2) => r1.id - r2.id);
         
     }
-
+  }
   getAllSolicitudesDescansoAdmin(): Observable<SolicitudDescanso[]> {
     const token = localStorage.getItem('access_token');
 
