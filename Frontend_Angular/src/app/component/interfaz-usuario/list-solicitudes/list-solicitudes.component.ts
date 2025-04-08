@@ -202,16 +202,6 @@ export class ListSolicitudesComponent implements OnInit {
     });
   }
 
-  editarSolicitud(solicitud: SolicitudDescanso) {
-    this.solicitudAEditar = solicitud;
-
-    this.formSolicitudDescanso.patchValue({
-      fecha_inicio: this.formatDate(solicitud.fecha_inicio),
-      fecha_fin: this.formatDate(solicitud.fecha_fin),
-      motivo: solicitud.motivo,
-    });
-  }
-
   formatDate(date: string | Date): string {
     const d = new Date(date);
     const year = d.getFullYear();
@@ -222,6 +212,16 @@ export class ListSolicitudesComponent implements OnInit {
     if (day < 10) day = '0' + day;
 
     return `${year}-${month}-${day}`;
+  }
+
+  editarSolicitud(solicitud: SolicitudDescanso) {
+    this.solicitudAEditar = solicitud;
+
+    this.formSolicitudDescanso.patchValue({
+      fecha_inicio: this.formatDate(solicitud.fecha_inicio),
+      fecha_fin: this.formatDate(solicitud.fecha_fin),
+      motivo: solicitud.motivo,
+    });
   }
 
   guardarEdicion() {
