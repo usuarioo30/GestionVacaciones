@@ -84,44 +84,43 @@
             </div>
             <div class="modal-body">
                 <!-- Form to create solicitud -->
-                <form [formGroup]="formSolicitudDescanso">
-                    <div class="mb-3">
-                        <label for="usuario" class="form-label">Usuario</label>
-                        <input type="text" class="form-control" id="usuario" formControlName="usuario" readonly>
-                        <input type="hidden" formControlName="usuario_id">
-                    </div>
-                    <div class="mb-3">
-                        <label for="fechaInicio" class="form-label">Fecha de Inicio</label>
-                        <input type="date" class="form-control" id="fechaInicio" formControlName="fecha_inicio" required
-                            [min]="fechaMinima">
-                        <div *ngIf="formSolicitudDescanso.get('fecha_inicio')?.invalid && formSolicitudDescanso.get('fecha_inicio')?.touched"
-                            class="text-danger">
-                            <small>Este campo es requerido.</small>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="fechaFin" class="form-label">Fecha de Fin</label>
-                        <input type="date" class="form-control" id="fechaFin" formControlName="fecha_fin" required
-                            [min]="formSolicitudDescanso.get('fecha_inicio')?.value">
-                        <div *ngIf="formSolicitudDescanso.get('fecha_fin')?.invalid && formSolicitudDescanso.get('fecha_fin')?.touched"
-                            class="text-danger">
-                            <small>Este campo es requerido.</small>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="fecha_solicitada" class="form-label">Fecha de Solicitud</label>
-                        <input type="date" class="form-control" id="fecha_solicitada" formControlName="fecha_solicitada"
-                            readonly required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="motivo" class="form-label">Motivo</label>
-                        <textarea class="form-control" id="motivo" formControlName="motivo" required></textarea>
-                        <div *ngIf="formSolicitudDescanso.get('motivo')?.invalid && formSolicitudDescanso.get('motivo')?.touched"
-                            class="text-danger">
-                            <small>Este campo es requerido.</small>
-                        </div>
-                    </div>
-                </form>
+              <form [formGroup]="formSolicitudDescanso">
+                <div class="mb-3">
+                  <label for="usuario" class="form-label">Usuario</label>
+                  <input type="text" class="form-control" formControlName="usuario" readonly>
+                  <input type="hidden" formControlName="usuario_id">
+                </div>
+                <div class="mb-3">
+                  <label for="fechaInicio" class="form-label">Fecha de Inicio</label>
+                  <input type="date" class="form-control" id="fechaInicio" formControlName="fecha_inicio" required
+                         [min]="fechaMinima">
+                  <div *ngIf="formSolicitudDescanso.get('fecha_inicio')?.invalid && formSolicitudDescanso.get('fecha_inicio')?.touched"
+                       class="text-danger">
+                    <small>Este campo es requerido.</small>
+                  </div>
+                </div>
+                <div class="mb-3">
+                  <label for="fechaFin" class="form-label">Fecha de Fin</label>
+                  <input type="date" class="form-control" id="fechaFin" formControlName="fecha_fin" required
+                         [min]="formSolicitudDescanso.get('fecha_inicio')?.value">
+                  <div *ngIf="formSolicitudDescanso.get('fecha_fin')?.invalid && formSolicitudDescanso.get('fecha_fin')?.touched"
+                       class="text-danger">
+                    <small>Este campo es requerido.</small>
+                  </div>
+                </div>
+                <div class="mb-3">
+                  <label for="fecha_solicitada" class="form-label">Fecha de Solicitud</label>
+                  <input type="date" class="form-control" id="fecha_solicitada" formControlName="fecha_solicitada" readonly required>
+                </div>
+                <div class="mb-3">
+                  <label for="motivo" class="form-label">Motivo</label>
+                  <textarea class="form-control" id="motivo" formControlName="motivo" required></textarea>
+                  <div *ngIf="formSolicitudDescanso.get('motivo')?.invalid && formSolicitudDescanso.get('motivo')?.touched"
+                       class="text-danger">
+                    <small>Este campo es requerido.</small>
+                  </div>
+                </div>
+              </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
