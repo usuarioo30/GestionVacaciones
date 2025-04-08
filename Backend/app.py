@@ -385,8 +385,6 @@ def eliminar_solicitud(id):
         return jsonify({'error': 'Hubo un error al eliminar la solicitud', 'message': str(e)}), 500
 
 
-
-
 @app.route('/request/list', methods=['GET'])
 @jwt_required()
 def listar_solicitudes():
@@ -454,6 +452,46 @@ def listar_solicitudes_admin():
     except Exception as e:
         return jsonify({"error": "Ocurrió un error al obtener las solicitudes.", "message": str(e)}), 500
     
+
+@app.route('/request/list-admin/all', methods=['GET'])
+@jwt_required()
+def listar_todas_solicitudes_admin():
+    try:
+        # Obtener la identidad del usuario autenticado
+        claims = get_jwt()
+
+        rol = claims.get('rol')
+
+        if rol != 'admin':
+            # Si no es admin, se retorna un error
+            return jsonify({"error": "No tienes permisos para acceder a esta lista de solicitudes."}), 403
+
+        # Si el rol es 'admin', se devuelven todas las solicitudes
+        resultados = db.session.query(SolicitudDescanso, Usuario.username, Usuario.nombreCompleto, Usuario.id)\
+        .join(Usuario, SolicitudDescanso.usuario_id == Usuario.id)\
+        .filter(SolicitudDescanso.estado.isnot(None))\
+        .all()
+
+        data = [
+            {
+                "id": solicitud.id,
+                "estado": solicitud.estado,
+                "motivo": solicitud.motivo,
+                "fecha_inicio": solicitud.fecha_inicio.strftime('%Y-%m-%d %H:%M:%S'),
+                "fecha_fin": solicitud.fecha_fin.strftime('%Y-%m-%d %H:%M:%S'),
+                "fecha_solicitada": solicitud.fecha_solicitada.strftime('%Y-%m-%d %H:%M:%S'),
+                "usuario_id": usuario_id,
+                "username": username,
+                "nombreCompleto": nombreCompleto
+                
+            }
+            for solicitud, username, nombreCompleto, usuario_id in resultados
+        ]
+        return jsonify(data), 200
+
+    except Exception as e:
+        return jsonify({"error": "Ocurrió un error al obtener las solicitudes.", "message": str(e)}), 500
+
 
 # Obtener todas las solicitudes de un usuario
 @app.route('/request/<int:user>', methods=['GET'])

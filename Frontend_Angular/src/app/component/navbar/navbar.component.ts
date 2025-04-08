@@ -18,7 +18,7 @@ export class NavbarComponent implements OnInit {
   mostrarCrearUsuario: boolean = true;
   username: string | null = null;
   rol: string | null = null;
-
+  isAdmin: boolean = false;
   constructor(
     private authService: AuthService,
     private renderer: Renderer2,
@@ -29,6 +29,8 @@ export class NavbarComponent implements OnInit {
   ngOnInit(): void {
     this.username = this.solicitudDescansoService.getUsernameToken();
     this.rol = this.authService.getUserRole();
+
+    this.isAdmin = this.rol === 'admin' ? true : false;
 
     this.mostrarNavbar = this.authService.isAuthenticated();
     this.applySavedTheme();

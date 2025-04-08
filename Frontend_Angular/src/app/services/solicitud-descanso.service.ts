@@ -1,10 +1,11 @@
-import { computed, Injectable, signal } from '@angular/core';
+import { computed, Injectable, Signal, signal } from '@angular/core';
 import { Observable } from 'rxjs';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { SolicitudDescanso } from '../interfaces/solicitud-descanso';
 import { jwtDecode } from 'jwt-decode';
 import { Usuario } from '../interfaces/usuario';
 import Swal from 'sweetalert2';
+import { AdminRequest } from '../interfaces/admin-request';
 
 @Injectable({
   providedIn: 'root'
@@ -13,7 +14,7 @@ export class SolicitudDescansoService {
 
   private urlApi = "http://localhost:5000/request";
 
-  private solicitudesSignal = signal<SolicitudDescanso[]>([]);
+  private solicitudesSignal = signal<SolicitudDescanso[] | AdminRequest[]>([]);
 
   private filterSignal = signal<any>('');
 
@@ -29,22 +30,25 @@ export class SolicitudDescansoService {
     this.orderSignal.set(field);
   }
 
-  filteredData = computed(() => {
-    const statusMap: Record<string, any> = {
-      "1": true,
-      "0": false
-    }
+  filteredData(isAdmin?: boolean): Signal<AdminRequest[]>
+  filteredData(): Signal<SolicitudDescanso[]> {
+    return computed(() => {
+      const statusMap: Record<string, any> = {
+        "1": true,
+        "0": false
+      }
+  
+  
+      if (this.filterSignal() !== 'true') {
+  
+        const filteredStatus = statusMap[this.filterSignal() as keyof typeof statusMap];
+        return this.orderData(this.solicitudesSignal().filter(request => request.estado == filteredStatus));
+      }
+      return this.orderData(this.solicitudesSignal());
+    })
+  }
 
-
-    if (this.filterSignal() !== 'true') {
-
-      const filteredStatus = statusMap[this.filterSignal() as keyof typeof statusMap];
-      return this.orderData(this.solicitudesSignal().filter(request => request.estado == filteredStatus));
-    }
-    return this.orderData(this.solicitudesSignal());
-  })
-
-  orderData = (array: SolicitudDescanso[]) => {
+  orderData = (array: SolicitudDescanso[] | AdminRequest[]) => {
     switch (this.orderSignal()) {
       case 'id_asc':
         return array.sort((r1, r2) => r1.id - r2.id);
@@ -102,6 +106,15 @@ export class SolicitudDescansoService {
   getUsersSolicitudDescanso(id: number, token: string): any {
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`)
     return this.http.get<SolicitudDescanso[]>(`${this.urlApi}/${id}`, { headers })
+      .subscribe({
+        next: response => this.solicitudesSignal.set(response),
+        error: err => console.log(err)
+      })
+  }
+
+  getAdminSolicitudDescanso(token: string): any {
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`)
+    return this.http.get<AdminRequest[]>(`${this.urlApi}/list-admin/all`, { headers })
       .subscribe({
         next: response => this.solicitudesSignal.set(response),
         error: err => console.log(err)

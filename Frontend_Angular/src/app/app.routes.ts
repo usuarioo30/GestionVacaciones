@@ -9,6 +9,7 @@ import { CalendarComponent } from './component/calendar/calendar.component';
 import { ListSolicitudesComponent } from './component/interfaz-usuario/list-solicitudes/list-solicitudes.component';
 import { HistorialComponent } from './component/interfaz-usuario/historial/historial.component';
 import { ListSolicitudesAdminComponent } from './component/interfaz-admin/list-solicitudes-admin/list-solicitudes-admin.component';
+import { HistorialAdminComponent } from './component/interfaz-admin/historial-admin/historial-admin.component';
 
 
 export const appRoutes: Routes = [
@@ -22,6 +23,7 @@ export const appRoutes: Routes = [
   { path: 'listusers', component: ListUsuariosComponent },
   { path: 'crearUsuario', component: CrearUsuarioComponent },
   { path: 'solicitudes-admin', component: ListSolicitudesAdminComponent },
+  { path: 'historial-admin', component: HistorialAdminComponent},
 
   //Usuario
   { path: 'solicitudes', component: ListSolicitudesComponent },

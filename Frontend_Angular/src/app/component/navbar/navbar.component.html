@@ -47,7 +47,7 @@
 
               <!-- Historial -->
               <li class="nav-item mt-2 mb-2 me-3 ms-3 ps-3 pe-3" [routerLinkActive]="'active-link'">
-                <a class="nav-link text-dark" [routerLink]="['/historial']" routerLinkActive="router-link-active"
+                <a class="nav-link text-dark" [routerLink]="isAdmin ? ['/historial-admin'] : ['/historial']" routerLinkActive="router-link-active"
                   aria-label="Historial">
                   <i class="bi bi-clock fs-4"></i>&nbsp; Historial
                 </a>
