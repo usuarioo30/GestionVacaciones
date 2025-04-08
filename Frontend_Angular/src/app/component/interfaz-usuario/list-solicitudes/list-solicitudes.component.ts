@@ -93,14 +93,6 @@ export class ListSolicitudesComponent implements OnInit {
   }
 
   abrirModalCrear() {
-    this.formSolicitudDescanso.reset({
-      fecha_solicitada: this.getFechaActual(),
-      usuario: this.username,
-      usuario_id: this.usuario_id,
-      fecha_inicio: '',
-      fecha_fin: '',
-      motivo: ''
-    });
     this.mostrarModal = true;
   }
 
@@ -143,6 +135,12 @@ export class ListSolicitudesComponent implements OnInit {
               fecha_inicio: '',
               fecha_fin: '',
               motivo: ''
+            });
+
+            this.formSolicitudDescanso.reset({
+              fecha_solicitada: this.getFechaActual(),
+              usuario: this.username,
+              usuario_id: this.usuario_id,
             });
 
             // Refrescar la lista de solicitudes

@@ -73,10 +73,16 @@ export class ListSolicitudesAdminComponent implements OnInit {
     }
   }
 
-  approveButton(request: SolicitudDescanso) {
-    request.estado = true;
-    console.log(request);
-    this.solicitudService.approveRequest(request.id, request);
+  handleRequest(request: SolicitudDescanso, isApprove: boolean) {
+    // Cambiar el estado de la solicitud según el valor de isApprove
+    request.estado = isApprove;
+
+    // Llamar al servicio para aprobar o rechazar la solicitud
+    console.log('Manejando solicitud:', request);
+
+    this.solicitudService.approveOrRejectRequest(request.id, request, isApprove);
+
+    // Volver a obtener todas las solicitudes
     this.solicitudService.getAllSolicitudesDescansoAdmin().subscribe({
       next: (solicitudes) => {
         this.solicitudes = solicitudes;

@@ -195,7 +195,7 @@ export class SolicitudDescansoService {
       try {
         // Decodificar el token con jwt-decode
         const decodedToken: any = jwtDecode(token);
-        return decodedToken.sub ? Number(decodedToken.sub) : null;  // Retorna el ID del usuario desde 'sub'
+        return decodedToken.sub ? Number(decodedToken.sub) : null;
       } catch (error) {
         console.error('Error decodificando el token', error);
         return null;
@@ -204,8 +204,7 @@ export class SolicitudDescansoService {
     return null;
   }
 
-  approveRequest(id: number, request: SolicitudDescanso) {
-
+  approveOrRejectRequest(id: number, request: SolicitudDescanso, isApprove: boolean) {
     const token = localStorage.getItem('access_token');
 
     if (!token) {
@@ -214,21 +213,28 @@ export class SolicitudDescansoService {
 
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
 
-    this.http.put(`${this.urlApi}/manage/${id}`, request,  {headers})
-    .subscribe({
-      next: () => Swal.fire({
-        icon: 'success',
-        title: 'Solicitud Aprobada',
-        text: 'Tu solicitud ha sido aprobada exitosamente',
-      }),
-      error: (err) => {Swal.fire({
-        icon: 'error',
-        title: 'Error al aceptar tu solicitud',
-        text: `${err.message}`,
+    // Cambiar el estado de la solicitud dependiendo de si es aprobar o rechazar
+    request.estado = isApprove;
+
+    // Realizar la petición PUT para aprobar o rechazar la solicitud
+    this.http.put(`${this.urlApi}/manage/${id}`, request, { headers })
+      .subscribe({
+        next: () => {
+          Swal.fire({
+            icon: 'success',
+            title: isApprove ? 'Solicitud Aprobada' : 'Solicitud Rechazada',
+            text: isApprove ? 'Tu solicitud ha sido aprobada exitosamente' : 'Tu solicitud ha sido rechazada exitosamente',
+          });
+        },
+        error: (err) => {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error al manejar la solicitud',
+            text: `${err.message}`,
+          });
+          console.log(err);
+        }
       });
-      console.log(err);
-    }
-    })
   }
 
 }
