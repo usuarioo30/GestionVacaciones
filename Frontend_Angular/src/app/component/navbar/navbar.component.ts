@@ -23,14 +23,10 @@ export class NavbarComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
-    this.checkAuthentication();
+    this.mostrarNavbar = this.authService.isAuthenticated();
     this.applySavedTheme();
     this.mostrarMisSolicitudes = this.authService.getUserRole() === 'user';
     this.mostrarCrearUsuario = this.authService.getUserRole() === 'admin';
-  }
-
-  checkAuthentication(): void {
-    this.mostrarNavbar = this.authService.isAuthenticated();
   }
 
   private applySavedTheme(): void {

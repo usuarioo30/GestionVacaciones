@@ -20,10 +20,10 @@ export class LoginComponent implements OnInit {
   private authService: AuthService = inject(AuthService);
 
   constructor(
-      private fb: FormBuilder,
-      
-      private router: Router,
-      private renderer: Renderer2
+    private fb: FormBuilder,
+
+    private router: Router,
+    private renderer: Renderer2
   ) {
     this.initLoginForm();
   }
@@ -69,26 +69,27 @@ export class LoginComponent implements OnInit {
 
     const { username, password } = this.loginForm.value;
     try {
-      
       this.authService.logIn(username, password)
-      .subscribe({
-        next: response => {
-          Swal.fire({
-            title: "Login correcto",
-            text: "Has iniciado sesión",
-            icon: 'success',
-            confirmButtonText: 'Aceptar'
-          });
+        .subscribe({
+          next: response => {
+            Swal.fire({
+              title: "Login correcto",
+              text: "Has iniciado sesión",
+              icon: 'success',
+              confirmButtonText: 'Aceptar'
+            }).then(() => {
+              // Recargar la página después de mostrar el mensaje
+              window.location.reload();
+            });
 
-        },
-        error: err => Swal.fire({
-          title: 'Error!',
-          text: "Credenciales incorrectas",
-          icon: 'error',
-          confirmButtonText: 'Aceptar',
-
-        })
-      });
+          },
+          error: err => Swal.fire({
+            title: 'Error!',
+            text: "Credenciales incorrectas",
+            icon: 'error',
+            confirmButtonText: 'Aceptar',
+          })
+        });
 
       setTimeout(() => this.redirectIfAuthenticated(), 2000);
     } catch (error) {
@@ -99,14 +100,17 @@ export class LoginComponent implements OnInit {
 
   handleCredentialResponse(response: any): void {
     this.authService.loginWithGoogle(response.credential)
-        .then(() => {
-          Swal.fire('Éxito', 'Inicio de sesión con Google exitoso', 'success');
+      .then(() => {
+        Swal.fire('Éxito', 'Inicio de sesión con Google exitoso', 'success').then(() => {
+          // Guardar el token y recargar la página
           localStorage.setItem('access_token', JSON.stringify(response.credential));
-          this.router.navigate(['/reservas']);
-        })
-        .catch(err => {
-          console.error('Error al iniciar sesión con Google:', err);
+          window.location.reload(); // Recargar la página
         });
+        this.router.navigate(['/reservas']);
+      })
+      .catch(err => {
+        console.error('Error al iniciar sesión con Google:', err);
+      });
   }
 
   private initializeGoogleAuth(): void {
@@ -121,7 +125,7 @@ export class LoginComponent implements OnInit {
     this.isDarkTheme = !this.isDarkTheme;
     localStorage.setItem('theme', this.isDarkTheme ? 'dark' : 'light');
     this.isDarkTheme
-        ? this.renderer.addClass(document.body, 'dark-theme')
-        : this.renderer.removeClass(document.body, 'dark-theme');
+      ? this.renderer.addClass(document.body, 'dark-theme')
+      : this.renderer.removeClass(document.body, 'dark-theme');
   }
 }
