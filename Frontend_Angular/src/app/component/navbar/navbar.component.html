@@ -3,14 +3,15 @@
     <div class="col">
       <!-- Navbar -->
       <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-lg p-3">
-        <div class="container-fluid">
+        <div class="container-fluid mb-5">
           <!-- Logo de la marca -->
-          <a class="navbar-brand text-dark">
-            <b>Apeiroo Vacations</b>
+          <a class="navbar-brand text-dark" [routerLink]="['/calendario']">
+            <b>Apeiroo Vacations</b><br>
+            <small class="mt-1">{{username}} ({{rol}})</small>
           </a>
 
           <!-- Botón de colapso para dispositivos móviles -->
-          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+          <button class="navbar-toggler mb-2" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
             aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
           </button>
@@ -19,7 +20,7 @@
           <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav mx-auto">
               <!-- Calendario -->
-              <li class="nav-item me-3" [routerLinkActive]="'active-link'">
+              <li class="nav-item mt-2 mb-2 me-3 ms-3 ps-3 pe-3" [routerLinkActive]="'active-link'">
                 <a class="nav-link text-dark" [routerLink]="['/calendario']" routerLinkActive="router-link-active"
                   aria-label="Calendario">
                   <i class="bi bi-calendar-month fs-4"></i>&nbsp; Calendario
@@ -27,8 +28,8 @@
               </li>
 
               <!-- Mis solicitudes -->
-              <li class="nav-item me-3" *ngIf="mostrarMisSolicitudes" [routerLinkActive]="'active-link'"
-                [routerLinkActiveOptions]="{ exact: true }">
+              <li class="nav-item mt-2 mb-2 me-3 ms-3 ps-3 pe-3" *ngIf="mostrarMisSolicitudes"
+                [routerLinkActive]="'active-link'" [routerLinkActiveOptions]="{ exact: true }">
                 <a class="nav-link text-dark" [routerLink]="['/solicitudes']" routerLinkActive="router-link-active"
                   aria-label="Mis Solicitudes">
                   <i class="bi bi-clipboard-check fs-4"></i>&nbsp; Mis Solicitudes
@@ -36,7 +37,8 @@
               </li>
 
               <!-- Solicitudes -->
-              <li class="nav-item me-3" *ngIf="!mostrarMisSolicitudes" [routerLinkActive]="'active-link'">
+              <li class="nav-item mt-2 mb-2 me-3 ms-3 ps-3 pe-3" *ngIf="!mostrarMisSolicitudes"
+                [routerLinkActive]="'active-link'">
                 <a class="nav-link text-dark" [routerLink]="['/solicitudes-admin']"
                   routerLinkActive="router-link-active" aria-label="Solicitudes">
                   <i class="bi bi-clipboard-check fs-4"></i>&nbsp; Solicitudes
@@ -44,7 +46,7 @@
               </li>
 
               <!-- Historial -->
-              <li class="nav-item" [routerLinkActive]="'active-link'">
+              <li class="nav-item mt-2 mb-2 me-3 ms-3 ps-3 pe-3" [routerLinkActive]="'active-link'">
                 <a class="nav-link text-dark" [routerLink]="['/historial']" routerLinkActive="router-link-active"
                   aria-label="Historial">
                   <i class="bi bi-clock fs-4"></i>&nbsp; Historial
@@ -52,15 +54,19 @@
               </li>
 
               <!-- Crear usuario -->
-              <li class="nav-item me-3" *ngIf="mostrarCrearUsuario" [routerLinkActive]="'active-link'">
+
+              <li class="nav-item mt-2 mb-2 me-3 ms-3 ps-3 pe-3" *ngIf="mostrarCrearUsuario"
+                [routerLinkActive]="'active-link'">
+
                 <a class="nav-link text-dark" [routerLink]="['/crearUsuario']" routerLinkActive="router-link-active"
                   aria-label="Crear Usuario">
                   <i class="bi bi-person-plus fs-4"></i>&nbsp; Crear usuario
                 </a>
               </li>
-              <li class=" ms-5">
-                <!-- Topbar: Configuración de tema -->
-                <div class="dropdown  p-3 configuracion">
+
+              <!-- Dropdown de configuración -->
+              <li class="ms-3">
+                <div class="dropdown p-3 configuracion">
                   <a href="#" class="text-black text-decoration-none dropdown-toggle" id="dropdownTheme"
                     data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="bi bi-gear fs-5"></i>

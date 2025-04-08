@@ -3,6 +3,7 @@ import { Component, OnInit, Renderer2 } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { Router, RouterLink, RouterModule } from '@angular/router';
+import { SolicitudDescansoService } from '../../services/solicitud-descanso.service';
 
 @Component({
   selector: 'app-navbar',
@@ -15,14 +16,20 @@ export class NavbarComponent implements OnInit {
   isDarkTheme = false;
   mostrarMisSolicitudes: boolean = false;
   mostrarCrearUsuario: boolean = true;
+  username: string | null = null;
+  rol: string | null = null;
 
   constructor(
     private authService: AuthService,
     private renderer: Renderer2,
-    private router: Router
+    private router: Router,
+    private solicitudDescansoService: SolicitudDescansoService
   ) { }
 
   ngOnInit(): void {
+    this.username = this.solicitudDescansoService.getUsernameToken();
+    this.rol = this.authService.getUserRole();
+
     this.mostrarNavbar = this.authService.isAuthenticated();
     this.applySavedTheme();
     this.mostrarMisSolicitudes = this.authService.getUserRole() === 'user';
