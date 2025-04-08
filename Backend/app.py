@@ -200,6 +200,85 @@ def getUserById(user_id):
     except Exception as e:
         return jsonify({"error": "Ocurrió un error al obtener la información del usuario", "message": str(e)}), 500
 
+@app.route('/user/list', methods=['GET'])
+@jwt_required()
+def getAllUsers():
+    try:
+        # Obtener el rol del usuario actual desde los claims del JWT
+        claims = get_jwt()
+        rol = claims.get("rol")  # 'rol' es el nombre del claim en el JWT que contiene el rol
+
+        # Verificar si el usuario tiene el rol 'admin'
+        if rol != 'admin':
+            return jsonify({"message": "Acceso no autorizado. Solo los administradores pueden ver este recurso."}), 403
+
+        # Obtener todos los usuarios de la base de datos
+        users = Usuario.query.all()
+
+        # Convertir los usuarios a un formato JSON
+        users_data = []
+        for user in users:
+            users_data.append({
+                'id': user.id,
+                'nombreCompleto': user.nombreCompleto,
+                'username': user.username,
+                'email': user.email,
+                'rol': user.rol,
+                # Añadir otros campos según lo necesites
+            })
+
+        # Devolver los usuarios
+        return jsonify({"users": users_data}), 200
+
+    except Exception as e:
+        # Capturar cualquier error y devolver un mensaje de error
+        return jsonify({"error": "Ha ocurrido un error al obtener los usuarios", "message": str(e)}), 500
+
+@app.route('/user/delete/<int:id>', methods=['DELETE'])
+@jwt_required()
+def eliminar_usuario(id):
+    """
+    Endpoint para eliminar un usuario.
+    DELETE: /user/delete/{id}
+    Response: 200 OK {"message": "Usuario eliminado correctamente"}
+    Response: 404 Not Found {"error": "Usuario no encontrado"}
+    Response: 403 Forbidden {"error": "No tienes permisos para eliminar este usuario"}
+    Response: 500 Internal Server Error {"error": "Hubo un error al eliminar el usuario"}
+    """
+    try:
+        # Obtener el usuario autenticado (ID del usuario desde el JWT)
+        usuario_id = get_jwt_identity()
+
+        # Verificar si el usuario autenticado tiene el rol de 'admin'
+        claims = get_jwt()
+        rol = claims.get('rol')
+
+        if rol != 'admin':
+            return jsonify({'error': 'No tienes permisos para eliminar este usuario'}), 403
+
+        # No se puede eliminar el propio usuario
+        if id == usuario_id:
+            return jsonify({'error': 'No puedes eliminar tu propio usuario'}), 403
+
+        # Buscar el usuario por ID
+        usuario = Usuario.query.get(id)
+
+        # Verificar si el usuario existe
+        if not usuario:
+            return jsonify({'error': 'Usuario no encontrado'}), 404
+
+        # Eliminar el usuario de la base de datos
+        db.session.delete(usuario)
+        db.session.commit()
+
+        return jsonify({'message': 'Usuario eliminado correctamente'}), 200
+
+    except Exception as e:
+        # En caso de error, revertir cualquier cambio en la base de datos
+        db.session.rollback()
+        return jsonify({'error': 'Hubo un error al eliminar el usuario', 'message': str(e)}), 500
+
+
 
 @app.route('/request/edit/<int:id>', methods=['PUT'])
 @jwt_required()

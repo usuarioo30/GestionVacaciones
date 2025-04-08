@@ -22,6 +22,7 @@ export const appRoutes: Routes = [
   { path: 'listusers', component: ListUsuariosComponent },
   { path: 'crearUsuario', component: CrearUsuarioComponent },
   { path: 'solicitudes-admin', component: ListSolicitudesAdminComponent },
+  { path: 'usuarios', component: ListUsuariosComponent },
 
   //Usuario
   { path: 'solicitudes', component: ListSolicitudesComponent },
@@ -31,7 +32,7 @@ export const appRoutes: Routes = [
   { path: 'calendario', component: CalendarComponent },
 
   //Historial
-  {path: 'historial', component: HistorialComponent},
+  { path: 'historial', component: HistorialComponent },
 
   { path: '**', redirectTo: '/login' }, // Redirige a login si la ruta no existe
 ];

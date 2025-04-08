@@ -84,7 +84,7 @@ export class CrearUsuarioComponent implements OnInit {
       next: (response) => {
         Swal.fire('Usuario creado con éxito');
         this.newuser.reset();
-        this.router.navigate(['/solicitudes']);
+        this.router.navigate(['/usuarios']);
       },
       error: (error: any) => {
         const backendError = error?.error?.message || error?.message;

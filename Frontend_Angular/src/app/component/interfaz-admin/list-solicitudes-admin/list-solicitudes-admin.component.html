@@ -10,11 +10,12 @@
                 <h3 class="mb-0">Lista de Solicitudes</h3>
             </div>
 
+
             <!-- Card Body -->
             <div class="card-body">
                 <!-- Mensaje cuando no hay solicitudes -->
-                <div *ngIf="solicitudes.length === 0" class="alert alert-info text-center">
-                    No hay solicitudes disponibles.
+                <div *ngIf="solicitudes.length === 0" class="alert alert-info text-center w-50 mx-auto">
+                    <b>No hay solicitudes disponibles.</b>
                 </div>
 
                 <!-- Tabla cuando hay solicitudes -->

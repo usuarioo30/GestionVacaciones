@@ -4,7 +4,7 @@ import { SolicitudDescansoService } from '../../../services/solicitud-descanso.s
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { Usuario } from '../../../interfaces/usuario';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
 import Swal from 'sweetalert2';
 
@@ -74,15 +74,12 @@ export class ListSolicitudesAdminComponent implements OnInit {
   }
 
   handleRequest(request: SolicitudDescanso, isApprove: boolean) {
-    // Cambiar el estado de la solicitud según el valor de isApprove
     request.estado = isApprove;
 
-    // Llamar al servicio para aprobar o rechazar la solicitud
     console.log('Manejando solicitud:', request);
 
     this.solicitudService.approveOrRejectRequest(request.id, request, isApprove);
 
-    // Volver a obtener todas las solicitudes
     this.solicitudService.getAllSolicitudesDescansoAdmin().subscribe({
       next: (solicitudes) => {
         this.solicitudes = solicitudes;
@@ -98,6 +95,8 @@ export class ListSolicitudesAdminComponent implements OnInit {
             }
           });
         });
+
+        window.location.reload();
       },
       error: (err) => {
         console.error('Error al obtener las solicitudes', err);
