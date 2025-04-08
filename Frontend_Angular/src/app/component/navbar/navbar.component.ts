@@ -18,7 +18,7 @@ export class NavbarComponent implements OnInit {
   mostrarCrearUsuario: boolean = true;
   username: string | null = null;
   rol: string | null = null;
-
+  isAdmin: boolean = false;
   constructor(
     private authService: AuthService,
     private renderer: Renderer2,
@@ -36,8 +36,10 @@ export class NavbarComponent implements OnInit {
     this.mostrarNavbar = this.authService.isAuthenticated();
     this.username = this.solicitudDescansoService.getUsernameToken();
     this.rol = this.authService.getUserRole();
+    this.isAdmin = this.rol === 'admin' ? true : false;
 
-    // Mostrar elementos del navbar basados en el rol del usuario
+    this.mostrarNavbar = this.authService.isAuthenticated();
+    this.applySavedTheme();
     this.mostrarMisSolicitudes = this.authService.getUserRole() === 'user';
     this.mostrarCrearUsuario = this.authService.getUserRole() === 'admin';
   }

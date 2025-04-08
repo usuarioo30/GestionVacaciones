@@ -40,14 +40,14 @@
               <li class="nav-item mt-2 mb-2 me-3 ms-3 ps-3 pe-3" *ngIf="!mostrarMisSolicitudes"
                 [routerLinkActive]="'active-link'">
                 <a class="nav-link text-dark" [routerLink]="['/solicitudes-admin']"
-                  routerLinkActive="router-link-active" href="#" aria-label="Solicitudes">
+                  routerLinkActive="router-link-active" aria-label="Solicitudes">
                   <i class="bi bi-clipboard-check fs-4"></i>&nbsp; Solicitudes
                 </a>
               </li>
 
               <!-- Historial -->
               <li class="nav-item mt-2 mb-2 me-3 ms-3 ps-3 pe-3" [routerLinkActive]="'active-link'">
-                <a class="nav-link text-dark" [routerLink]="['/historial']" routerLinkActive="router-link-active"
+                <a class="nav-link text-dark" [routerLink]="isAdmin ? ['/historial-admin'] : ['/historial']" routerLinkActive="router-link-active"
                   aria-label="Historial">
                   <i class="bi bi-clock fs-4"></i>&nbsp; Historial
                 </a>
@@ -71,7 +71,7 @@
                   </a>
                   <ul class="dropdown-menu dropdown-menu-dark shadow">
                     <li>
-                      <a class="dropdown-item" href="#" (click)="toggleTheme()">
+                      <a class="dropdown-item" (click)="toggleTheme()">
                         {{ isDarkTheme ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro' }}
                       </a>
                     </li>
