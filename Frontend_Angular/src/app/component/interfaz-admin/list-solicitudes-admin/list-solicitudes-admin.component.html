@@ -3,17 +3,23 @@
 </div>
 
 <div *ngIf="isAdmin && !isLoading">
-    <h2 class="text-center my-4">Lista de Solicitudes</h2>
+    <div class="container mt-5">
+        <div class="card shadow-lg p-3 mb-5 bg-white rounded">
+            <!-- Card Header -->
+            <div class="card-header text-center bg-primary text-white">
+                <h3 class="mb-0">Lista de Solicitudes</h3>
+            </div>
 
-    <div *ngIf="solicitudes.length === 0" class="alert alert-info text-center">
-        No hay solicitudes disponibles.
-    </div>
+            <!-- Card Body -->
+            <div class="card-body">
+                <!-- Mensaje cuando no hay solicitudes -->
+                <div *ngIf="solicitudes.length === 0" class="alert alert-info text-center">
+                    No hay solicitudes disponibles.
+                </div>
 
-    <div class="card shadow-lg p-3 mb-5 bg-white rounded" *ngIf="solicitudes.length > 0">
-        <div class="card-body">
-            <div *ngIf="solicitudes.length > 0">
-                <div class="table-responsive">
-                    <table class="table table-bordered table-striped table-hover">
+                <!-- Tabla cuando hay solicitudes -->
+                <div *ngIf="solicitudes.length > 0" class="table-responsive">
+                    <table class="table table-striped table-bordered table-hover">
                         <thead class="thead-dark">
                             <tr>
                                 <th style="white-space: nowrap;">Nombre Completo</th>
@@ -21,8 +27,8 @@
                                 <th style="white-space: nowrap;">Fecha Fin</th>
                                 <th style="white-space: nowrap;">Fecha que se solicitó</th>
                                 <th style="white-space: nowrap;">Motivo</th>
-                                <th>Aprobado</th>
-                                <th>Acciones</th>
+                                <th style="white-space: nowrap;">Estado</th>
+                                <th style="white-space: nowrap;">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -62,4 +68,8 @@
             </div>
         </div>
     </div>
+</div>
+
+<div *ngIf="!isAdmin && !isLoading" class="alert alert-warning text-center mt-5">
+    <strong>No puedes ver esta lista de solicitudes.</strong>
 </div>

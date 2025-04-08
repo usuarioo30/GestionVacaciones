@@ -481,6 +481,8 @@ def getUserRequest(user):
         return jsonify({"error": "Ocurrió un error al obtener las solicitudes.", "message": str(e)}), 500
 
 
+
+
 # Ejecutar el servidor Flask
 if __name__ == '__main__':
     with app.app_context():
