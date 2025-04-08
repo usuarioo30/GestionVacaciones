@@ -314,10 +314,13 @@ def manageRequest(id):
     """
     try:
         # Obtener el usuario autenticado
-        usuario_actual = get_jwt_identity()
+        usuarioId = get_jwt_identity()
+        
+        usuario_actual = Usuario.query.filter_by(id=usuarioId).first()
+
 
         # Verificar si el usuario es admin
-        if usuario_actual['rol'] != 'admin':
+        if usuario_actual.rol != 'admin':
             return jsonify({"error": "No tienes permisos para gestionar solicitudes"}), 403
 
         solicitud = SolicitudDescanso.query.get(id)
@@ -325,16 +328,16 @@ def manageRequest(id):
         if solicitud:
             # Obtener el dato de aprobación del cuerpo de la solicitud
             data = request.get_json()
-            aprobado = data.get('aprobado')
+            estado = data.get('estado')
 
-            if aprobado is None:
+            if estado is None:
                 return jsonify({"error": "Falta el parámetro 'aprobado'"}), 400
 
             # Actualizar la solicitud con la aprobación
-            solicitud.aprobado = aprobado
+            solicitud.estado = estado
             db.session.commit()
             
-            message = "Solicitud " + ("aprobada" if aprobado else "rechazada") + " con éxito"
+            message = "Solicitud " + ("aprobada" if estado else "rechazada") + " con éxito"
             return jsonify({"message": message}), 200
         else:
             return jsonify({"message": "Solicitud no encontrada"}), 404
@@ -430,7 +433,7 @@ def listar_solicitudes_admin():
             return jsonify({"error": "No tienes permisos para acceder a esta lista de solicitudes."}), 403
 
         # Si el rol es 'admin', se devuelven todas las solicitudes
-        solicitudes = SolicitudDescanso.query.all()
+        solicitudes = SolicitudDescanso.query.filter(SolicitudDescanso.estado==None).all() # No me reconoce null, usé None
 
         # Formatear las solicitudes para la respuesta JSON
         solicitudes_data = []
