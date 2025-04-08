@@ -1,8 +1,8 @@
 import { CommonModule } from '@angular/common';
-import {Component, OnInit, Renderer2} from '@angular/core';
+import { Component, OnInit, Renderer2 } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
-import { AuthService } from '../services/auth.service';
-import { RouterLink, RouterModule } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
+import { Router, RouterLink, RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-navbar',
@@ -16,15 +16,21 @@ export class NavbarComponent implements OnInit {
   mostrarMisSolicitudes: boolean = false;
   mostrarCrearUsuario: boolean = true;
 
-  constructor(private authService: AuthService,
-              private renderer: Renderer2) { }
+  constructor(
+    private authService: AuthService,
+    private renderer: Renderer2,
+    private router: Router
+  ) { }
 
   ngOnInit(): void {
-    this.mostrarNavbar = this.authService.isAuthenticated();
+    this.checkAuthentication();
     this.applySavedTheme();
-    this.mostrarNavbar = this.authService.isAuthenticated();
     this.mostrarMisSolicitudes = this.authService.getUserRole() === 'user';
     this.mostrarCrearUsuario = this.authService.getUserRole() === 'admin';
+  }
+
+  checkAuthentication(): void {
+    this.mostrarNavbar = this.authService.isAuthenticated();
   }
 
   private applySavedTheme(): void {
@@ -41,5 +47,11 @@ export class NavbarComponent implements OnInit {
     this.isDarkTheme
       ? this.renderer.addClass(document.body, 'dark-theme')
       : this.renderer.removeClass(document.body, 'dark-theme');
+  }
+
+  logout(): void {
+    localStorage.removeItem('access_token');
+
+    this.router.navigateByUrl("/login");
   }
 }
