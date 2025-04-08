@@ -1,0 +1,65 @@
+<div *ngIf="isLoading && isAdmin" class="loading text-center mt-5">
+    <p>Cargando solicitudes...</p>
+</div>
+
+<div *ngIf="isAdmin && !isLoading && solicitudes.length > 0">
+    <h2 class="text-center my-4">Lista de Solicitudes</h2>
+
+    <div *ngIf="solicitudes.length === 0" class="alert alert-info text-center">
+        No hay solicitudes disponibles.
+    </div>
+
+    <div class="card shadow-lg p-3 mb-5 bg-white rounded">
+        <div class="card-body">
+            <div *ngIf="solicitudes.length > 0">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped table-hover">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th style="white-space: nowrap;">Nombre Completo</th>
+                                <th style="white-space: nowrap;">Fecha Inicio</th>
+                                <th style="white-space: nowrap;">Fecha Fin</th>
+                                <th style="white-space: nowrap;">Fecha que se solicitó</th>
+                                <th style="white-space: nowrap;">Motivo</th>
+                                <th>Aprobado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let solicitud of solicitudes">
+                                <td>
+                                    {{ usuarios[solicitud.usuario_id].nombreCompleto }}<br>
+                                    <span class="text-muted">{{ usuarios[solicitud.usuario_id].username }}</span>
+                                </td>
+                                <td>{{ solicitud.fecha_inicio | date: 'shortDate' }}</td>
+                                <td>{{ solicitud.fecha_fin | date: 'shortDate' }}</td>
+                                <td>{{ solicitud.fecha_solicitada | date: 'shortDate' }}</td>
+                                <td>{{ solicitud.motivo }}</td>
+                                <td>
+                                    <span class="badge text-black" [ngClass]="{
+                                        'badge-warning': solicitud.estado === null,
+                                        'badge-success': solicitud.estado === true,
+                                        'badge-danger': solicitud.estado === false
+                                    }">
+                                        {{
+                                        solicitud.estado === null ? 'Pendiente' :
+                                        solicitud.estado === true ? 'Aprobada' : 'Rechazada'
+                                        }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <button class="btn btn-success btn-sm">
+                                        <i class="bi bi-check-lg"></i>
+                                    </button>&nbsp;
+                                    <button class="btn btn-danger btn-sm ml-2">
+                                        <i class="bi bi-x"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
