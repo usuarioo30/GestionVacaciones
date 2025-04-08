@@ -38,7 +38,7 @@
               <!-- Solicitudes -->
               <li class="nav-item me-3" *ngIf="!mostrarMisSolicitudes" [routerLinkActive]="'active-link'">
                 <a class="nav-link text-dark" [routerLink]="['/solicitudes-admin']"
-                  routerLinkActive="router-link-active" href="#" aria-label="Solicitudes">
+                  routerLinkActive="router-link-active" aria-label="Solicitudes">
                   <i class="bi bi-clipboard-check fs-4"></i>&nbsp; Solicitudes
                 </a>
               </li>
@@ -52,7 +52,7 @@
               </li>
 
               <!-- Crear usuario -->
-              <li class="nav-item me-3 ms-3" *ngIf="mostrarCrearUsuario" [routerLinkActive]="'active-link'">
+              <li class="nav-item me-3" *ngIf="mostrarCrearUsuario" [routerLinkActive]="'active-link'">
                 <a class="nav-link text-dark" [routerLink]="['/crearUsuario']" routerLinkActive="router-link-active"
                   aria-label="Crear Usuario">
                   <i class="bi bi-person-plus fs-4"></i>&nbsp; Crear usuario
