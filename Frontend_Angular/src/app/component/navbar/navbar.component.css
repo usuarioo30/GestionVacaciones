@@ -28,20 +28,16 @@
 .navbar-nav .nav-item:hover a i {
   font-size: 1.5rem;
   color: #007bff;
-  /* Cambiar color al pasar el ratón */
 }
 
 /* Mantener el color y tamaño cuando está activo */
 .navbar-nav .nav-item.active a i {
   font-size: 1.5rem;
   color: #007bff;
-  /* Color activo */
 }
 
 /* Asegurar que el ícono no cambie cuando está activo y se pasa el ratón */
 .navbar-nav .nav-item.active:hover a i {
   font-size: 1.5rem;
-  /* Mantener tamaño */
   color: #007bff;
-  /* Mantener color */
 }
