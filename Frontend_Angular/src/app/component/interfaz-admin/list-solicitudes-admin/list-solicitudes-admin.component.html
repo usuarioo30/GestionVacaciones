@@ -10,11 +10,12 @@
                 <h3 class="mb-0">Lista de Solicitudes</h3>
             </div>
 
+
             <!-- Card Body -->
             <div class="card-body">
                 <!-- Mensaje cuando no hay solicitudes -->
-                <div *ngIf="solicitudes.length === 0" class="alert alert-info text-center">
-                    No hay solicitudes disponibles.
+                <div *ngIf="solicitudes.length === 0" class="alert alert-info text-center w-50 mx-auto">
+                    <b>No hay solicitudes disponibles.</b>
                 </div>
 
                 <!-- Tabla cuando hay solicitudes -->
@@ -40,7 +41,8 @@
                                 <td>{{ solicitud.fecha_inicio | date: 'shortDate' }}</td>
                                 <td>{{ solicitud.fecha_fin | date: 'shortDate' }}</td>
                                 <td>{{ solicitud.fecha_solicitada | date: 'shortDate' }}</td>
-                                <td>{{ solicitud.motivo ? solicitud.motivo : 'No se ha especificado ningún motivo' }}</td>
+                                <td>{{ solicitud.motivo ? solicitud.motivo : 'No se ha especificado ningún motivo' }}
+                                </td>
                                 <td>
                                     <span class="badge text-black" [ngClass]="{
                                         'badge-warning': solicitud.estado === null,
@@ -54,10 +56,11 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <button class="btn btn-success btn-sm" (click)="approveButton(solicitud)">
+                                    <button class="btn btn-success btn-sm" (click)="handleRequest(solicitud, true)">
                                         <i class="bi bi-check-lg"></i>
                                     </button>&nbsp;
-                                    <button class="btn btn-danger btn-sm ml-2">
+                                    <button class="btn btn-danger btn-sm ml-2"
+                                        (click)="handleRequest(solicitud, false)">
                                         <i class="bi bi-x"></i>
                                     </button>
                                 </td>

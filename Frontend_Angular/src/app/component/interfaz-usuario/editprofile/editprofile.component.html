@@ -1,55 +1,27 @@
-<div class="container d-flex justify-content-center align-items-center mt-0 vh-100">
-    <div class="card shadow-lg p-4" style="max-width: 400px; width: 100%;">
-      <h2 class="text-center mb-2 mt-4">Apeiroo Rooms</h2>
-      <h5 class="text-center mb-4 mt-4">Editar perfil</h5>
-      <form [formGroup]="editUser" (ngSubmit)="editUserSubmit()">
-        <div class="mb-3">
-            <label class="form-label" for="">Correo electrónico</label>
-            <input class="form-control" type="email" id="email" formControlName="email" readonly>
-            
-        </div>
-        <div class="mb-3">
-            <label for="">Nombre de usuario</label>
-            <input class="form-control" type="text" formControlName="username" id="username">
-            <span class="text-danger" *ngIf="inValidField('username')">Rellene este campo</span>
-            <span class="text-danger" *ngIf="editUser.get('username')?.touched && !validUsername">El nombre de usuario escogido ya pertenece a otro usuario</span>
-            
-        </div>
-        <div class="mb-3">
-            <label for="">Cambiar Contraseña</label>
-            <input class="form-control" type="password" formControlName="password" id="password">
-        </div>
-        <div class="mb-3">
-            <label for="">Confirmar Contraseña</label>
-            <input class="form-control" type="password" formControlName="confirmPassword" id="confirmPassword">
-            <span class="text-danger" *ngIf="editUser.controls['confirmPassword']?.touched && editUser.get('confirmPassword')?.value === '' || editUser.hasError('passNoCoinciden')">
-                ⚠ Las contraseñas no coinciden.
-            </span>
-              
-        </div>
-    
-        <div class="d-flex justify-content-between gap-2">
-            <button
-              type="button"
-              class="btn btn-secondary w-50"
-              [routerLink]="['/reservas']"
-              [queryParams]="{ sala: 'upper' }"
-              routerLinkActive="router-link-active"
-            >
-              Volver atrás
-            </button>
-            <button
-              type="submit"
-              class="btn btn-primary w-50"
-            >
-              Confirmar Edición
-            </button>
-          </div>
-    
-    </form>
+<div class="container mt-5">
+  <h2>Editar Perfil</h2>
+
+  <form [formGroup]="editForm" (ngSubmit)="onSubmit()">
+    <div class="form-group">
+      <label for="nombreCompleto">Nombre Completo</label>
+      <input type="text" id="nombreCompleto" class="form-control" formControlName="nombreCompleto" />
     </div>
-  </div>
-  
 
+    <div class="form-group">
+      <label for="email">Correo Electrónico</label>
+      <input type="email" id="email" class="form-control" formControlName="email" />
+    </div>
 
+    <div class="form-group">
+      <label for="username">Nombre de Usuario</label>
+      <input type="text" id="username" class="form-control" formControlName="username" />
+    </div>
 
+    <div class="form-group">
+      <label for="password">Contraseña (opcional)</label>
+      <input type="password" id="password" class="form-control" formControlName="password" />
+    </div>
+
+    <button type="submit" class="btn btn-primary" [disabled]="editForm.invalid">Guardar Cambios</button>
+  </form>
+</div>

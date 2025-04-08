@@ -27,9 +27,15 @@ export class NavbarComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
+    this.updateNavbarVisibility();
+    this.applySavedTheme();
+  }
+
+  private updateNavbarVisibility(): void {
+    // Comprobamos si el usuario está autenticado
+    this.mostrarNavbar = this.authService.isAuthenticated();
     this.username = this.solicitudDescansoService.getUsernameToken();
     this.rol = this.authService.getUserRole();
-
     this.isAdmin = this.rol === 'admin' ? true : false;
 
     this.mostrarNavbar = this.authService.isAuthenticated();
@@ -56,6 +62,8 @@ export class NavbarComponent implements OnInit {
 
   logout(): void {
     localStorage.removeItem('access_token');
+    this.updateNavbarVisibility();
+
     this.router.navigateByUrl("/login");
   }
 }

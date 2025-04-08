@@ -44,8 +44,8 @@
                             <td style="white-space: nowrap;">
                                 <span [ngClass]="{
                                     'badge': true,
-                                    'badge-success text-white': solicitud.estado === true,
-                                    'badge-danger text-white': solicitud.estado === false,
+                                    'badge-success text-black': solicitud.estado === true,
+                                    'badge-danger text-black': solicitud.estado === false,
                                     'badge-secondary text-black': solicitud.estado === null
                                 }">
                                     {{ solicitud.estado === true ? 'Aprobada' :
@@ -53,7 +53,7 @@
                                     solicitud.estado === null ? 'Pendiente' : '' }}
                                 </span>
                             </td>
-                            <td style="white-space: nowrap;" *ngIf="!solicitud.estado">
+                            <td style="white-space: nowrap;" *ngIf="solicitud.estado === null">
                                 <button class="btn btn-danger btn-sm" (click)="eliminarSolicitud(solicitud.id)">
                                     <i class="bi bi-trash"></i>
                                 </button> &nbsp;
