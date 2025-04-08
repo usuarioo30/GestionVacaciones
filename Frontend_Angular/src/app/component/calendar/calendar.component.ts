@@ -121,14 +121,4 @@ export class CalendarComponent implements OnInit {
     }
     this.loadCalendar();
   }
-
-  onNextYear(): void {
-    this.year++;
-    this.loadCalendar();
-  }
-
-  onPreviousYear(): void {
-    this.year--;
-    this.loadCalendar();
-  }
 }

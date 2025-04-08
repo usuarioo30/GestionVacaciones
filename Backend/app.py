@@ -225,7 +225,7 @@ def editar_solicitud(id):
         if not solicitud:
             return jsonify({'error': 'Solicitud no encontrada'}), 404
 
-        if solicitud.aprobado is not None:
+        if solicitud.estado is not None:
             return jsonify({'error': 'Solo se puede editar una solicitud pendiente'}), 403
 
         if rol not in ['admin', 'user']:
