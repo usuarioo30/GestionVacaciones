@@ -406,7 +406,7 @@ def listar_solicitudes():
                 "fecha_inicio": solicitud.fecha_inicio.strftime('%Y-%m-%d %H:%M:%S'),
                 "fecha_fin": solicitud.fecha_fin.strftime('%Y-%m-%d %H:%M:%S'),
                 "fecha_solicitada": solicitud.fecha_solicitada.strftime('%Y-%m-%d %H:%M:%S'),
-                "aprobado": solicitud.aprobado,
+                "estado": solicitud.estado,
                 "motivo": solicitud.motivo
             }
             solicitudes_data.append(solicitud_info)
