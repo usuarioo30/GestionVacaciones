@@ -32,8 +32,7 @@ export class SolicitudDescansoService {
   filteredData = computed(() => {
     const statusMap: Record<string, any> = {
       "1": true,
-      "0": false,
-      "null": null
+      "0": false
     }
 
 

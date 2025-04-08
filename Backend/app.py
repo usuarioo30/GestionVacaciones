@@ -399,7 +399,7 @@ def listar_solicitudes():
         if rol != 'user':
             return jsonify({"error": "No tienes permisos para acceder a esta lista de solicitudes."}), 403
 
-        solicitudes = SolicitudDescanso.query.filter_by(usuario_id=usuario_id).all()
+        solicitudes = SolicitudDescanso.query.filter_by(usuario_id=usuario_id, estado=None).all()
 
         solicitudes_data = []
         for solicitud in solicitudes:
@@ -460,7 +460,10 @@ def listar_solicitudes_admin():
 @jwt_required()
 def getUserRequest(user):
     try:
-        solicitudes = SolicitudDescanso.query.filter(user==SolicitudDescanso.usuario_id)
+        solicitudes = SolicitudDescanso.query.filter(
+            SolicitudDescanso.usuario_id == user,
+            SolicitudDescanso.estado != None
+        ).all()
 
         solicitudes_data = []
         for solicitud in solicitudes:
