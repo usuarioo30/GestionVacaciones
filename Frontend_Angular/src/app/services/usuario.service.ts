@@ -14,7 +14,6 @@ export class UsuarioService {
 
   createUser(userData: any): Observable<any> {
     const token = localStorage.getItem('access_token');
-
     const headers = new HttpHeaders({
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
@@ -68,12 +67,57 @@ export class UsuarioService {
 
   deleteUser(userId: number): Observable<any> {
     const token = localStorage.getItem('access_token');
-
     const headers = new HttpHeaders({
       'Authorization': `Bearer ${token}`
     });
 
     return this.http.delete(`${this.apiUrl}/delete/${userId}`, { headers });
+  }
+
+  getUserData(): Observable<any> {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      return new Observable(observer => observer.error('No token found'));
+    }
+
+    try {
+      const decodedToken: any = jwtDecode(token);
+      const userId = decodedToken.id;
+
+      // Llamamos al backend para obtener los datos del usuario
+      return this.http.get(`${this.apiUrl}/profile/${userId}`, {
+        headers: new HttpHeaders({
+          'Authorization': `Bearer ${token}`
+        })
+      });
+    } catch (e) {
+      console.error('Error al decodificar el token', e);
+      return new Observable(observer => observer.error('Error al decodificar el token'));
+    }
+  }
+
+
+  updateUser(userData: any): Observable<any> {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      throw new Error('Token no encontrado. El usuario no está autenticado.');
+    }
+
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    });
+
+    // Decodificar el token
+    const decodedToken: any = jwtDecode(token);
+    const userId = decodedToken.id;
+
+    if (!userId) {
+      throw new Error('No se pudo obtener el ID del usuario.');
+    }
+
+    // Hacemos la solicitud PUT al backend para actualizar el usuario
+    return this.http.put(`${this.apiUrl}/edit/${userId}`, userData, { headers });
   }
 
 

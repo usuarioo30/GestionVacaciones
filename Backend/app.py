@@ -33,15 +33,18 @@ class Usuario(db.Model):
 class SolicitudDescanso(db.Model):
     __tablename__ = 'solicitudDescanso'
     id = db.Column(db.Integer, primary_key=True)
-    usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id', ondelete="CASCADE"), nullable=False)
     fecha_inicio = db.Column(db.DateTime, nullable=False)
     fecha_fin = db.Column(db.DateTime, nullable=False)
     fecha_solicitada = db.Column(db.DateTime, default=datetime.utcnow)
     estado = db.Column(db.Boolean, nullable=True, default=None)
     motivo = db.Column(db.String(255), nullable=True)
 
+    usuario = db.relationship('Usuario', backref=db.backref('solicitudes', cascade="all, delete-orphan"))
+
     def __repr__(self):
         return f'<SolicitudDescanso {self.id}>'
+
 
 # Función para crear la aplicación
 def create_app():
@@ -105,7 +108,7 @@ def login():
 
     access_token = create_access_token(
         identity=str(usuario.id), 
-        additional_claims={"username": usuario.username, "nombreCompleto": usuario.nombreCompleto, "rol": usuario.rol},
+        additional_claims={"username": usuario.username, "nombreCompleto": usuario.nombreCompleto, "rol": usuario.rol, "email": usuario.email},
         expires_delta=timedelta(hours=24)),
     return jsonify({'access_token': access_token}), 200
 
@@ -204,18 +207,14 @@ def getUserById(user_id):
 @jwt_required()
 def getAllUsers():
     try:
-        # Obtener el rol del usuario actual desde los claims del JWT
         claims = get_jwt()
-        rol = claims.get("rol")  # 'rol' es el nombre del claim en el JWT que contiene el rol
+        rol = claims.get("rol")
 
-        # Verificar si el usuario tiene el rol 'admin'
         if rol != 'admin':
             return jsonify({"message": "Acceso no autorizado. Solo los administradores pueden ver este recurso."}), 403
 
-        # Obtener todos los usuarios de la base de datos
         users = Usuario.query.all()
 
-        # Convertir los usuarios a un formato JSON
         users_data = []
         for user in users:
             users_data.append({
@@ -224,14 +223,11 @@ def getAllUsers():
                 'username': user.username,
                 'email': user.email,
                 'rol': user.rol,
-                # Añadir otros campos según lo necesites
             })
 
-        # Devolver los usuarios
         return jsonify({"users": users_data}), 200
 
     except Exception as e:
-        # Capturar cualquier error y devolver un mensaje de error
         return jsonify({"error": "Ha ocurrido un error al obtener los usuarios", "message": str(e)}), 500
 
 @app.route('/user/delete/<int:id>', methods=['DELETE'])
@@ -246,37 +242,101 @@ def eliminar_usuario(id):
     Response: 500 Internal Server Error {"error": "Hubo un error al eliminar el usuario"}
     """
     try:
-        # Obtener el usuario autenticado (ID del usuario desde el JWT)
         usuario_id = get_jwt_identity()
 
-        # Verificar si el usuario autenticado tiene el rol de 'admin'
         claims = get_jwt()
         rol = claims.get('rol')
 
         if rol != 'admin':
             return jsonify({'error': 'No tienes permisos para eliminar este usuario'}), 403
 
-        # No se puede eliminar el propio usuario
         if id == usuario_id:
             return jsonify({'error': 'No puedes eliminar tu propio usuario'}), 403
 
-        # Buscar el usuario por ID
         usuario = Usuario.query.get(id)
 
-        # Verificar si el usuario existe
         if not usuario:
             return jsonify({'error': 'Usuario no encontrado'}), 404
 
-        # Eliminar el usuario de la base de datos
         db.session.delete(usuario)
         db.session.commit()
 
         return jsonify({'message': 'Usuario eliminado correctamente'}), 200
 
     except Exception as e:
-        # En caso de error, revertir cualquier cambio en la base de datos
         db.session.rollback()
         return jsonify({'error': 'Hubo un error al eliminar el usuario', 'message': str(e)}), 500
+
+@app.route('/user/edit/<int:id>', methods=['PUT'])
+@jwt_required()
+def editar_usuario(id):
+    """
+    Endpoint para editar los datos de un usuario.
+    PUT: /user/edit/{id}
+    Request Body: {
+        "nombreCompleto": "Nuevo Nombre",
+        "email": "nuevo_email@dominio.com",
+        "username": "nuevo_username",
+        "password": "nueva_contraseña"
+    }
+    Response: 200 OK {"message": "Usuario editado correctamente"}
+    Response: 404 Not Found {"error": "Usuario no encontrado"}
+    Response: 403 Forbidden {"error": "No tienes permisos para editar este usuario"}
+    Response: 400 Bad Request {"error": "Datos inválidos"}
+    Response: 500 Internal Server Error {"error": "Hubo un error al editar el usuario"}
+    """
+    try:
+        # Obtener el usuario autenticado
+        usuario_autenticado_id = get_jwt_identity()
+
+        # Verificar si el usuario es admin o si es el propio usuario que desea editar sus datos
+        if usuario_autenticado_id != id:
+            return jsonify({'error': 'No tienes permisos para editar este usuario'}), 403
+
+        # Buscar el usuario por id
+        usuario = Usuario.query.get(id)
+
+        if not usuario:
+            return jsonify({'error': 'Usuario no encontrado'}), 404
+
+        # Obtener los nuevos datos del cuerpo de la solicitud
+        data = request.get_json()
+
+        nombreCompleto = data.get('nombreCompleto')
+        email = data.get('email')
+        username = data.get('username')
+        password = data.get('password')
+
+        # Validar si los campos requeridos son válidos
+        if not all([nombreCompleto, email, username]):
+            return jsonify({"error": "Faltan datos"}), 400
+
+        # Verificar que no haya otro usuario con el mismo username o email
+        if Usuario.query.filter(Usuario.username == username, Usuario.id != id).first():
+            return jsonify({"error": "El nombre de usuario ya está en uso"}), 400
+
+        if Usuario.query.filter(Usuario.email == email, Usuario.id != id).first():
+            return jsonify({"error": "El correo electrónico ya está en uso"}), 400
+
+        # Actualizar los datos del usuario
+        usuario.nombreCompleto = nombreCompleto
+        usuario.email = email
+        usuario.username = username
+
+        # Si se ha proporcionado una nueva contraseña, la actualizamos
+        if password:
+            hashed_password = generate_password_hash(password, method='sha256')
+            usuario.password = hashed_password  # Actualiza la contraseña
+
+        db.session.commit()
+
+        return jsonify({'message': 'Usuario editado correctamente'}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Hubo un error al editar el usuario', 'message': str(e)}), 500
+
+    
 
 
 

@@ -26,7 +26,7 @@ export const appRoutes: Routes = [
 
   //Usuario
   { path: 'solicitudes', component: ListSolicitudesComponent },
-  { path: 'profile', component: EditprofileComponent },
+  { path: 'editarUsuario', component: EditprofileComponent },
 
   //Calendario
   { path: 'calendario', component: CalendarComponent },
