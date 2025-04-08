@@ -2,6 +2,7 @@ import { Component, inject, OnInit } from '@angular/core';
 import { CreateCalendarService } from '../../services/createcalendar.service';
 import { Day } from '../../interfaces/day';
 import {CommonModule, NgFor, NgStyle} from '@angular/common';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-calendar',
@@ -21,7 +22,17 @@ export class CalendarComponent implements OnInit {
 
   calendar: CreateCalendarService = inject(CreateCalendarService);
 
+  constructor(
+    private router: Router
+  ) {}
+
   ngOnInit(): void {
+    const token = localStorage.getItem("access_token");
+
+    if(!token) {
+      this.router.navigateByUrl("/login");
+    }
+
     // Se obtiene el mes actual para inicializar monthNumber y year.
     const currentMonthData = this.calendar.getCurrentMonth();
     this.monthNumber = currentMonthData[0].monthIndex;

@@ -1,18 +1,3 @@
-<div class="container-fluid mt-5 w-" *ngIf="mostrarNavbar">
-  <!-- Topbar: Configuración de tema -->
-  <div class="dropdown position-absolute top-0 end-0 p-3">
-    <a href="#" class="text-black text-decoration-none dropdown-toggle" id="dropdownTheme" data-bs-toggle="dropdown"
-       aria-expanded="false">
-      <i class="bi bi-gear fs-5"></i>
-    </a>
-    <ul class="dropdown-menu dropdown-menu-dark shadow">
-      <li>
-        <a class="dropdown-item" href="#" (click)="toggleTheme()">
-          {{ isDarkTheme ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro' }}
-        </a>
-      </li>
-    </ul>
-  </div>
 <div class="container-fluid mt-5" *ngIf="mostrarNavbar">
   <div class="row">
     <div class="col">
@@ -34,9 +19,10 @@
           <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav mx-auto">
               <!-- Calendario -->
-              <li class="nav-item me-3">
-                <a class="nav-link text-dark" [routerLink]="['/calendario']" aria-label="Calendario">
-                  <i class="bi bi-calendar-month fs-4"></i> Calendario
+              <li class="nav-item me-3" [routerLinkActive]="'active-link'">
+                <a class="nav-link text-dark" [routerLink]="['/calendario']" routerLinkActive="router-link-active"
+                  aria-label="Calendario">
+                  <i class="bi bi-calendar-month fs-4"></i>&nbsp; Calendario
                 </a>
               </li>
 
@@ -51,23 +37,47 @@
 
               <!-- Solicitudes -->
               <li class="nav-item me-3" *ngIf="!mostrarMisSolicitudes" [routerLinkActive]="'active-link'">
-                <a class="nav-link text-dark" [routerLink]="['/solicitudes-admin']" routerLinkActive="router-link-active" href="#" aria-label="Solicitudes">
+                <a class="nav-link text-dark" [routerLink]="['/solicitudes-admin']"
+                  routerLinkActive="router-link-active" href="#" aria-label="Solicitudes">
                   <i class="bi bi-clipboard-check fs-4"></i>&nbsp; Solicitudes
                 </a>
               </li>
 
               <!-- Historial -->
-              <li class="nav-item me-5 ms-5" [routerLink]="['/historial']" routerLinkActive="router-link-active" >
-                <a class="nav-link text-dark" aria-label="Historial">
-                  <i class="bi bi-clock fs-4"></i>
-                  </a>
+              <li class="nav-item" [routerLinkActive]="'active-link'">
+                <a class="nav-link text-dark" [routerLink]="['/historial']" routerLinkActive="router-link-active"
+                  aria-label="Historial">
+                  <i class="bi bi-clock fs-4"></i>&nbsp; Historial
+                </a>
               </li>
 
               <!-- Crear usuario -->
               <li class="nav-item me-3" *ngIf="mostrarCrearUsuario" [routerLinkActive]="'active-link'">
-                <a class="nav-link text-dark" [routerLink]="['/crearUsuario']" routerLinkActive="router-link-active" aria-label="Crear Usuario">
+                <a class="nav-link text-dark" [routerLink]="['/crearUsuario']" routerLinkActive="router-link-active"
+                  aria-label="Crear Usuario">
                   <i class="bi bi-person-plus fs-4"></i>&nbsp; Crear usuario
                 </a>
+              </li>
+              <li class=" ms-5">
+                <!-- Topbar: Configuración de tema -->
+                <div class="dropdown  p-3 configuracion">
+                  <a href="#" class="text-black text-decoration-none dropdown-toggle" id="dropdownTheme"
+                    data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-gear fs-5"></i>
+                  </a>
+                  <ul class="dropdown-menu dropdown-menu-dark shadow">
+                    <li>
+                      <a class="dropdown-item" href="#" (click)="toggleTheme()">
+                        {{ isDarkTheme ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro' }}
+                      </a>
+                    </li>
+                    <li>
+                      <a class="dropdown-item" href="#" (click)="logout()">
+                        Cerrar sesión
+                      </a>
+                    </li>
+                  </ul>
+                </div>
               </li>
             </ul>
           </div>
