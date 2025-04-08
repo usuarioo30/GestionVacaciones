@@ -4,6 +4,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { SolicitudDescanso } from '../interfaces/solicitud-descanso';
 import { jwtDecode } from 'jwt-decode';
 import { Usuario } from '../interfaces/usuario';
+import Swal from 'sweetalert2';
 
 @Injectable({
   providedIn: 'root'
@@ -202,4 +203,32 @@ export class SolicitudDescansoService {
     }
     return null;
   }
+
+  approveRequest(id: number, request: SolicitudDescanso) {
+
+    const token = localStorage.getItem('access_token');
+
+    if (!token) {
+      throw new Error('Token no encontrado');
+    }
+
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+
+    this.http.put(`${this.urlApi}/manage/${id}`, request,  {headers})
+    .subscribe({
+      next: () => Swal.fire({
+        icon: 'success',
+        title: 'Solicitud Aprobada',
+        text: 'Tu solicitud ha sido aprobada exitosamente',
+      }),
+      error: (err) => {Swal.fire({
+        icon: 'error',
+        title: 'Error al aceptar tu solicitud',
+        text: `${err.message}`,
+      });
+      console.log(err);
+    }
+    })
+  }
+
 }

@@ -73,4 +73,31 @@ export class ListSolicitudesAdminComponent implements OnInit {
     }
   }
 
+  approveButton(request: SolicitudDescanso) {
+    request.estado = true;
+    console.log(request);
+    this.solicitudService.approveRequest(request.id, request);
+    this.solicitudService.getAllSolicitudesDescansoAdmin().subscribe({
+      next: (solicitudes) => {
+        this.solicitudes = solicitudes;
+        this.isLoading = false;
+
+        solicitudes.forEach(solicitud => {
+          this.solicitudService.getUserById(solicitud.usuario_id).subscribe({
+            next: (usuario) => {
+              this.usuarios[solicitud.usuario_id] = usuario;
+            },
+            error: (err) => {
+              console.error('Error al obtener el usuario', err);
+            }
+          });
+        });
+      },
+      error: (err) => {
+        console.error('Error al obtener las solicitudes', err);
+        this.isLoading = false;
+      }
+    });
+  }
+
 }
