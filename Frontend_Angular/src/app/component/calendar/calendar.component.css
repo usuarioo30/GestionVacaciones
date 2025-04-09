@@ -25,7 +25,7 @@
 
 /* Opcional: ajustar el color de fondo para el día actual */
 .bg-light {
-  background-color: #d9f1ff !important;
+  background-color: #288ed0 !important;
 }
 
 /* Media query para dispositivos móviles */
@@ -34,4 +34,61 @@
     padding: 40px 0;
     font-size: 1rem;
   }
+}
+
+/* Contenedor general y cabecera */
+.dark-theme .calendar-container {
+  background-color: #1e1e1e;
+  color: #ffffff;
+  padding: 1rem;
+  border: 1px solid #444;
+}
+
+.dark-theme .calendar-header {
+  background-color: #2b2b2b;
+  border-bottom: 1px solid #444;
+  padding: 0.5rem 1rem;
+  color: #ffffff;
+}
+
+/* Cada semana se puede disponer como una fila */
+.dark-theme .calendar-week {
+  display: flex;
+}
+
+/* Estilos base para cada día */
+.dark-theme .calendar-day {
+  flex: 1;
+  border: 1px solid #333;
+  min-height: 100px;
+  text-align: center;
+  padding: 0.5rem;
+  position: relative;
+  /* Puedes agregar márgenes para separar un poco */
+  margin: 0.1rem;
+}
+
+/* Día disponible: un tono que indique que se puede seleccionar */
+.dark-theme .calendar-day.available {
+  background-color: #e8f5e9; /* Verde muy pálido */
+  color: #2e7d32;           /* Verde oscuro */
+}
+
+/* Día no disponible: otro tono, por ejemplo un rojo suave */
+.dark-theme .calendar-day.not-available {
+  background-color: #ffebee; /* Rojo pálido */
+  color: #c62828;            /* Rojo oscuro */
+}
+
+/* Día que ha sido solicitado/aprobado: destaca con otro color */
+.dark-theme .calendar-day.requested {
+  background-color: #bbdefb; /* Azul pálido */
+  color: #1565c0;            /* Azul oscuro */
+  font-weight: bold;
+}
+
+.day-requested {
+  background-color: #b2dffb !important; /* azul claro */
+  border-radius: 8px;
+  color: #004085;
 }

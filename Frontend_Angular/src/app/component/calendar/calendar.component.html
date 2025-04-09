@@ -8,6 +8,11 @@
     <button class="btn btn-outline-primary btn-sm mb-2 mb-sm-0" (click)="onNextMonth()">&#8250;</button>
   </div>
 
+  <!-- Mensaje si se ha solicitado todo el mes -->
+  <div *ngIf="isMonthRequested()" class="alert alert-info text-center">
+    Has solicitado vacaciones para todo este mes.
+  </div>
+
   <!-- Cabecera de días -->
   <div class="row text-center fw-bold border-bottom pb-2 mt-5">
     <div class="col-1 col-sm" *ngFor="let weekDay of weeksDaysName">
@@ -18,11 +23,13 @@
   <!-- Días del calendario -->
   <div class="calendar-weeks">
     <div class="row text-center mb-2" *ngFor="let week of fullCalendarWeeks">
-      <div class="col p-2 calendar-day py-5" *ngFor="let day of week"
+      <div class="col p-2 calendar-day py-5"
+           *ngFor="let day of week"
            [ngClass]="{
              'text-muted': !day.isCurrentMonth,
              'bg-light': day.isToday,
-             'fw-bold': day.isToday
+             'fw-bold': day.isToday,
+             'day-requested': day.requested
            }">
         {{ day.number }}
       </div>

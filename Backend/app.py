@@ -36,7 +36,7 @@ class SolicitudDescanso(db.Model):
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id', ondelete="CASCADE"), nullable=False)
     fecha_inicio = db.Column(db.DateTime, nullable=False)
     fecha_fin = db.Column(db.DateTime, nullable=False)
-    fecha_solicitada = db.Column(db.DateTime, default=datetime.utcnow)
+    fecha_solicitud = db.Column(db.DateTime, default=datetime.utcnow)
     estado = db.Column(db.Boolean, nullable=True, default=None)
     motivo = db.Column(db.String(255), nullable=True)
 
@@ -525,7 +525,7 @@ def listar_solicitudes():
                 "usuario_id": solicitud.usuario_id,
                 "fecha_inicio": solicitud.fecha_inicio.strftime('%Y-%m-%d %H:%M:%S'),
                 "fecha_fin": solicitud.fecha_fin.strftime('%Y-%m-%d %H:%M:%S'),
-                "fecha_solicitada": solicitud.fecha_solicitada.strftime('%Y-%m-%d %H:%M:%S'),
+                "fecha_solicitud": solicitud.fecha_solicitud.strftime('%Y-%m-%d %H:%M:%S'),
                 "estado": solicitud.estado,
                 "motivo": solicitud.motivo
             }
@@ -560,7 +560,7 @@ def listar_solicitudes_admin():
                 "usuario_id": solicitud.usuario_id,
                 "fecha_inicio": solicitud.fecha_inicio.strftime('%Y-%m-%d %H:%M:%S'),
                 "fecha_fin": solicitud.fecha_fin.strftime('%Y-%m-%d %H:%M:%S'),
-                "fecha_solicitada": solicitud.fecha_solicitada.strftime('%Y-%m-%d %H:%M:%S'),
+                "fecha_solicitud": solicitud.fecha_solicitud.strftime('%Y-%m-%d %H:%M:%S'),
                 "estado": solicitud.estado,
                 "motivo": solicitud.motivo
             }
@@ -629,7 +629,7 @@ def getUserRequest(user):
                 "usuario_id": solicitud.usuario_id,
                 "fecha_inicio": solicitud.fecha_inicio.strftime('%Y-%m-%d %H:%M:%S'),
                 "fecha_fin": solicitud.fecha_fin.strftime('%Y-%m-%d %H:%M:%S'),
-                "fecha_solicitada": solicitud.fecha_solicitada.strftime('%Y-%m-%d %H:%M:%S'),
+                "fecha_solicitud": solicitud.fecha_solicitud.strftime('%Y-%m-%d %H:%M:%S'),
                 "estado": solicitud.estado,
                 "motivo": solicitud.motivo
             }
