@@ -1,8 +1,12 @@
-import { Component, inject, OnInit } from '@angular/core';
+import {Component, inject, Input, OnInit, SimpleChanges} from '@angular/core';
 import { CreateCalendarService } from '../../services/createcalendar.service';
 import { Day } from '../../interfaces/day';
-import {CommonModule, NgFor, NgStyle} from '@angular/common';
+import {CommonModule, DatePipe, NgFor} from '@angular/common';
 import { Router } from '@angular/router';
+import {SolicitudDescanso} from '../../interfaces/solicitud-descanso';
+import {SolicitudDescansoService} from '../../services/solicitud-descanso.service';
+import Swal from 'sweetalert2';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-calendar',
@@ -12,8 +16,11 @@ import { Router } from '@angular/router';
 })
 export class CalendarComponent implements OnInit {
 
+  solicitud!: SolicitudDescanso;
   monthDays!: Day[];            // Array completo de días (incluyendo relleno)
+  day!: Day;
   fullCalendarWeeks!: Day[][];  // Días agrupados en semanas (cada semana es un array de 7 días)
+  solicitudes: SolicitudDescanso[] = [];
   monthNumber!: number;
   year!: number;
 
@@ -21,12 +28,21 @@ export class CalendarComponent implements OnInit {
   weeksDaysName: string[] = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
 
   calendar: CreateCalendarService = inject(CreateCalendarService);
+  solicitudSrvc: SolicitudDescansoService = inject(SolicitudDescansoService);
 
   constructor(
     private router: Router
   ) {}
 
-  ngOnInit(): void {
+  ngOnChanges(changes: SimpleChanges): void {
+    if(changes['solicitudes'] && this.monthNumber !== undefined && this.year !== undefined) {
+      console.log('Las solicitudes han cambiado:', changes['solicitudes']);
+      // Recargar el calendario en caso de que las solicitudes cambien.
+      this.loadCalendar();
+    }
+  }
+
+  async ngOnInit() {
     const token = localStorage.getItem("access_token");
 
     if(!token) {
@@ -37,19 +53,136 @@ export class CalendarComponent implements OnInit {
     const currentMonthData = this.calendar.getCurrentMonth();
     this.monthNumber = currentMonthData[0].monthIndex;
     this.year = currentMonthData[0].year;
+    await this.loadSolicitudes();
     this.loadCalendar();
+  }
+
+  isMonthRequested(): boolean {
+    // Si el array de solicitudes no está definido o está vacío, retorna false
+    if (!this.solicitudes || this.solicitudes.length === 0) {
+      return false;
+    }
+
+    for (const solicitud of this.solicitudes) {
+      // Si por alguna razón algún elemento es undefined, lo saltamos
+      if (!solicitud) {
+        continue;
+      }
+
+      // Asegúrate de que fecha_inicio y fecha_fin existen en la solicitud.
+      if (!solicitud.fecha_inicio || !solicitud.fecha_fin) {
+        continue;
+      }
+
+      const fecha_inicio = new Date(solicitud.fecha_inicio);
+      const fecha_fin = new Date(solicitud.fecha_fin);
+
+      // Solo consideramos solicitudes que están en el mes actual
+      if (
+        fecha_inicio.getFullYear() === this.year &&
+        fecha_inicio.getMonth() === this.monthNumber &&
+        fecha_fin.getFullYear() === this.year &&
+        fecha_fin.getMonth() === this.monthNumber
+      ) {
+        const anio = fecha_inicio.getFullYear();
+        const mes = fecha_inicio.getMonth();
+
+        // Días laborables del mes completo
+        const diasEnMes = new Date(anio, mes + 1, 0).getDate();
+        let totalLaborablesMes = 0;
+        for (let dia = 1; dia <= diasEnMes; dia++) {
+          const fecha = new Date(anio, mes, dia);
+          const diaSemana = fecha.getDay();
+          if (diaSemana !== 0 && diaSemana !== 6) totalLaborablesMes++;
+        }
+
+        // Días laborables de la solicitud
+        let laborablesSolicitados = 0;
+        const fechaActual = new Date(fecha_inicio);
+        while (fechaActual <= fecha_fin) {
+          const diaSemana = fechaActual.getDay();
+          if (diaSemana !== 0 && diaSemana !== 6) laborablesSolicitados++;
+          fechaActual.setDate(fechaActual.getDate() + 1);
+        }
+
+        if (laborablesSolicitados === totalLaborablesMes) {
+          return true; // Al menos una solicitud cubre el mes completo
+        }
+      }
+    }
+
+    return false; // Ninguna solicitud cubre el mes completo
+  }
+
+  isRequested(day: any): boolean {
+    // Convertimos el objeto "day" a Date
+    const dayDate = new Date(day.year, day.monthIndex, day.number);
+    // Verifica si el día está solicitado
+    if (!this.solicitudes || this.solicitudes.length === 0) {
+      return false;
+    }
+
+    for (const solicitud of this.solicitudes) {
+      const fecha_inicio = new Date(solicitud.fecha_inicio);
+      const fecha_fin = new Date(solicitud.fecha_fin);
+
+
+      if (
+        fecha_inicio.getFullYear() === day.year &&
+        fecha_inicio.getMonth() === day.monthIndex &&
+        fecha_fin.getFullYear() === day.year &&
+        fecha_fin.getMonth() === day.monthIndex
+      ) {
+        if (fecha_inicio <= dayDate && dayDate <= fecha_fin) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  async loadSolicitudes() {
+    try {
+      const solicitud = await firstValueFrom(this.solicitudSrvc.getAllSolicitudesDescanso());
+      this.solicitudes = solicitud;
+      console.log(this.solicitudes);
+    } catch (error) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Acceso Denegado',
+        text: 'Solo los administradores pueden ver esta lista de solicitudes.',
+        confirmButtonText: 'Cerrar'
+      });
+    }
   }
 
   /**
    * Carga el calendario completo del mes actual,
    * completando con los días del mes anterior y siguiente para llenar las semanas.
+   * Se asignan propiedades para determinar si un día está disponible para descanso y si ha sido solicitado.
    */
-  loadCalendar(): void {
-    // Días del mes actual y se marca como pertenecientes al mes (isCurrentMonth = true)
-    const currentDays = this.calendar.getMonth(this.monthNumber, this.year);
-    currentDays.forEach(day => day.isCurrentMonth = true);
+  loadCalendar() {
+    // 1. Verificamos si el mes completo ha sido solicitado
+    const solicitudCompleta: boolean = this.isMonthRequested(); // <- usa tu objeto solicitud
 
-    // Obtener datos del mes anterior
+    // 2. Días del mes actual
+    const currentDays = this.calendar.getMonth(this.monthNumber, this.year);
+    currentDays.forEach(day => {
+      day.isCurrentMonth = true;
+      day.available = this.calendar.isDayAvailable(day);
+
+      const solicitudParcial: boolean = this.isRequested(day);
+      // Si el mes fue solicitado completamente, todos los días laborables se marcan como requested
+      if (solicitudCompleta && day.weekDayNumber < 5) {
+        day.requested = true;
+      }else if (solicitudParcial && day.weekDayNumber < 5) {
+        day.requested = true;
+      } else {
+        day.requested = false;
+      }
+    });
+
+    // 3. Días del mes anterior (relleno al inicio)
     let prevMonth: number, prevYear: number;
     if (this.monthNumber === 0) {
       prevMonth = 11;
@@ -59,22 +192,22 @@ export class CalendarComponent implements OnInit {
       prevYear = this.year;
     }
     const previousMonthDays = this.calendar.getMonth(prevMonth, prevYear);
-
-    // Calcular cuántos días faltan al inicio de la primera semana
-    // Se asume que currentDays[0].weekDayNumber indica el índice del día (0 = Lunes)
     const numMissing = currentDays[0].weekDayNumber;
     let daysToPrepend: Day[] = [];
+
     if (numMissing > 0) {
-      // Se toman los últimos 'numMissing' días del mes anterior
       daysToPrepend = previousMonthDays.slice(-numMissing);
-      daysToPrepend.forEach(day => day.isCurrentMonth = false);
+      daysToPrepend.forEach(day => {
+        day.isCurrentMonth = false;
+        day.available = this.calendar.isDayAvailable(day);
+        day.requested = false; // Días de otro mes no se consideran solicitados aquí
+      });
     }
 
-    // Se combinan los días del mes anterior (relleno) y los días del mes actual
+    // 4. Días del mes siguiente (relleno al final)
     let fullDays = [...daysToPrepend, ...currentDays];
-
-    // Comprobar si la última semana está incompleta y completarla con días del mes siguiente
     const remainder = fullDays.length % 7;
+
     if (remainder !== 0) {
       let nextMonth: number, nextYear: number;
       if (this.monthNumber === 11) {
@@ -84,18 +217,26 @@ export class CalendarComponent implements OnInit {
         nextMonth = this.monthNumber + 1;
         nextYear = this.year;
       }
+
       const nextMonthDays = this.calendar.getMonth(nextMonth, nextYear);
       const missing = 7 - remainder;
       const daysToAppend = nextMonthDays.slice(0, missing);
-      daysToAppend.forEach(day => day.isCurrentMonth = false);
+      daysToAppend.forEach(day => {
+        day.isCurrentMonth = false;
+        day.available = this.calendar.isDayAvailable(day);
+        day.requested = false; // No se consideran solicitados
+      });
+
       fullDays = fullDays.concat(daysToAppend);
     }
 
-    // Agrupar los días en semanas (cada semana es un array de 7 días)
+    // 5. Agrupar los días en semanas
     const weeks: Day[][] = [];
     for (let i = 0; i < fullDays.length; i += 7) {
       weeks.push(fullDays.slice(i, i + 7));
     }
+
+    // 6. Guardamos los resultados
     this.monthDays = fullDays;
     this.fullCalendarWeeks = weeks;
   }

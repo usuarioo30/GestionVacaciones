@@ -44,7 +44,7 @@ export class ListSolicitudesAdminComponent implements OnInit {
           text: 'Solo los administradores pueden ver esta lista de solicitudes.',
           confirmButtonText: 'Cerrar'
         }).then(() => {
-          this.router.navigateByUrl('/home'); // Redirigir a otra página si no es admin
+          this.router.navigateByUrl('/'); // Redirigir a otra página si no es admin
         });
       } else {
         this.isAdmin = true;

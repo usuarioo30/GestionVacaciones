@@ -1,7 +1,8 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { jwtDecode } from 'jwt-decode';
-import { Observable } from 'rxjs';
+import { Observable, tap, throwError } from 'rxjs';
+import { Usuario } from '../interfaces/usuario';
 
 @Injectable({
   providedIn: 'root'
@@ -74,52 +75,44 @@ export class UsuarioService {
     return this.http.delete(`${this.apiUrl}/delete/${userId}`, { headers });
   }
 
-  getUserData(): Observable<any> {
+  getUsuarioById(userId: number): Observable<Usuario> {
     const token = localStorage.getItem('access_token');
-    if (!token) {
-      return new Observable(observer => observer.error('No token found'));
-    }
+    return this.http.get<Usuario>(`${this.apiUrl}/${userId}`, {
+      headers: new HttpHeaders().set('Authorization', `Bearer ${token}`)
+    });
+  }
 
+  editarUsuario(userData: any): Observable<any> {
+    const token = localStorage.getItem('access_token');
+  
+    // Verificar si el token existe y extraer el ID del usuario
+    if (!token) {
+      return throwError('Token no encontrado');
+    }
+  
     try {
       const decodedToken: any = jwtDecode(token);
-      const userId = decodedToken.id;
-
-      // Llamamos al backend para obtener los datos del usuario
-      return this.http.get(`${this.apiUrl}/profile/${userId}`, {
-        headers: new HttpHeaders({
-          'Authorization': `Bearer ${token}`
-        })
+      const userId = decodedToken.sub; // Suponiendo que el ID del usuario esté en el token
+  
+      const headers = new HttpHeaders({
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
       });
+  
+      // Llamada PUT al backend para editar el usuario
+      return this.http.put(`${this.apiUrl}/edit/${userId}`, userData, { headers }).pipe(
+        // Aquí actualizamos el token si el backend lo devuelve
+        tap((response: any) => {
+          // Si el backend devuelve un nuevo token, actualizamos el almacenamiento
+          if (response.access_token) {
+            localStorage.setItem('access_token', response.access_token);
+          }
+        })
+      );
     } catch (e) {
       console.error('Error al decodificar el token', e);
-      return new Observable(observer => observer.error('Error al decodificar el token'));
+      return throwError('Error al decodificar el token');
     }
   }
-
-
-  updateUser(userData: any): Observable<any> {
-    const token = localStorage.getItem('access_token');
-    if (!token) {
-      throw new Error('Token no encontrado. El usuario no está autenticado.');
-    }
-
-    const headers = new HttpHeaders({
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    });
-
-    // Decodificar el token
-    const decodedToken: any = jwtDecode(token);
-    const userId = decodedToken.id;
-
-    if (!userId) {
-      throw new Error('No se pudo obtener el ID del usuario.');
-    }
-
-    // Hacemos la solicitud PUT al backend para actualizar el usuario
-    return this.http.put(`${this.apiUrl}/edit/${userId}`, userData, { headers });
-  }
-
-
 
 }

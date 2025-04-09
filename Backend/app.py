@@ -36,7 +36,7 @@ class SolicitudDescanso(db.Model):
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id', ondelete="CASCADE"), nullable=False)
     fecha_inicio = db.Column(db.DateTime, nullable=False)
     fecha_fin = db.Column(db.DateTime, nullable=False)
-    fecha_solicitada = db.Column(db.DateTime, default=datetime.utcnow)
+    fecha_solicitud = db.Column(db.DateTime, default=datetime.utcnow)
     estado = db.Column(db.Boolean, nullable=True, default=None)
     motivo = db.Column(db.String(255), nullable=True)
 
@@ -270,75 +270,55 @@ def eliminar_usuario(id):
 @app.route('/user/edit/<int:id>', methods=['PUT'])
 @jwt_required()
 def editar_usuario(id):
-    """
-    Endpoint para editar los datos de un usuario.
-    PUT: /user/edit/{id}
-    Request Body: {
-        "nombreCompleto": "Nuevo Nombre",
-        "email": "nuevo_email@dominio.com",
-        "username": "nuevo_username",
-        "password": "nueva_contraseña"
-    }
-    Response: 200 OK {"message": "Usuario editado correctamente"}
-    Response: 404 Not Found {"error": "Usuario no encontrado"}
-    Response: 403 Forbidden {"error": "No tienes permisos para editar este usuario"}
-    Response: 400 Bad Request {"error": "Datos inválidos"}
-    Response: 500 Internal Server Error {"error": "Hubo un error al editar el usuario"}
-    """
     try:
-        # Obtener el usuario autenticado
-        usuario_autenticado_id = get_jwt_identity()
-
-        # Verificar si el usuario es admin o si es el propio usuario que desea editar sus datos
-        if usuario_autenticado_id != id:
-            return jsonify({'error': 'No tienes permisos para editar este usuario'}), 403
-
-        # Buscar el usuario por id
-        usuario = Usuario.query.get(id)
-
-        if not usuario:
-            return jsonify({'error': 'Usuario no encontrado'}), 404
-
-        # Obtener los nuevos datos del cuerpo de la solicitud
+        # Obtener los datos enviados en el cuerpo de la solicitud
         data = request.get_json()
 
-        nombreCompleto = data.get('nombreCompleto')
-        email = data.get('email')
-        username = data.get('username')
-        password = data.get('password')
+        # Verificar que se enviaron los datos necesarios
+        if not data:
+            return jsonify({'message': 'No se enviaron datos para editar el usuario'}), 400
 
-        # Validar si los campos requeridos son válidos
-        if not all([nombreCompleto, email, username]):
-            return jsonify({"error": "Faltan datos"}), 400
+        # Obtener el usuario a editar de la base de datos
+        usuario = Usuario.query.get_or_404(id)
 
-        # Verificar que no haya otro usuario con el mismo username o email
-        if Usuario.query.filter(Usuario.username == username, Usuario.id != id).first():
-            return jsonify({"error": "El nombre de usuario ya está en uso"}), 400
+        # Verificar si el usuario que hace la solicitud es el mismo que se está editando
+        from flask_jwt_extended import get_jwt_identity
+        current_user_id = get_jwt_identity()  # El ID del usuario que hizo la solicitud
 
-        if Usuario.query.filter(Usuario.email == email, Usuario.id != id).first():
-            return jsonify({"error": "El correo electrónico ya está en uso"}), 400
+        # Actualizar los datos del usuario sin validaciones adicionales
+        usuario.nombreCompleto = data.get('nombreCompleto', usuario.nombreCompleto)
+        usuario.username = data.get('username', usuario.username)
+        usuario.email = data.get('email', usuario.email)
 
-        # Actualizar los datos del usuario
-        usuario.nombreCompleto = nombreCompleto
-        usuario.email = email
-        usuario.username = username
+        # Solo actualizar la contraseña si se proporciona una nueva
+        nueva_contraseña = data.get('password')
+        if nueva_contraseña:
+            usuario.password = generate_password_hash(nueva_contraseña)
 
-        # Si se ha proporcionado una nueva contraseña, la actualizamos
-        if password:
-            hashed_password = generate_password_hash(password, method='sha256')
-            usuario.password = hashed_password  # Actualiza la contraseña
-
+        # Guardar los cambios en la base de datos
         db.session.commit()
 
-        return jsonify({'message': 'Usuario editado correctamente'}), 200
+        # Crear un nuevo token con los datos actualizados
+        access_token = create_access_token(
+            identity=str(usuario.id), 
+            additional_claims={
+                "username": usuario.username, 
+                "nombreCompleto": usuario.nombreCompleto, 
+                "rol": usuario.rol, 
+                "email": usuario.email
+            },
+            expires_delta=timedelta(hours=24)
+        )
+
+        # Devolver el mensaje de éxito y el nuevo token
+        return jsonify({
+            'message': 'Usuario editado correctamente',
+            'access_token': access_token  # Devolver el nuevo token
+        }), 200
 
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': 'Hubo un error al editar el usuario', 'message': str(e)}), 500
-
-    
-
-
+        return jsonify({'message': 'Error al editar el usuario', 'error': str(e)}), 500
 
 @app.route('/request/edit/<int:id>', methods=['PUT'])
 @jwt_required()
@@ -545,7 +525,7 @@ def listar_solicitudes():
                 "usuario_id": solicitud.usuario_id,
                 "fecha_inicio": solicitud.fecha_inicio.strftime('%Y-%m-%d %H:%M:%S'),
                 "fecha_fin": solicitud.fecha_fin.strftime('%Y-%m-%d %H:%M:%S'),
-                "fecha_solicitada": solicitud.fecha_solicitada.strftime('%Y-%m-%d %H:%M:%S'),
+                "fecha_solicitud": solicitud.fecha_solicitud.strftime('%Y-%m-%d %H:%M:%S'),
                 "estado": solicitud.estado,
                 "motivo": solicitud.motivo
             }
@@ -580,7 +560,7 @@ def listar_solicitudes_admin():
                 "usuario_id": solicitud.usuario_id,
                 "fecha_inicio": solicitud.fecha_inicio.strftime('%Y-%m-%d %H:%M:%S'),
                 "fecha_fin": solicitud.fecha_fin.strftime('%Y-%m-%d %H:%M:%S'),
-                "fecha_solicitada": solicitud.fecha_solicitada.strftime('%Y-%m-%d %H:%M:%S'),
+                "fecha_solicitud": solicitud.fecha_solicitud.strftime('%Y-%m-%d %H:%M:%S'),
                 "estado": solicitud.estado,
                 "motivo": solicitud.motivo
             }
@@ -618,7 +598,7 @@ def listar_todas_solicitudes_admin():
                 "motivo": solicitud.motivo,
                 "fecha_inicio": solicitud.fecha_inicio.strftime('%Y-%m-%d %H:%M:%S'),
                 "fecha_fin": solicitud.fecha_fin.strftime('%Y-%m-%d %H:%M:%S'),
-                "fecha_solicitada": solicitud.fecha_solicitada.strftime('%Y-%m-%d %H:%M:%S'),
+                "fecha_solicitud": solicitud.fecha_solicitud.strftime('%Y-%m-%d %H:%M:%S'),
                 "usuario_id": usuario_id,
                 "username": username,
                 "nombreCompleto": nombreCompleto
@@ -649,7 +629,7 @@ def getUserRequest(user):
                 "usuario_id": solicitud.usuario_id,
                 "fecha_inicio": solicitud.fecha_inicio.strftime('%Y-%m-%d %H:%M:%S'),
                 "fecha_fin": solicitud.fecha_fin.strftime('%Y-%m-%d %H:%M:%S'),
-                "fecha_solicitada": solicitud.fecha_solicitada.strftime('%Y-%m-%d %H:%M:%S'),
+                "fecha_solicitud": solicitud.fecha_solicitud.strftime('%Y-%m-%d %H:%M:%S'),
                 "estado": solicitud.estado,
                 "motivo": solicitud.motivo
             }
