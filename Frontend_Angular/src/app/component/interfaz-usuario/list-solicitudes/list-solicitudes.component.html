@@ -40,7 +40,7 @@
                             <td style="white-space: nowrap;">{{ solicitud.fecha_inicio | date: 'shortDate' }}</td>
                             <td style="white-space: nowrap;">{{ solicitud.fecha_fin | date: 'shortDate' }}</td>
                             <td style="white-space: nowrap;">{{ solicitud.motivo }}</td>
-                            <td style="white-space: nowrap;">{{ solicitud.fecha_solicitada | date: 'shortDate' }}</td>
+                            <td style="white-space: nowrap;">{{ solicitud.fecha_solicitud | date: 'shortDate' }}</td>
                             <td style="white-space: nowrap;">
                                 <span [ngClass]="{
                                     'badge': true,
@@ -109,8 +109,8 @@
                   </div>
                 </div>
                 <div class="mb-3">
-                  <label for="fecha_solicitada" class="form-label">Fecha de Solicitud</label>
-                  <input type="date" class="form-control" id="fecha_solicitada" formControlName="fecha_solicitada" readonly required>
+                  <label for="fecha_solicitud" class="form-label">Fecha de Solicitud</label>
+                  <input type="date" class="form-control" id="fecha_solicitud" formControlName="fecha_solicitud" readonly required>
                 </div>
                 <div class="mb-3">
                   <label for="motivo" class="form-label">Motivo</label>
@@ -158,8 +158,8 @@
                             [min]="formSolicitudDescanso.get('fecha_inicio')?.value">
                     </div>
                     <div class="mb-3">
-                        <label for="fecha_solicitada" class="form-label">Fecha de Solicitud</label>
-                        <input type="date" class="form-control" id="fecha_solicitada" formControlName="fecha_solicitada"
+                        <label for="fecha_solicitud" class="form-label">Fecha de Solicitud</label>
+                        <input type="date" class="form-control" id="fecha_solicitud" formControlName="fecha_solicitud"
                             readonly required>
                     </div>
                     <div class="mb-3">

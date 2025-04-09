@@ -39,7 +39,7 @@
                                 </td>
                                 <td>{{ solicitud.fecha_inicio | date: 'shortDate' }}</td>
                                 <td>{{ solicitud.fecha_fin | date: 'shortDate' }}</td>
-                                <td>{{ solicitud.fecha_solicitada | date: 'shortDate' }}</td>
+                                <td>{{ solicitud.fecha_solicitud | date: 'shortDate' }}</td>
                                 <td>{{ solicitud.motivo ? solicitud.motivo : 'No se ha especificado ningún motivo' }}</td>
                                 <td>
                                     <span class="badge text-black" [ngClass]="{

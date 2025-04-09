@@ -25,7 +25,7 @@ export class CreateCalendarService {
     let firstDay = this.createDay(1, monthIndex, year);
 
     //Crear días vacíos
-    // for (let i = 1; i < firstDay.weekDayNumber; i++) { 
+    // for (let i = 1; i < firstDay.weekDayNumber; i++) {
     //   days.push({
     //     weekDayNumber: i,
     //     monthIndex: monthIndex,
@@ -36,17 +36,17 @@ export class CreateCalendarService {
     days.push(firstDay);
     console.log(days);
     let countDaysInMonth = new Date(year, monthIndex + 1, 0).getDate(); // 0 es el último día del mes anterior
-    
+
     for (let index = 2; index < countDaysInMonth + 1; index++) {
       days.push(this.createDay(index, monthIndex, year));
-      
+
     }
 
     return days;
   }
 
   getMonthName(monthIndex: number): string {
-    switch (monthIndex) { 
+    switch (monthIndex) {
       case 0:
         return 'Enero';
       case 1:
@@ -77,8 +77,8 @@ export class CreateCalendarService {
   }
 
   getDayWeekName(weekDayIndex: number): string {
-    switch (weekDayIndex) { 
-      case 0: 
+    switch (weekDayIndex) {
+      case 0:
         return 'Lunes';
       case 1:
         return 'Martes';
@@ -105,25 +105,56 @@ export class CreateCalendarService {
     const weekNo = Math.ceil((((tempDate.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
     return weekNo;
   }
-  
+
 
   private createDay(number: number, monthIndex: number, year: number): Day {
-  
+
     let day = {} as Day;
     day.monthIndex = monthIndex;
     day.month = this.getMonthName(monthIndex);
 
     day.number = number;
-    day.year = this.currentYear;
+    day.year = year;
 
-    const date = new Date(year, monthIndex, number-1);
+    const date = new Date(year, monthIndex, number);
 
     day.weekNumber = this.getWeekNumber(date);
 
-    day.weekDayNumber = date.getDay();
+    day.weekDayNumber = (date.getDay() + 6) % 7; // Transformar 0 (domingo) a 6, 1 (lunes) a 0, etc.
     day.weekDayName = this.getDayWeekName(day.weekDayNumber);
 
     return day;
   }
 
+  /**
+   * Determina si un día está disponible para solicitar descanso o vacaciones.
+   * En esta regla de ejemplo se considera disponible si es de lunes a viernes.
+   */
+  isDayAvailable(day: Day): boolean {
+    return day.weekDayNumber < 5; // lunes (0) a viernes (4) son considerados disponibles.
+  }
+
+  // Función auxiliar para comparar si dos fechas corresponden al mismo día
+  public isSameDay(date1: Date, date2: Date): boolean {
+    return date1.getDate() === date2.getDate() &&
+      date1.getMonth() === date2.getMonth() &&
+      date1.getFullYear() === date2.getFullYear();
+  }
+
+  // Función para convertir una fecha en formato 'YYYY-MM-DD HH:MM:SS' a un objeto Date
+  convertToDate(fecha: string): Date {
+    const [datePart, timePart] = fecha.split(' ');
+    const [year, month, day] = datePart.split('-').map(Number);
+    const [hours, minutes, seconds] = timePart.split(':').map(Number);
+
+    // JavaScript usa un índice de mes basado en 0 (enero = 0, diciembre = 11)
+    return new Date(year, month - 1, day, hours, minutes, seconds);
+  }
+
+  // Función para comparar solo el día, mes y año sin tener en cuenta la hora, minutos o segundos
+  isSameDayIgnoringTime(date1: Date, date2: Date): boolean {
+    return date1.getUTCFullYear() === date2.getUTCFullYear() &&
+      date1.getUTCMonth() === date2.getUTCMonth() &&
+      date1.getUTCDate() === date2.getUTCDate();
+  }
 }

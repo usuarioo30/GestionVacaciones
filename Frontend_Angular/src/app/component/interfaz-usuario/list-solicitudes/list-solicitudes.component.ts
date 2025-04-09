@@ -5,14 +5,14 @@ import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } 
 import { ActivatedRoute, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { SolicitudDescanso } from '../../../interfaces/solicitud-descanso';
 import Swal from 'sweetalert2';
-import { Token } from '@angular/compiler';
 import { AuthService } from '../../../services/auth.service';
 
 @Component({
   selector: 'app-list-solicitudes',
+  standalone: true,
   imports: [CommonModule, ReactiveFormsModule, FormsModule],
   templateUrl: './list-solicitudes.component.html',
-  styleUrl: './list-solicitudes.component.css'
+  styleUrls: ['./list-solicitudes.component.css']
 })
 export class ListSolicitudesComponent implements OnInit {
   solicitudesDescanso: SolicitudDescanso[] = [];
@@ -53,13 +53,13 @@ export class ListSolicitudesComponent implements OnInit {
     this.usuario_id = this.solicitudDescansoService.getUsuarioIdToken()
 
     this.formSolicitudDescanso = this.fb.group({
-      usuario: [{ value: this.username, disabled: true }, [Validators.required]],
-      usuario_id: [{ value: this.usuario_id, disabled: true }, [Validators.required]],
-      fecha_inicio: ['', [Validators.required]],
-      fecha_fin: ['', [Validators.required]],
-      fecha_solicitada: [{ value: this.getFechaActual(), disabled: true }, [Validators.required]],
-      motivo: ['', [Validators.required]],
-    }
+        usuario: [{ value: this.username, disabled: true }, [Validators.required]],
+        usuario_id: [{ value: this.usuario_id, disabled: true }, [Validators.required]],
+        fecha_inicio: ['', [Validators.required]],
+        fecha_fin: ['', [Validators.required]],
+        fecha_solicitud: [{ value: this.getFechaActual(), disabled: true }, [Validators.required]],
+        motivo: ['', [Validators.required]],
+      }
     )
 
     this.formSolicitudDescanso.get('fecha_inicio')?.valueChanges.subscribe(fechaInicio => {
@@ -115,7 +115,7 @@ export class ListSolicitudesComponent implements OnInit {
       const nuevaSolicitud: SolicitudDescanso = {
         ...this.formSolicitudDescanso.value,
         usuario_id: this.usuario_id,
-        fecha_solicitada: this.getFechaActual()
+        fecha_solicitud: this.getFechaActual()
       };
 
       console.log(nuevaSolicitud);
@@ -139,7 +139,7 @@ export class ListSolicitudesComponent implements OnInit {
             });
 
             this.formSolicitudDescanso.reset({
-              fecha_solicitada: this.getFechaActual(),
+              fecha_solicitud: this.getFechaActual(),
               usuario: this.username,
               usuario_id: this.usuario_id,
             });
@@ -254,6 +254,4 @@ export class ListSolicitudesComponent implements OnInit {
       );
     }
   }
-
-
 }
