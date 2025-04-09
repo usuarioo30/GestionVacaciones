@@ -165,14 +165,12 @@ export class SolicitudDescansoService {
 
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
 
-    // Aquí enviamos el objeto completo (con los datos de la solicitud) al backend
     return this.http.put<any>(`${this.urlApi}/edit/${solicitud.id}`, solicitud, { headers });
   }
 
   getUsernameToken(): string {
     const token = localStorage.getItem('access_token');
     if (token) {
-      // Decodificar el token para obtener los claims
       interface DecodedToken {
         username: string;
         exp: number;
@@ -188,7 +186,6 @@ export class SolicitudDescansoService {
   getNombreCompletoToken(): string {
     const token = localStorage.getItem('access_token');
     if (token) {
-      // Decodificar el token para obtener los claims
       interface DecodedToken {
         nombreCompleto: string;
         exp: number;
@@ -225,10 +222,8 @@ export class SolicitudDescansoService {
 
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
 
-    // Cambiar el estado de la solicitud dependiendo de si es aprobar o rechazar
     request.estado = isApprove;
 
-    // Realizar la petición PUT para aprobar o rechazar la solicitud
     this.http.put(`${this.urlApi}/manage/${id}`, request, { headers })
       .subscribe({
         next: () => {

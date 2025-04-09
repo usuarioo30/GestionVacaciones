@@ -1,59 +1,99 @@
 import { Component, OnInit } from "@angular/core";
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { UsuarioService } from "../../../services/usuario.service";
-import { Router } from "@angular/router";
+import { Router, RouterLink } from "@angular/router";
 import { CommonModule } from "@angular/common";
-import { Usuario } from "../../../interfaces/usuario";
+import { jwtDecode } from "jwt-decode";
 import { HttpErrorResponse } from "@angular/common/http";
+import Swal from "sweetalert2";
 
 @Component({
   selector: 'app-editprofile',
-  imports: [ReactiveFormsModule, CommonModule, FormsModule],
+  imports: [ReactiveFormsModule, CommonModule, FormsModule, RouterLink],
   templateUrl: './editprofile.component.html',
   styleUrl: './editprofile.component.css'
 })
 export class EditprofileComponent implements OnInit {
-  editForm!: FormGroup;
+
+  userForm!: FormGroup;
+  loading: boolean = false;
+  errorMessage: string = '';
+  userId!: number;
 
   constructor(
     private fb: FormBuilder,
-    private usuarioService: UsuarioService
+    private usuarioService: UsuarioService,
+    private router: Router
   ) { }
 
   ngOnInit(): void {
-    // Llamamos a getUsuarioData() para obtener los datos del usuario
-    this.usuarioService.getUserData().subscribe(
-      (user: Usuario) => {
-        this.editForm.patchValue({
-          nombreCompleto: user.nombreCompleto,
-          email: user.email,
-          username: user.username
-        });
-      },
-      (error) => {
-        console.error('Error al obtener los datos del usuario', error);
-      }
-    );
+    this.initializeForm();
+    this.loadUserData();
+  }
 
-    // Inicializamos el formulario
-    this.editForm = this.fb.group({
-      nombreCompleto: ['', [Validators.required]],
+  initializeForm() {
+    this.userForm = this.fb.group({
+      username: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
-      username: ['', [Validators.required]],
-      password: ['', [Validators.minLength(6)]]  // Contraseña opcional
+      nombreCompleto: ['', Validators.required],
+      password: ['']
     });
   }
 
-
-  // Enviar el formulario
-  onSubmit(): void {
-    if (this.editForm.invalid) {
-      return;
+  loadUserData() {
+    const usuario = this.usuarioService.getUsuarioActual();
+    if (usuario) {
+      this.userId = usuario.id;
+      this.userForm.patchValue({
+        username: usuario.username,
+        email: usuario.email,
+        nombreCompleto: usuario.nombreCompleto
+      });
+    } else {
+      this.router.navigate(['/login']);
     }
-
-    console.log('Formulario enviado', this.editForm.value);
-    // Aquí enviaríamos la actualización al backend si fuera necesario
   }
+
+  editUser() {
+    if (this.userForm.valid) {
+      const updatedUser = {
+        username: this.userForm.value.username,
+        email: this.userForm.value.email,
+        nombreCompleto: this.userForm.value.nombreCompleto,
+        password: this.userForm.value.password || null
+      };
+
+      this.loading = true;
+
+      this.usuarioService.editarUsuario(updatedUser).subscribe(
+        (response: any) => {
+          this.loading = false;
+
+          if (response.access_token) {
+            localStorage.setItem('access_token', response.access_token);
+          }
+
+          Swal.fire({
+            icon: 'success',
+            title: 'Perfil actualizado correctamente',
+            text: 'Tu perfil ha sido actualizado exitosamente.',
+            confirmButtonText: 'Aceptar'
+          }).then(() => {
+            window.location.reload();
+          });
+        },
+        (error: HttpErrorResponse) => {
+          this.loading = false;
+          if (error.error && error.error.message) {
+            this.errorMessage = error.error.message;
+          } else {
+            this.errorMessage = 'Error al actualizar el perfil';
+          }
+        }
+      );
+    } else {
+      this.errorMessage = 'Formulario inválido. Por favor revisa los campos.';
+    }
+  }
+
 }
-
-

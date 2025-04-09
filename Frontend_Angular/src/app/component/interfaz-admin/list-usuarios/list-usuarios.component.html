@@ -13,8 +13,8 @@
       <!-- Card Body -->
       <div class="card-body">
         <div class="mb-3">
-          <button class="btn btn-primary btn-sm d-flex align-items-center fs-6"
-            [routerLink]="['/crearUsuario']" aria-label="Crear Usuario">
+          <button class="btn btn-primary btn-sm d-flex align-items-center fs-6" [routerLink]="['/crearUsuario']"
+            aria-label="Crear Usuario">
             <i class="bi bi-person-plus me-2"></i> Crear usuario
           </button>
         </div>
@@ -26,7 +26,7 @@
         <!-- Tabla cuando hay usuarios -->
         <div *ngIf="usuarios.length > 0" class="table-responsive">
           <table class="table table-striped table-bordered table-hover">
-            <thead class="thead-dark">
+            <thead class="thead-dark text-center">
               <tr>
                 <th style="white-space: nowrap;">#</th>
                 <th style="white-space: nowrap;">Nombre</th>
@@ -37,11 +37,14 @@
             </thead>
             <tbody>
               <tr *ngFor="let user of usuarios">
-                <td style="white-space: nowrap;">{{ user.id }}</td>
-                <td style="white-space: nowrap;">{{ user.nombreCompleto }}</td>
-                <td style="white-space: nowrap;">{{ user.email }}</td>
-                <td style="white-space: nowrap;">{{ user.rol }}</td>
-                <td>
+                <td class="text-center" style="white-space: nowrap;">{{ user.id }}</td>
+                <td style="white-space: nowrap;">
+                  {{ user.nombreCompleto }}<br>
+                  <span class="text-muted">{{ user.username }}</span>
+                </td>
+                <td class="text-center" style="white-space: nowrap;">{{ user.email }}</td>
+                <td class="text-center" style="white-space: nowrap;">{{ user.rol }}</td>
+                <td class="text-center">
                   <button *ngIf="user.id.toString() !== usuario_actual?.sub.toString()" class="btn btn-danger btn-sm"
                     (click)="deleteUser(user.id)">
                     <i class="bi bi-trash"></i>
