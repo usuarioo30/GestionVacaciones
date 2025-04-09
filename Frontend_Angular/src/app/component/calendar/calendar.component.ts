@@ -8,6 +8,7 @@ import {SolicitudDescansoService} from '../../services/solicitud-descanso.servic
 import Swal from 'sweetalert2';
 import { firstValueFrom } from 'rxjs';
 import { jwtDecode } from 'jwt-decode';
+import { CalendarRequestService } from '../../services/calendar-request.service';
 
 @Component({
   selector: 'app-calendar',
@@ -25,13 +26,14 @@ export class CalendarComponent implements OnInit {
   monthNumber!: number;
   year!: number;
   auth: string = '';
+  status: string = 'true';
 
   // Cabecera con los días de la semana
   weeksDaysName: string[] = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
 
   calendar: CreateCalendarService = inject(CreateCalendarService);
   solicitudSrvc: SolicitudDescansoService = inject(SolicitudDescansoService);
-
+  requestCalendar: CalendarRequestService = inject(CalendarRequestService);
 
   constructor(
     private router: Router
@@ -45,7 +47,7 @@ export class CalendarComponent implements OnInit {
     }
   }
 
-  async ngOnInit() {
+  ngOnInit() {
     const token = localStorage.getItem("access_token");
 
     if(!token) {
@@ -59,7 +61,7 @@ export class CalendarComponent implements OnInit {
       const decodedToken = jwtDecode(token);
         if (decodedToken.sub) {
           const userId = Number.parseInt(decodedToken.sub);
-          this.solicitudSrvc.getUsersSolicitudDescanso(userId, this.auth);
+          this.requestCalendar.getAcceptedUsersSolicitudDescanso(userId, this.auth);
 
         }
   
@@ -131,11 +133,11 @@ export class CalendarComponent implements OnInit {
     // Convertimos el objeto "day" a Date
     const dayDate = new Date(day.year, day.monthIndex, day.number);
     // Verifica si el día está solicitado
-    if (!this.solicitudSrvc.filteredData()() || this.solicitudSrvc.filteredData()().length === 0) {
+    if (!this.requestCalendar.requests() || this.requestCalendar.requests().length === 0) {
       return false;
     }
 
-    for (const solicitud of this.solicitudSrvc.filteredData()()) {
+    for (const solicitud of this.requestCalendar.requests()) {
       const fecha_inicio = new Date(solicitud.fecha_inicio);
       const fecha_fin = new Date(solicitud.fecha_fin);
 
@@ -154,20 +156,7 @@ export class CalendarComponent implements OnInit {
     return false;
   }
 
-  async loadSolicitudes() {
-    try {
-      const solicitud = await firstValueFrom(this.solicitudSrvc.getAllSolicitudesDescanso());
-      this.solicitudes = solicitud;
-      console.log(this.solicitudes);
-    } catch (error) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Acceso Denegado',
-        text: 'Solo los administradores pueden ver esta lista de solicitudes.',
-        confirmButtonText: 'Cerrar'
-      });
-    }
-  }
+
 
   /**
    * Carga el calendario completo del mes actual,
