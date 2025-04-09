@@ -1,16 +1,17 @@
 import {Component, inject, Input, OnInit, SimpleChanges} from '@angular/core';
 import { CreateCalendarService } from '../../services/createcalendar.service';
 import { Day } from '../../interfaces/day';
-import {CommonModule, DatePipe, NgFor} from '@angular/common';
+import {CommonModule, DatePipe} from '@angular/common';
 import { Router } from '@angular/router';
 import {SolicitudDescanso} from '../../interfaces/solicitud-descanso';
 import {SolicitudDescansoService} from '../../services/solicitud-descanso.service';
 import Swal from 'sweetalert2';
 import { firstValueFrom } from 'rxjs';
+import { jwtDecode } from 'jwt-decode';
 
 @Component({
   selector: 'app-calendar',
-  imports: [NgFor, CommonModule],
+  imports: [CommonModule],
   templateUrl: './calendar.component.html',
   styleUrls: ['./calendar.component.css']
 })
@@ -23,12 +24,14 @@ export class CalendarComponent implements OnInit {
   solicitudes: SolicitudDescanso[] = [];
   monthNumber!: number;
   year!: number;
+  auth: string = '';
 
   // Cabecera con los días de la semana
   weeksDaysName: string[] = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
 
   calendar: CreateCalendarService = inject(CreateCalendarService);
   solicitudSrvc: SolicitudDescansoService = inject(SolicitudDescansoService);
+
 
   constructor(
     private router: Router
@@ -47,14 +50,24 @@ export class CalendarComponent implements OnInit {
 
     if(!token) {
       this.router.navigateByUrl("/login");
+    } else {
+      // Se obtiene el mes actual para inicializar monthNumber y year.
+      const currentMonthData = this.calendar.getCurrentMonth();
+      this.monthNumber = currentMonthData[0].monthIndex;
+      this.year = currentMonthData[0].year;
+      this.auth = token;
+      const decodedToken = jwtDecode(token);
+        if (decodedToken.sub) {
+          const userId = Number.parseInt(decodedToken.sub);
+          this.solicitudSrvc.getUsersSolicitudDescanso(userId, this.auth);
+
+        }
+  
+      //await this.loadSolicitudes();
+      this.loadCalendar();
+
     }
 
-    // Se obtiene el mes actual para inicializar monthNumber y year.
-    const currentMonthData = this.calendar.getCurrentMonth();
-    this.monthNumber = currentMonthData[0].monthIndex;
-    this.year = currentMonthData[0].year;
-    await this.loadSolicitudes();
-    this.loadCalendar();
   }
 
   isMonthRequested(): boolean {
@@ -118,11 +131,11 @@ export class CalendarComponent implements OnInit {
     // Convertimos el objeto "day" a Date
     const dayDate = new Date(day.year, day.monthIndex, day.number);
     // Verifica si el día está solicitado
-    if (!this.solicitudes || this.solicitudes.length === 0) {
+    if (!this.solicitudSrvc.filteredData()() || this.solicitudSrvc.filteredData()().length === 0) {
       return false;
     }
 
-    for (const solicitud of this.solicitudes) {
+    for (const solicitud of this.solicitudSrvc.filteredData()()) {
       const fecha_inicio = new Date(solicitud.fecha_inicio);
       const fecha_fin = new Date(solicitud.fecha_fin);
 
