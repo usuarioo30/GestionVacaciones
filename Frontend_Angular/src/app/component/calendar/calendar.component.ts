@@ -145,7 +145,7 @@ export class CalendarComponent implements OnInit {
     try {
       const solicitud = await firstValueFrom(this.solicitudSrvc.getAllSolicitudesDescanso());
       this.solicitudes = solicitud;
-      // console.log(this.solicitudes);
+      console.log(this.solicitudes);
     } catch (error) {
       Swal.fire({
         icon: 'warning',
