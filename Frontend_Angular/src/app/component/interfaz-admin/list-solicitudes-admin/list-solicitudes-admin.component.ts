@@ -4,7 +4,7 @@ import { SolicitudDescansoService } from '../../../services/solicitud-descanso.s
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { Usuario } from '../../../interfaces/usuario';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
 import Swal from 'sweetalert2';
 
@@ -44,7 +44,7 @@ export class ListSolicitudesAdminComponent implements OnInit {
           text: 'Solo los administradores pueden ver esta lista de solicitudes.',
           confirmButtonText: 'Cerrar'
         }).then(() => {
-          this.router.navigateByUrl('/home'); // Redirigir a otra página si no es admin
+          this.router.navigateByUrl('/'); // Redirigir a otra página si no es admin
         });
       } else {
         this.isAdmin = true;
@@ -73,10 +73,13 @@ export class ListSolicitudesAdminComponent implements OnInit {
     }
   }
 
-  approveButton(request: SolicitudDescanso) {
-    request.estado = true;
-    console.log(request);
-    this.solicitudService.approveRequest(request.id, request);
+  handleRequest(request: SolicitudDescanso, isApprove: boolean) {
+    request.estado = isApprove;
+
+    console.log('Manejando solicitud:', request);
+
+    this.solicitudService.approveOrRejectRequest(request.id, request, isApprove);
+
     this.solicitudService.getAllSolicitudesDescansoAdmin().subscribe({
       next: (solicitudes) => {
         this.solicitudes = solicitudes;
@@ -92,6 +95,8 @@ export class ListSolicitudesAdminComponent implements OnInit {
             }
           });
         });
+
+        window.location.reload();
       },
       error: (err) => {
         console.error('Error al obtener las solicitudes', err);

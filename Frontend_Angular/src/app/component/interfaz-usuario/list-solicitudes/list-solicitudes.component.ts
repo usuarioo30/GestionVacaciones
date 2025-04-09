@@ -93,7 +93,6 @@ export class ListSolicitudesComponent implements OnInit {
   }
 
   abrirModalCrear() {
-
     this.mostrarModal = true;
   }
 
@@ -143,6 +142,7 @@ export class ListSolicitudesComponent implements OnInit {
               usuario: this.username,
               usuario_id: this.usuario_id,
             });
+            
             // Refrescar la lista de solicitudes
             this.findAllSolicitudesDescanso();
           });

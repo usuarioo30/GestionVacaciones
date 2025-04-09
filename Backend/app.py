@@ -33,15 +33,18 @@ class Usuario(db.Model):
 class SolicitudDescanso(db.Model):
     __tablename__ = 'solicitudDescanso'
     id = db.Column(db.Integer, primary_key=True)
-    usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id', ondelete="CASCADE"), nullable=False)
     fecha_inicio = db.Column(db.DateTime, nullable=False)
     fecha_fin = db.Column(db.DateTime, nullable=False)
     fecha_solicitud = db.Column(db.DateTime, default=datetime.utcnow)
     estado = db.Column(db.Boolean, nullable=True, default=None)
     motivo = db.Column(db.String(255), nullable=True)
 
+    usuario = db.relationship('Usuario', backref=db.backref('solicitudes', cascade="all, delete-orphan"))
+
     def __repr__(self):
         return f'<SolicitudDescanso {self.id}>'
+
 
 # Función para crear la aplicación
 def create_app():
@@ -105,7 +108,7 @@ def login():
 
     access_token = create_access_token(
         identity=str(usuario.id), 
-        additional_claims={"username": usuario.username, "nombreCompleto": usuario.nombreCompleto, "rol": usuario.rol},
+        additional_claims={"username": usuario.username, "nombreCompleto": usuario.nombreCompleto, "rol": usuario.rol, "email": usuario.email},
         expires_delta=timedelta(hours=24)),
     return jsonify({'access_token': access_token}), 200
 
@@ -200,6 +203,122 @@ def getUserById(user_id):
     except Exception as e:
         return jsonify({"error": "Ocurrió un error al obtener la información del usuario", "message": str(e)}), 500
 
+@app.route('/user/list', methods=['GET'])
+@jwt_required()
+def getAllUsers():
+    try:
+        claims = get_jwt()
+        rol = claims.get("rol")
+
+        if rol != 'admin':
+            return jsonify({"message": "Acceso no autorizado. Solo los administradores pueden ver este recurso."}), 403
+
+        users = Usuario.query.all()
+
+        users_data = []
+        for user in users:
+            users_data.append({
+                'id': user.id,
+                'nombreCompleto': user.nombreCompleto,
+                'username': user.username,
+                'email': user.email,
+                'rol': user.rol,
+            })
+
+        return jsonify({"users": users_data}), 200
+
+    except Exception as e:
+        return jsonify({"error": "Ha ocurrido un error al obtener los usuarios", "message": str(e)}), 500
+
+@app.route('/user/delete/<int:id>', methods=['DELETE'])
+@jwt_required()
+def eliminar_usuario(id):
+    """
+    Endpoint para eliminar un usuario.
+    DELETE: /user/delete/{id}
+    Response: 200 OK {"message": "Usuario eliminado correctamente"}
+    Response: 404 Not Found {"error": "Usuario no encontrado"}
+    Response: 403 Forbidden {"error": "No tienes permisos para eliminar este usuario"}
+    Response: 500 Internal Server Error {"error": "Hubo un error al eliminar el usuario"}
+    """
+    try:
+        usuario_id = get_jwt_identity()
+
+        claims = get_jwt()
+        rol = claims.get('rol')
+
+        if rol != 'admin':
+            return jsonify({'error': 'No tienes permisos para eliminar este usuario'}), 403
+
+        if id == usuario_id:
+            return jsonify({'error': 'No puedes eliminar tu propio usuario'}), 403
+
+        usuario = Usuario.query.get(id)
+
+        if not usuario:
+            return jsonify({'error': 'Usuario no encontrado'}), 404
+
+        db.session.delete(usuario)
+        db.session.commit()
+
+        return jsonify({'message': 'Usuario eliminado correctamente'}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Hubo un error al eliminar el usuario', 'message': str(e)}), 500
+
+@app.route('/user/edit/<int:id>', methods=['PUT'])
+@jwt_required()
+def editar_usuario(id):
+    try:
+        # Obtener los datos enviados en el cuerpo de la solicitud
+        data = request.get_json()
+
+        # Verificar que se enviaron los datos necesarios
+        if not data:
+            return jsonify({'message': 'No se enviaron datos para editar el usuario'}), 400
+
+        # Obtener el usuario a editar de la base de datos
+        usuario = Usuario.query.get_or_404(id)
+
+        # Verificar si el usuario que hace la solicitud es el mismo que se está editando
+        from flask_jwt_extended import get_jwt_identity
+        current_user_id = get_jwt_identity()  # El ID del usuario que hizo la solicitud
+
+        # Actualizar los datos del usuario sin validaciones adicionales
+        usuario.nombreCompleto = data.get('nombreCompleto', usuario.nombreCompleto)
+        usuario.username = data.get('username', usuario.username)
+        usuario.email = data.get('email', usuario.email)
+
+        # Solo actualizar la contraseña si se proporciona una nueva
+        nueva_contraseña = data.get('password')
+        if nueva_contraseña:
+            usuario.password = generate_password_hash(nueva_contraseña)
+
+        # Guardar los cambios en la base de datos
+        db.session.commit()
+
+        # Crear un nuevo token con los datos actualizados
+        access_token = create_access_token(
+            identity=str(usuario.id), 
+            additional_claims={
+                "username": usuario.username, 
+                "nombreCompleto": usuario.nombreCompleto, 
+                "rol": usuario.rol, 
+                "email": usuario.email
+            },
+            expires_delta=timedelta(hours=24)
+        )
+
+        # Devolver el mensaje de éxito y el nuevo token
+        return jsonify({
+            'message': 'Usuario editado correctamente',
+            'access_token': access_token  # Devolver el nuevo token
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'message': 'Error al editar el usuario', 'error': str(e)}), 500
 
 @app.route('/request/edit/<int:id>', methods=['PUT'])
 @jwt_required()
@@ -385,8 +504,6 @@ def eliminar_solicitud(id):
         return jsonify({'error': 'Hubo un error al eliminar la solicitud', 'message': str(e)}), 500
 
 
-
-
 @app.route('/request/list', methods=['GET'])
 @jwt_required()
 def listar_solicitudes():
@@ -399,7 +516,7 @@ def listar_solicitudes():
         if rol != 'user':
             return jsonify({"error": "No tienes permisos para acceder a esta lista de solicitudes."}), 403
 
-        solicitudes = SolicitudDescanso.query.filter_by(usuario_id=usuario_id).all()
+        solicitudes = SolicitudDescanso.query.filter_by(usuario_id=usuario_id, estado=None).all()
 
         solicitudes_data = []
         for solicitud in solicitudes:
@@ -455,12 +572,55 @@ def listar_solicitudes_admin():
         return jsonify({"error": "Ocurrió un error al obtener las solicitudes.", "message": str(e)}), 500
     
 
+@app.route('/request/list-admin/all', methods=['GET'])
+@jwt_required()
+def listar_todas_solicitudes_admin():
+    try:
+        # Obtener la identidad del usuario autenticado
+        claims = get_jwt()
+
+        rol = claims.get('rol')
+
+        if rol != 'admin':
+            # Si no es admin, se retorna un error
+            return jsonify({"error": "No tienes permisos para acceder a esta lista de solicitudes."}), 403
+
+        # Si el rol es 'admin', se devuelven todas las solicitudes
+        resultados = db.session.query(SolicitudDescanso, Usuario.username, Usuario.nombreCompleto, Usuario.id)\
+        .join(Usuario, SolicitudDescanso.usuario_id == Usuario.id)\
+        .filter(SolicitudDescanso.estado.isnot(None))\
+        .all()
+
+        data = [
+            {
+                "id": solicitud.id,
+                "estado": solicitud.estado,
+                "motivo": solicitud.motivo,
+                "fecha_inicio": solicitud.fecha_inicio.strftime('%Y-%m-%d %H:%M:%S'),
+                "fecha_fin": solicitud.fecha_fin.strftime('%Y-%m-%d %H:%M:%S'),
+                "fecha_solicitada": solicitud.fecha_solicitada.strftime('%Y-%m-%d %H:%M:%S'),
+                "usuario_id": usuario_id,
+                "username": username,
+                "nombreCompleto": nombreCompleto
+                
+            }
+            for solicitud, username, nombreCompleto, usuario_id in resultados
+        ]
+        return jsonify(data), 200
+
+    except Exception as e:
+        return jsonify({"error": "Ocurrió un error al obtener las solicitudes.", "message": str(e)}), 500
+
+
 # Obtener todas las solicitudes de un usuario
 @app.route('/request/<int:user>', methods=['GET'])
 @jwt_required()
 def getUserRequest(user):
     try:
-        solicitudes = SolicitudDescanso.query.filter(user==SolicitudDescanso.usuario_id)
+        solicitudes = SolicitudDescanso.query.filter(
+            SolicitudDescanso.usuario_id == user,
+            SolicitudDescanso.estado != None
+        ).all()
 
         solicitudes_data = []
         for solicitud in solicitudes:

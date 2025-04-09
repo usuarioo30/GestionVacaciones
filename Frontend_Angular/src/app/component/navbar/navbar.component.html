@@ -47,20 +47,18 @@
 
               <!-- Historial -->
               <li class="nav-item mt-2 mb-2 me-3 ms-3 ps-3 pe-3" [routerLinkActive]="'active-link'">
-                <a class="nav-link text-dark" [routerLink]="['/historial']" routerLinkActive="router-link-active"
+                <a class="nav-link text-dark" [routerLink]="isAdmin ? ['/historial-admin'] : ['/historial']" routerLinkActive="router-link-active"
                   aria-label="Historial">
                   <i class="bi bi-clock fs-4"></i>&nbsp; Historial
                 </a>
               </li>
 
-              <!-- Crear usuario -->
-
-              <li class="nav-item mt-2 mb-2 me-3 ms-3 ps-3 pe-3" *ngIf="mostrarCrearUsuario"
-                [routerLinkActive]="'active-link'">
-
-                <a class="nav-link text-dark" [routerLink]="['/crearUsuario']" routerLinkActive="router-link-active"
-                  aria-label="Crear Usuario">
-                  <i class="bi bi-person-plus fs-4"></i>&nbsp; Crear usuario
+              <!-- Usuarios -->
+              <li class="nav-item mt-2 mb-2 me-3 ms-3 ps-3 pe-3" [routerLinkActive]="'active-link'"
+                *ngIf="mostrarCrearUsuario">
+                <a class="nav-link text-dark" [routerLink]="['/usuarios']" routerLinkActive="router-link-active"
+                  aria-label="Usuarios">
+                  <i class="bi bi-person-lines-fill fs-4"></i>&nbsp; Usuarios
                 </a>
               </li>
 
@@ -78,8 +76,13 @@
                       </a>
                     </li>
                     <li>
+                      <a class="dropdown-item" [routerLink]="['/editarUsuario']" aria-label="Crear Usuario">
+                        <i class="bi bi-pencil me-1"></i>&nbsp; Editar usuario
+                      </a>
+                    </li>
+                    <li>
                       <a class="dropdown-item" (click)="logout()">
-                        Cerrar sesión
+                        <i class="bi bi-box-arrow-right me-1"></i>&nbsp; Cerrar sesión
                       </a>
                     </li>
                   </ul>

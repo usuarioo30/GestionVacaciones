@@ -1,6 +1,6 @@
 /* Estilo para resaltar el enlace activo */
 .active-link {
-  background-color: grey;
+  background-color: #EEEEEE;
   color: white !important;
   font-weight: bold;
   border-radius: 5px;
@@ -27,7 +27,7 @@
 /* Aumentar tamaño de los iconos cuando se pasa el ratón */
 .navbar-nav .nav-item:hover a i {
   font-size: 1.5rem;
-  color: #007bff;
+  color: #4CAF50;
 }
 
 /* Mantener el color y tamaño cuando está activo */

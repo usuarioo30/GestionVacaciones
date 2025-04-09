@@ -12,7 +12,7 @@ import { SolicitudDescanso } from '../../../interfaces/solicitud-descanso';
   templateUrl: './historial.component.html',
   styleUrl: './historial.component.css'
 })
-export class HistorialComponent implements OnInit{
+export class HistorialComponent implements OnInit {
 
   solicitudesService: SolicitudDescansoService = inject(SolicitudDescansoService)
   private router: Router = inject(Router)
@@ -30,20 +30,19 @@ export class HistorialComponent implements OnInit{
     if (token) {
       this.auth = token;
       const decodedToken = jwtDecode(this.auth);
-      console.log("Estoy aquí")
-      if(decodedToken.sub) {
+      if (decodedToken.sub) {
         this.userId = Number.parseInt(decodedToken.sub);
         this.solicitudesService.getUsersSolicitudDescanso(this.userId, this.auth);
         this.solicitudesService.setFilter(this.status);
-        
-  
+
+
 
       }
     } else {
       this.router.navigate(['/login']);
     }
 
-    
+
   }
 
   orderRequest(field: string) {
@@ -55,7 +54,7 @@ export class HistorialComponent implements OnInit{
 
   }
 
-  
+
 
 
 }
