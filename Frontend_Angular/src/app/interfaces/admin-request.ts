@@ -5,7 +5,7 @@ export interface AdminRequest {
     nombreCompleto: string;
     fecha_inicio: string;
     fecha_fin: string
-    fecha_solicitada: string
+    fecha_solicitud: string
     estado: boolean
     motivo: string;
 }
