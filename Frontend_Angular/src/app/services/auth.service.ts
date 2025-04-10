@@ -1,9 +1,9 @@
 import { inject, Injectable, OnChanges, OnInit, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { jwtDecode } from 'jwt-decode';
-import { Usuario } from '../interfaces/usuario';
 import { firstValueFrom, tap, Observable } from 'rxjs';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Usuariomin } from '../interfaces/usuariomin';
 
 @Injectable({
   providedIn: 'root',
@@ -17,10 +17,15 @@ export class AuthService implements OnChanges {
   private apiUrl = 'http://localhost:5000/';
   //Signal de inicio/cierre de sesión
   private isLoguedSignal = signal<boolean>(false);
+  private users = signal<Usuariomin[]>([]);
 
   //Getter de la signal de login
   get isLogued() {
     return this.isLoguedSignal.asReadonly();
+  }
+
+  get allUsers() {
+    return this.users.asReadonly();
   }
 
   //Función para obtener el valor puro de la signal
@@ -67,6 +72,19 @@ export class AuthService implements OnChanges {
       )
   }
 
+  getUsers(token: string) {
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+    return this.http.get<Usuariomin[]>(`${this.apiUrl}user/list/min`, { headers })
+      .subscribe({
+        next: response => {
+          this.users.set(response);
+          console.log(response);
+        }, // <- Signal actualizada
+        error: err => alert("Ha ocurrido un error inesperado " + err)
+      });
+  }
+  
+
   /**
    * Método para obtener el nombre de usuario desde el token
    * @returns El email del usuario
@@ -93,18 +111,18 @@ export class AuthService implements OnChanges {
    * @param email Correo electrónico del usuario
    * @returns Promise<Usuario> El usuario registrado con ese correo
    */
-  async getUserByMail(email: string): Promise<Usuario> {
-    const response = await fetch(`${this.apiUrl}/usuarios/email/${email}`)
+  // async getUserByMail(email: string): Promise<Usuario> {
+  //   const response = await fetch(`${this.apiUrl}/usuarios/email/${email}`)
 
-    if (!response.ok) {
-      throw new Error('Error al obtener el usuario');
-    }
+  //   if (!response.ok) {
+  //     throw new Error('Error al obtener el usuario');
+  //   }
 
-    const json = await response.json();
+  //   const json = await response.json();
 
-    return await json;
+  //   return await json;
 
-  }
+  // }
 
   /**
    * Método para obtener un usuario dado su nombre de usuario
@@ -129,52 +147,52 @@ export class AuthService implements OnChanges {
    * Método para obtener a todos los usuarios existentes
    * @returns Lista de usuarios existentes
    */
-  async getUsers(): Promise<Usuario[]> {
-    try {
-      return await firstValueFrom(this.http.get<Usuario[]>(`${this.apiUrl}/usuarios`));
-    } catch (error) {
-      console.error('Error al obtener los usuarios:', error);
-      return [];
-    }
-  }
+  // async getUsers(): Promise<Usuario[]> {
+  //   try {
+  //     return await firstValueFrom(this.http.get<Usuario[]>(`${this.apiUrl}/usuarios`));
+  //   } catch (error) {
+  //     console.error('Error al obtener los usuarios:', error);
+  //     return [];
+  //   }
+  // }
 
   /**
    * Método para obtener a un usuario dado su id
    * @param id del usuario
    * @returns El usuario al que pertenece ese id
    */
-  async getUser(id: number) {
-    const response = await fetch(`${this.apiUrl}/usuarios/${id}`)
+  // async getUser(id: number) {
+  //   const response = await fetch(`${this.apiUrl}/usuarios/${id}`)
 
-    if (!response.ok) {
-      throw new Error('Error al obtener el usuario');
-    }
+  //   if (!response.ok) {
+  //     throw new Error('Error al obtener el usuario');
+  //   }
 
-    return response.json();
+  //   return response.json();
 
-  }
+  // }
 
   /**
    * Método para obtener el rol del usuario logueado mediante su token almacenado localmente
    * @returns El rol del usuario
    */
-  async getRole() {
-    const token = localStorage.getItem('access_token');
-    if (token) {
-      try {
-        // Decodificar el token
-        const decodedToken: any = jwtDecode(token);
-        console.log('Decoded Token:', decodedToken);
+  // async getRole() {
+  //   const token = localStorage.getItem('access_token');
+  //   if (token) {
+  //     try {
+  //       // Decodificar el token
+  //       const decodedToken: any = jwtDecode(token);
+  //       console.log('Decoded Token:', decodedToken);
 
-        // Verifica que el rol esté presente en el token
-        return decodedToken?.rol || (await this.getUserByMail(decodedToken.email)).roles;
-      } catch (error) {
-        console.error('Error al decodificar el token:', error);
-        return null;
-      }
-    }
-    return null;
-  }
+  //       // Verifica que el rol esté presente en el token
+  //       return decodedToken?.rol || (await this.getUserByMail(decodedToken.email)).roles;
+  //     } catch (error) {
+  //       console.error('Error al decodificar el token:', error);
+  //       return null;
+  //     }
+  //   }
+  //   return null;
+  // }
 
   /**
    * Método para iniciar sesión con google

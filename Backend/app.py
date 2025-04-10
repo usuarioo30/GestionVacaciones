@@ -229,6 +229,40 @@ def getAllUsers():
 
     except Exception as e:
         return jsonify({"error": "Ha ocurrido un error al obtener los usuarios", "message": str(e)}), 500
+    
+
+
+@app.route('/user/list/min', methods=['GET'])
+@jwt_required()
+def getAllUsersMin():
+    try:
+        claims = get_jwt()
+        rol = claims.get("rol")
+
+        if rol != 'admin':
+            return jsonify({"message": "Acceso no autorizado. Solo los administradores pueden ver este recurso."}), 403
+
+        users =  db.session.query(
+            Usuario.id,
+            Usuario.nombreCompleto,
+            Usuario.username,
+            Usuario.rol
+        ).join(SolicitudDescanso).filter(SolicitudDescanso.estado == 1).group_by(Usuario.id).all()
+
+        users_data = []
+        for user in users:
+            users_data.append({
+                'id': user.id,
+                'nombreCompleto': user.nombreCompleto,
+                'rol': user.rol
+            })
+
+        return jsonify(users_data), 200
+
+    except Exception as e:
+        return jsonify({"error": "Ha ocurrido un error al obtener los usuarios", "message": str(e)}), 500
+
+
 
 @app.route('/user/delete/<int:id>', methods=['DELETE'])
 @jwt_required()

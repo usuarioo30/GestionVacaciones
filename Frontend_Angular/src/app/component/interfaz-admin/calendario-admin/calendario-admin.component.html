@@ -1,3 +1,11 @@
+<div *ngFor="let user of users()">
+    <span [ngStyle]="{ 
+        'background-color': getRandomColor(user.id),
+        'padding': '3px'}">
+    </span>
+    {{user.nombreCompleto}} ({{user.rol}}) 
+</div>
+
 <div class="container calendar-container py-3 mt-5 mb-5">
     <!-- Cabecera -->
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
@@ -9,7 +17,7 @@
     </div>
   
     <!-- Mensaje si se ha solicitado todo el mes -->
-    <div *ngIf="isMonthRequested()" class="alert alert-info text-center">
+    <div *ngIf="isMonthRequested().estado" class="alert alert-info text-center">
       Has solicitado vacaciones para todo este mes.
     </div>
   
@@ -27,8 +35,10 @@
                'text-muted': !day.isCurrentMonth,
                'bg-light': day.isToday,
                'fw-bold': day.isToday,
-               'day-requested': day.requested
-             }">
+               
+             }"
+             [ngStyle]="day.requested ? { 'background-color': getRandomColor(day.id) } : {}"
+             >
           {{ day.number }}
         </div>
       </div>
