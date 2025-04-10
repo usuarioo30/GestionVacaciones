@@ -47,6 +47,7 @@
                             <th style="white-space: nowrap;">Fecha que se solicitó</th>
                             <th style="white-space: nowrap;">Estado</th>
                             <th style="white-space: nowrap;">Motivo</th>
+                            <th style="white-space: nowrap;">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -67,6 +68,11 @@
                                 </b></span>
                             </td>
                             <td style="white-space: nowrap;">{{ solicitud.motivo ? solicitud.motivo : 'No se dado una razón concreta' }}</td>
+                            <td class="text-center">
+                                <button class="btn btn-danger btn-sm" (click)="eliminarSolicitud(solicitud.id)">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
                         </tr>
                     </tbody>
                 </table>

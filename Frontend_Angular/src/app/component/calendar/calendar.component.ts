@@ -1,10 +1,10 @@
-import {Component, inject, Input, OnInit, SimpleChanges} from '@angular/core';
+import { Component, inject, Input, OnInit, SimpleChanges } from '@angular/core';
 import { CreateCalendarService } from '../../services/createcalendar.service';
 import { Day } from '../../interfaces/day';
-import {CommonModule, DatePipe} from '@angular/common';
+import { CommonModule, DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
-import {SolicitudDescanso} from '../../interfaces/solicitud-descanso';
-import {SolicitudDescansoService} from '../../services/solicitud-descanso.service';
+import { SolicitudDescanso } from '../../interfaces/solicitud-descanso';
+import { SolicitudDescansoService } from '../../services/solicitud-descanso.service';
 import Swal from 'sweetalert2';
 import { firstValueFrom } from 'rxjs';
 import { jwtDecode } from 'jwt-decode';
@@ -37,10 +37,10 @@ export class CalendarComponent implements OnInit {
 
   constructor(
     private router: Router
-  ) {}
+  ) { }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if(changes['solicitudes'] && this.monthNumber !== undefined && this.year !== undefined) {
+    if (changes['solicitudes'] && this.monthNumber !== undefined && this.year !== undefined) {
       console.log('Las solicitudes han cambiado:', changes['solicitudes']);
       // Recargar el calendario en caso de que las solicitudes cambien.
       this.loadCalendar();
@@ -50,24 +50,25 @@ export class CalendarComponent implements OnInit {
   ngOnInit() {
     const token = localStorage.getItem("access_token");
 
-    if(!token) {
+    if (!token) {
       this.router.navigateByUrl("/login");
     } else {
-      // Se obtiene el mes actual para inicializar monthNumber y year.
       const currentMonthData = this.calendar.getCurrentMonth();
       this.monthNumber = currentMonthData[0].monthIndex;
       this.year = currentMonthData[0].year;
       this.auth = token;
+
       const decodedToken = jwtDecode(token);
-        if (decodedToken.sub) {
-          const userId = Number.parseInt(decodedToken.sub);
-          this.requestCalendar.getAcceptedUsersSolicitudDescanso(userId, this.auth);
+      if (decodedToken.sub) {
+        const userId = Number.parseInt(decodedToken.sub);
 
-        }
-  
-      //await this.loadSolicitudes();
-      this.loadCalendar();
-
+        // Esperamos a que se carguen las solicitudes
+        firstValueFrom(
+          this.requestCalendar.getAcceptedUsersSolicitudDescanso(userId, this.auth)
+        ).then(() => {
+          this.loadCalendar();
+        });
+      }
     }
 
   }
@@ -177,7 +178,7 @@ export class CalendarComponent implements OnInit {
       // Si el mes fue solicitado completamente, todos los días laborables se marcan como requested
       if (solicitudCompleta && day.weekDayNumber < 5) {
         day.requested = true;
-      }else if (solicitudParcial && day.weekDayNumber < 5) {
+      } else if (solicitudParcial && day.weekDayNumber < 5) {
         day.requested = true;
       } else {
         day.requested = false;

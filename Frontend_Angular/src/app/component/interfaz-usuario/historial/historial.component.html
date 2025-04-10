@@ -11,7 +11,7 @@
                 <div class="mx-2">
                     <label for="status" class="form-label">Ordenar</label>
                     <select id="status" class="form-control" [(ngModel)]="order" (change)="orderRequest(order)">
-                        <option value="#" >Orden por defecto</option>
+                        <option value="#">Orden por defecto</option>
                         <option value="id_asc">Código Ascendente</option>
                         <option value="id_desc">Código Descendente</option>
                         <option value="date_asc">Fecha incial Ascendente</option>
@@ -26,13 +26,14 @@
                         <option value="true">Sin filtrar</option>
                         <option value="1">Aprobado</option>
                         <option value="0">Rechazado</option>
-                        
+
                     </select>
                 </div>
 
             </div>
 
-            <div *ngIf="solicitudesService.filteredData()().length === 0" class="alert alert-info text- w-50 text-center mx-auto">
+            <div *ngIf="solicitudesService.filteredData()().length === 0"
+                class="alert alert-info text- w-50 text-center mx-auto">
                 <strong>No hay solicitudes registradas.</strong>
             </div>
 
@@ -52,18 +53,23 @@
 
                         <tr *ngFor="let solicitud of solicitudesService.filteredData()()">
                             <td class="text-center" style="white-space: nowrap;">{{ solicitud.id }}</td>
-                            <td class="text-center" style="white-space: nowrap;">{{ solicitud.fecha_inicio | date: 'shortDate' }}</td>
-                            <td class="text-center" style="white-space: nowrap;">{{ solicitud.fecha_fin | date: 'shortDate' }}</td>
-                            <td class="text-center" style="white-space: nowrap;">{{ solicitud.fecha_solicitud | date: 'shortDate' }}</td>
+                            <td class="text-center" style="white-space: nowrap;">{{ solicitud.fecha_inicio | date:
+                                'shortDate' }}</td>
+                            <td class="text-center" style="white-space: nowrap;">{{ solicitud.fecha_fin | date:
+                                'shortDate' }}</td>
+                            <td class="text-center" style="white-space: nowrap;">{{ solicitud.fecha_solicitud | date:
+                                'shortDate' }}</td>
                             <td class="text-center" style="white-space: nowrap;">
 
-                                <span>
-                                    {{ solicitud.estado === true ? 'Aprobada' :
-                                    solicitud.estado === false ? 'Rechazada' :
-                                    solicitud.estado === null ? 'Pendiente' : '' }}
-                                </span>
+                                <b><span>
+                                        {{ solicitud.estado === true ? 'Aprobada' :
+                                        solicitud.estado === false ? 'Rechazada' :
+                                        solicitud.estado === null ? 'Pendiente' : '' }}
+                                    </span></b>
                             </td>
-                            <td style="white-space: nowrap;">{{ solicitud.motivo ? solicitud.motivo : 'No se dado una razón concreta' }}</td>
+                            <td style="white-space: nowrap;">
+                                {{ solicitud.motivo ? solicitud.motivo : 'No se dado una razón concreta' }}
+                            </td>
                         </tr>
                     </tbody>
                 </table>
