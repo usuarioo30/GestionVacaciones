@@ -1,0 +1,36 @@
+<div class="container calendar-container py-3 mt-5 mb-5">
+    <!-- Cabecera -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+      <button class="btn btn-outline-primary btn-sm mb-2 mb-sm-0" (click)="onPreviousMonth()">&#8249;</button>
+      <h5 class="mb-0 text-center flex-grow-1 px-2">
+        {{ calendar.getMonthName(monthNumber) }} {{ year }}
+      </h5>
+      <button class="btn btn-outline-primary btn-sm mb-2 mb-sm-0" (click)="onNextMonth()">&#8250;</button>
+    </div>
+  
+    <!-- Mensaje si se ha solicitado todo el mes -->
+    <div *ngIf="isMonthRequested()" class="alert alert-info text-center">
+      Has solicitado vacaciones para todo este mes.
+    </div>
+  
+    <!-- Cabecera de días -->
+    <div class="row text-center fw-bold border-bottom pb-2 mt-5">
+      <div class="col-1 col-sm" *ngFor="let weekDay of weeksDaysName">
+        {{ weekDay }}
+      </div>
+    </div>
+  
+    <!-- Días del calendario -->
+    <div class="calendar-weeks">
+      <div class="row text-center mb-2" *ngFor="let week of fullCalendarWeeks">
+        <div class="col p-2 calendar-day py-5 ms-1 me-1 mt-1" *ngFor="let day of week" [ngClass]="{
+               'text-muted': !day.isCurrentMonth,
+               'bg-light': day.isToday,
+               'fw-bold': day.isToday,
+               'day-requested': day.requested
+             }">
+          {{ day.number }}
+        </div>
+      </div>
+    </div>
+  </div>

@@ -6,6 +6,7 @@ import { loadGapiInsideDOM, gapi } from 'gapi-script';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule } from '@angular/forms';
 import Swal from 'sweetalert2';
+import { jwtDecode } from 'jwt-decode';
 
 @Component({
   imports: [CommonModule, ReactiveFormsModule],
@@ -43,8 +44,16 @@ export class LoginComponent implements OnInit {
   }
 
   private redirectIfAuthenticated(): void {
-    if (localStorage.getItem('access_token')) {
-      this.router.navigate(['/calendario']);
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      const rol: any = jwtDecode(token)
+
+      if (rol.rol === 'admin') {
+        this.router.navigate(['/calendario-admin']);
+      } else {
+        this.router.navigate(['/calendario']);
+      }
+
     }
   }
 

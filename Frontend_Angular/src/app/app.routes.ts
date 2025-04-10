@@ -10,6 +10,7 @@ import { ListSolicitudesComponent } from './component/interfaz-usuario/list-soli
 import { HistorialComponent } from './component/interfaz-usuario/historial/historial.component';
 import { ListSolicitudesAdminComponent } from './component/interfaz-admin/list-solicitudes-admin/list-solicitudes-admin.component';
 import { HistorialAdminComponent } from './component/interfaz-admin/historial-admin/historial-admin.component';
+import { CalendarioAdminComponent } from './component/interfaz-admin/calendario-admin/calendario-admin.component';
 
 
 export const appRoutes: Routes = [
@@ -25,6 +26,7 @@ export const appRoutes: Routes = [
   { path: 'solicitudes-admin', component: ListSolicitudesAdminComponent },
   { path: 'historial-admin', component: HistorialAdminComponent},
   { path: 'usuarios', component: ListUsuariosComponent },
+  {path: 'calendario-admin', component: CalendarioAdminComponent},
 
   //Usuario
   { path: 'solicitudes', component: ListSolicitudesComponent },
