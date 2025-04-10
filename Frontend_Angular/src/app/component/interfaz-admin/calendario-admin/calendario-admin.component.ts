@@ -35,7 +35,6 @@ export class CalendarioAdminComponent {
   users!: Signal<Usuariomin[]>;
   selectedUserId: number | null = null;
 
-  // Cabecera con los días de la semana
   weeksDaysName: string[] = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
 
   calendar: CreateCalendarService = inject(CreateCalendarService);
@@ -50,7 +49,6 @@ export class CalendarioAdminComponent {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['solicitudes'] && this.monthNumber !== undefined && this.year !== undefined) {
       console.log('Las solicitudes han cambiado:', changes['solicitudes']);
-      // Recargar el calendario en caso de que las solicitudes cambien.
       this.loadCalendar();
     }
   }
@@ -70,42 +68,28 @@ export class CalendarioAdminComponent {
       if (decodedToken.sub) {
         const userId = Number.parseInt(decodedToken.sub);
 
-        // Esperamos a que se carguen las solicitudes
-        firstValueFrom(
-          this.requestCalendar.getAcceptedRequest(this.auth)
-        ).then(() => {
-          this.loadCalendar();
-        });
+        firstValueFrom(this.requestCalendar.getAcceptedRequest(this.auth))
+          .then(() => {
+            this.loadCalendar();
+          });
 
         this.authService.getUsers(token);
         this.users = computed(() => this.authService.allUsers());
-
       }
     }
-
   }
 
   isMonthRequested(): RequestResponse {
-    // Si el array de solicitudes no está definido o está vacío, retorna false
     if (!this.solicitudes || this.solicitudes.length === 0) {
       return { estado: false, usuarioId: 0 };
     }
 
     for (const solicitud of this.solicitudes) {
-      // Si por alguna razón algún elemento es undefined, lo saltamos
-      if (!solicitud) {
-        continue;
-      }
-
-      // Asegúrate de que fecha_inicio y fecha_fin existen en la solicitud.
-      if (!solicitud.fecha_inicio || !solicitud.fecha_fin) {
-        continue;
-      }
+      if (!solicitud || !solicitud.fecha_inicio || !solicitud.fecha_fin) continue;
 
       const fecha_inicio = new Date(solicitud.fecha_inicio);
       const fecha_fin = new Date(solicitud.fecha_fin);
 
-      // Solo consideramos solicitudes que están en el mes actual
       if (
         fecha_inicio.getFullYear() === this.year &&
         fecha_inicio.getMonth() === this.monthNumber &&
@@ -114,8 +98,6 @@ export class CalendarioAdminComponent {
       ) {
         const anio = fecha_inicio.getFullYear();
         const mes = fecha_inicio.getMonth();
-
-        // Días laborables del mes completo
         const diasEnMes = new Date(anio, mes + 1, 0).getDate();
         let totalLaborablesMes = 0;
         for (let dia = 1; dia <= diasEnMes; dia++) {
@@ -124,7 +106,6 @@ export class CalendarioAdminComponent {
           if (diaSemana !== 0 && diaSemana !== 6) totalLaborablesMes++;
         }
 
-        // Días laborables de la solicitud
         let laborablesSolicitados = 0;
         const fechaActual = new Date(fecha_inicio);
         while (fechaActual <= fecha_fin) {
@@ -133,20 +114,17 @@ export class CalendarioAdminComponent {
           fechaActual.setDate(fechaActual.getDate() + 1);
         }
 
-        console.log("Hasta aquí llegue")
         if (laborablesSolicitados === totalLaborablesMes) {
-          return { estado: true, usuarioId: solicitud.usuario_id }; // Al menos una solicitud cubre el mes completo
+          return { estado: true, usuarioId: solicitud.usuario_id };
         }
       }
     }
 
-    return { estado: false, usuarioId: 0 }; // Ninguna solicitud cubre el mes completo
+    return { estado: false, usuarioId: 0 };
   }
 
   isRequested(day: any): RequestResponse {
-    // Convertimos el objeto "day" a Date
     const dayDate = new Date(day.year, day.monthIndex, day.number);
-    // Verifica si el día está solicitado
     if (!this.requestCalendar.requests() || this.requestCalendar.requests().length === 0) {
       return { estado: false, usuarioId: 0 };
     }
@@ -155,7 +133,6 @@ export class CalendarioAdminComponent {
       const fecha_inicio = new Date(solicitud.fecha_inicio);
       const fecha_fin = new Date(solicitud.fecha_fin);
 
-
       if (
         fecha_inicio.getFullYear() === day.year &&
         fecha_inicio.getMonth() === day.monthIndex &&
@@ -163,7 +140,6 @@ export class CalendarioAdminComponent {
         fecha_fin.getMonth() === day.monthIndex
       ) {
         if (fecha_inicio <= dayDate && dayDate <= fecha_fin) {
-
           return { estado: true, usuarioId: solicitud.usuario_id };
         }
       }
@@ -171,18 +147,8 @@ export class CalendarioAdminComponent {
     return { estado: false, usuarioId: 0 };
   }
 
-
-
-  /**
-   * Carga el calendario completo del mes actual,
-   * completando con los días del mes anterior y siguiente para llenar las semanas.
-   * Se asignan propiedades para determinar si un día está disponible para descanso y si ha sido solicitado.
-   */
   loadCalendar() {
-    // 1. Verificamos si el mes completo ha sido solicitado
-    const solicitudCompleta: RequestResponse = this.isMonthRequested(); // <- usa tu objeto solicitud
-
-    // 2. Días del mes actual
+    const solicitudCompleta: RequestResponse = this.isMonthRequested();
     const currentDays = this.calendar.getMonth(this.monthNumber, this.year);
     currentDays.forEach(day => {
       day.isCurrentMonth = true;
@@ -205,7 +171,6 @@ export class CalendarioAdminComponent {
       }
     });
 
-    // 3. Días del mes anterior (relleno al inicio)
     let prevMonth: number, prevYear: number;
     if (this.monthNumber === 0) {
       prevMonth = 11;
@@ -223,11 +188,10 @@ export class CalendarioAdminComponent {
       daysToPrepend.forEach(day => {
         day.isCurrentMonth = false;
         day.available = this.calendar.isDayAvailable(day);
-        day.requested = false; // Días de otro mes no se consideran solicitados aquí
+        day.requested = false;
       });
     }
 
-    // 4. Días del mes siguiente (relleno al final)
     let fullDays = [...daysToPrepend, ...currentDays];
     const remainder = fullDays.length % 7;
 
@@ -247,24 +211,20 @@ export class CalendarioAdminComponent {
       daysToAppend.forEach(day => {
         day.isCurrentMonth = false;
         day.available = this.calendar.isDayAvailable(day);
-        day.requested = false; // No se consideran solicitados
+        day.requested = false;
       });
 
       fullDays = fullDays.concat(daysToAppend);
     }
 
-    // 5. Agrupar los días en semanas
     const weeks: Day[][] = [];
     for (let i = 0; i < fullDays.length; i += 7) {
       weeks.push(fullDays.slice(i, i + 7));
     }
 
-    // 6. Guardamos los resultados
     this.monthDays = fullDays;
     this.fullCalendarWeeks = weeks;
   }
-
-  // Navegación del calendario
 
   onNextMonth(): void {
     if (this.monthNumber === 11) {
@@ -286,43 +246,43 @@ export class CalendarioAdminComponent {
     this.loadCalendar();
   }
 
-
-
-
   getRandomColor(id: number): string {
     const colores = [
-      '#A8D0E6', '#FFB6B9', '#C3FBD8', '#FFE6A7',
-      '#B5EAD7', '#FFDAC1', '#E2F0CB', '#C7CEEA',
-      '#F6D6AD', '#FFDEFA', '#D5AAFF', '#F0E6EF',
-      '#F9F7D9', '#A0E7E5', '#B4F8C8', '#FFCBC1',
-      '#FFD3B6', '#D0F4DE', '#E4C1F9', '#FAF3DD',
-      '#F9C6C9', '#D8E2DC', '#FCD5CE', '#A3C4F3',
-      '#D9D7F1', '#B8E0D2', '#FFEFBA', '#F0A6CA',
-      '#EAD5DC', '#D2F6C5', '#FFF5BA', '#BFD7EA',
-      '#FCE1E4', '#B5DAD2', '#F7D1CD', '#E3D4B9',
-      '#F8ECD7', '#F6DFEB', '#C2ECEF', '#DFD3C3',
-      '#F7FFE0', '#F3EAC2', '#FFDFD3', '#C9F2C7',
-      '#EFD6FF', '#E3F9F0', '#F2C6DE', '#FFF3E6',
-      '#FDDDE6', '#DAF4F0', '#FFEDDA', '#F1C6E7',
-      '#D3F8E2', '#E4F9F5', '#FDD9E4', '#E2DBBE',
-      '#F9D1D1', '#E8F6EF', '#D9F1F1', '#FFF1E6',
-      '#C6F1E7', '#FFE6EB', '#FAF0E6', '#F7CFE6',
-      '#F6F5F5', '#F2EBE9', '#FAF4C0', '#E3F6FF'
+      '#A8D0E6', '#FFB6B9', '#C3FBD8', '#FFE6A7', '#B5EAD7', '#FFDAC1', '#E2F0CB', '#C7CEEA', '#F6D6AD',
+      '#FFDEFA', '#D5AAFF', '#F0E6EF', '#F9F7D9', '#A0E7E5', '#B4F8C8', '#FFCBC1', '#FFD3B6', '#D0F4DE',
+      '#E4C1F9', '#FAF3DD', '#F9C6C9', '#D8E2DC', '#FCD5CE', '#A3C4F3', '#D9D7F1', '#B8E0D2', '#FFEFBA',
+      '#F0A6CA', '#EAD5DC', '#D2F6C5', '#FFF5BA', '#BFD7EA', '#FCE1E4', '#B5DAD2', '#F7D1CD', '#E3D4B9',
+      '#F8ECD7', '#F6DFEB', '#C2ECEF', '#DFD3C3', '#F7FFE0', '#F3EAC2', '#FFDFD3', '#C9F2C7', '#EFD6FF',
+      '#E3F9F0', '#F2C6DE', '#FFF3E6', '#FDDDE6', '#DAF4F0', '#FFEDDA', '#F1C6E7', '#D3F8E2', '#E4F9F5',
+      '#FDD9E4', '#E2DBBE', '#F9D1D1', '#E8F6EF', '#D9F1F1', '#FFF1E6', '#C6F1E7', '#FFE6EB', '#FAF0E6',
+      '#F7CFE6', '#F6F5F5', '#F2EBE9', '#FAF4C0', '#E3F6FF'
     ];
 
-
     const colorAleatorio = colores[Math.floor(Math.random() * colores.length)];
-
-    localStorage.setItem(`user-color-${id}`, colorAleatorio)
-      ;
+    localStorage.setItem(`user-color-${id}`, colorAleatorio);
 
     return colorAleatorio;
   }
 
   getStoredColor(id: number): string {
-    const storedColor = localStorage.getItem(`user-color-${id}`);
+    let color: string | null = localStorage.getItem(`user-color-${id}`);
+    if (color === null) {
+      color = this.getRandomColor(id);
+    }
+    return color;
+  }
 
-    return storedColor || this.getRandomColor(id);
+  getDayBackgroundColor(day: Day): string {
+    if (day.weekDayNumber === 5 || day.weekDayNumber === 6) {
+      return '#EEEEEE';
+    }
+
+    if (day.requested) {
+      return this.getStoredColor(day.id);
+    }
+
+    
+    return '';
   }
 
 }
