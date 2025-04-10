@@ -5,10 +5,11 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { SolicitudDescanso } from '../../../interfaces/solicitud-descanso';
 import { SolicitudDescansoService } from '../../../services/solicitud-descanso.service';
-import Swal from 'sweetalert2';
 import { firstValueFrom } from 'rxjs';
 import { jwtDecode } from 'jwt-decode';
 import { CreateCalendarService } from '../../../services/createcalendar.service';
+import { RequestResponse } from '../../../interfaces/request-response';
+import { Color } from '../../../interfaces/color';
 
 
 
@@ -20,21 +21,22 @@ import { CreateCalendarService } from '../../../services/createcalendar.service'
 })
 export class CalendarioAdminComponent {
   solicitud!: SolicitudDescanso;
-    monthDays!: Day[];            // Array completo de días (incluyendo relleno)
-    day!: Day;
-    fullCalendarWeeks!: Day[][];  // Días agrupados en semanas (cada semana es un array de 7 días)
-    solicitudes: SolicitudDescanso[] = [];
-    monthNumber!: number;
-    year!: number;
-    auth: string = '';
-    status: string = 'true';
+  monthDays!: Day[];            // Array completo de días (incluyendo relleno)
+  day!: Day;
+  fullCalendarWeeks!: Day[][];  // Días agrupados en semanas (cada semana es un array de 7 días)
+  solicitudes: SolicitudDescanso[] = [];
+  monthNumber!: number;
+  year!: number;
+  auth: string = '';
+  status: string = 'true';
+  color: Color [] =[]
+
+  // Cabecera con los días de la semana
+  weeksDaysName: string[] = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
   
-    // Cabecera con los días de la semana
-    weeksDaysName: string[] = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
-  
-    calendar: CreateCalendarService = inject(CreateCalendarService);
-    solicitudSrvc: SolicitudDescansoService = inject(SolicitudDescansoService);
-    requestCalendar: CalendarRequestService = inject(CalendarRequestService);
+  calendar: CreateCalendarService = inject(CreateCalendarService);
+  solicitudSrvc: SolicitudDescansoService = inject(SolicitudDescansoService);
+  requestCalendar: CalendarRequestService = inject(CalendarRequestService);
   
     constructor(
       private router: Router
@@ -74,10 +76,10 @@ export class CalendarioAdminComponent {
   
     }
   
-    isMonthRequested(): boolean {
+    isMonthRequested(): RequestResponse {
       // Si el array de solicitudes no está definido o está vacío, retorna false
       if (!this.solicitudes || this.solicitudes.length === 0) {
-        return false;
+        return {estado: false, usuarioId: 0};
       }
   
       for (const solicitud of this.solicitudes) {
@@ -122,21 +124,22 @@ export class CalendarioAdminComponent {
             fechaActual.setDate(fechaActual.getDate() + 1);
           }
   
+          console.log("Hasta aquí llegue")
           if (laborablesSolicitados === totalLaborablesMes) {
-            return true; // Al menos una solicitud cubre el mes completo
+            return {estado: true, usuarioId: solicitud.usuario_id}; // Al menos una solicitud cubre el mes completo
           }
         }
       }
   
-      return false; // Ninguna solicitud cubre el mes completo
+      return {estado: false, usuarioId: 0}; // Ninguna solicitud cubre el mes completo
     }
   
-    isRequested(day: any): boolean {
+    isRequested(day: any): RequestResponse {
       // Convertimos el objeto "day" a Date
       const dayDate = new Date(day.year, day.monthIndex, day.number);
       // Verifica si el día está solicitado
       if (!this.requestCalendar.requests() || this.requestCalendar.requests().length === 0) {
-        return false;
+        return {estado: false, usuarioId: 0};
       }
   
       for (const solicitud of this.requestCalendar.requests()) {
@@ -151,11 +154,12 @@ export class CalendarioAdminComponent {
           fecha_fin.getMonth() === day.monthIndex
         ) {
           if (fecha_inicio <= dayDate && dayDate <= fecha_fin) {
-            return true;
+            
+            return {estado: true, usuarioId: solicitud.usuario_id};
           }
         }
       }
-      return false;
+      return {estado: false, usuarioId: 0};
     }
   
   
@@ -167,7 +171,7 @@ export class CalendarioAdminComponent {
      */
     loadCalendar() {
       // 1. Verificamos si el mes completo ha sido solicitado
-      const solicitudCompleta: boolean = this.isMonthRequested(); // <- usa tu objeto solicitud
+      const solicitudCompleta: RequestResponse = this.isMonthRequested(); // <- usa tu objeto solicitud
   
       // 2. Días del mes actual
       const currentDays = this.calendar.getMonth(this.monthNumber, this.year);
@@ -175,12 +179,14 @@ export class CalendarioAdminComponent {
         day.isCurrentMonth = true;
         day.available = this.calendar.isDayAvailable(day);
   
-        const solicitudParcial: boolean = this.isRequested(day);
+        const solicitudParcial: RequestResponse = !solicitudCompleta.estado ? this.isRequested(day) : {estado: false, usuarioId: 0};
         // Si el mes fue solicitado completamente, todos los días laborables se marcan como requested
-        if (solicitudCompleta && day.weekDayNumber < 5) {
+        if (solicitudCompleta.estado && day.weekDayNumber < 5) {
           day.requested = true;
-        } else if (solicitudParcial && day.weekDayNumber < 5) {
+          day.id = solicitudCompleta.usuarioId;
+        } else if (solicitudParcial.estado && day.weekDayNumber < 5) {
           day.requested = true;
+          day.id = solicitudParcial.usuarioId;
         } else {
           day.requested = false;
         }
@@ -266,4 +272,28 @@ export class CalendarioAdminComponent {
       }
       this.loadCalendar();
     }
+
+
+
+
+    // Seleccionador de colores aleatorios
+    getRandomColor(id: number): string {
+
+      if (this.color.length !== 0) {
+        const usedColors = this.color.filter(col => col.id === id);
+        
+        if (usedColors.length) {
+          return usedColors[0].color;
+        }
+      }
+
+
+      const colores = ['#3498db', '#e74c3c', '#2ecc71', '#f39c12'];
+      const colorAleatorio = colores[Math.floor(Math.random() * colores.length)];
+      
+      this.color.push({id: id, color: colorAleatorio});
+
+      return colorAleatorio;
+}
+
 }
