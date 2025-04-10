@@ -284,24 +284,21 @@ export class CalendarioAdminComponent {
 
 
 
-  // Seleccionador de colores aleatorios
   getRandomColor(id: number): string {
-
-    if (this.color.length !== 0) {
-      const usedColors = this.color.filter(col => col.id === id);
-
-      if (usedColors.length) {
-        return usedColors[0].color;
-      }
-    }
-
-
     const colores = ['#A8D0E6', '#FFB6B9', '#C3FBD8', '#FFE6A7'];
+
     const colorAleatorio = colores[Math.floor(Math.random() * colores.length)];
 
-    this.color.push({ id: id, color: colorAleatorio });
+    localStorage.setItem(`user-color-${id}`, colorAleatorio)
+      ;
 
     return colorAleatorio;
+  }
+
+  getStoredColor(id: number): string {
+    const storedColor = localStorage.getItem(`user-color-${id}`);
+
+    return storedColor || this.getRandomColor(id);
   }
 
 }
