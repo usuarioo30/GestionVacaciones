@@ -641,6 +641,34 @@ def getUserRequest(user):
         return jsonify({"error": "Ocurrió un error al obtener las solicitudes.", "message": str(e)}), 500
 
 
+@app.route('/request/accepted/<int:user>', methods=['GET'])
+@jwt_required()
+def getAcceptedUserRequest(user):
+    try:
+        solicitudes = SolicitudDescanso.query.filter(
+            SolicitudDescanso.usuario_id == user,
+            SolicitudDescanso.estado == True
+        ).all()
+
+        solicitudes_data = []
+        for solicitud in solicitudes:
+            solicitud_info = {
+                "id": solicitud.id,
+                "usuario_id": solicitud.usuario_id,
+                "fecha_inicio": solicitud.fecha_inicio.strftime('%Y-%m-%d %H:%M:%S'),
+                "fecha_fin": solicitud.fecha_fin.strftime('%Y-%m-%d %H:%M:%S'),
+                "fecha_solicitud": solicitud.fecha_solicitud.strftime('%Y-%m-%d %H:%M:%S'),
+                "estado": solicitud.estado,
+                "motivo": solicitud.motivo
+            }
+            solicitudes_data.append(solicitud_info)
+
+        return jsonify(solicitudes_data), 200
+
+    except Exception as e:
+        return jsonify({"error": "Ocurrió un error al obtener las solicitudes.", "message": str(e)}), 500
+
+
 
 
 # Ejecutar el servidor Flask
