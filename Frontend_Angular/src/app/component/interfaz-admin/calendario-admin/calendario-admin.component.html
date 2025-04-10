@@ -6,15 +6,28 @@
   </div>
 
   <div class="card-body">
-    <div *ngFor="let user of users()" class="mt-3 d-flex align-items-center user-legend-item">
+    <!-- Opción para mostrar todos los usuarios -->
+    <div class="user-legend-item ms-2" (click)="selectedUserId = null; loadCalendar()" style="cursor: pointer;">
+      <div class="user-text">
+        <span class="fw-bold">Calendario completo</span>
+      </div>
+    </div>
+
+    <!-- Usuarios individuales -->
+    <div *ngFor="let user of users()" class="mt-3 d-flex align-items-center user-legend-item"
+      (click)="selectedUserId = user.id; loadCalendar()" [ngStyle]="{
+           'cursor': 'pointer',
+           'opacity': selectedUserId !== null && selectedUserId !== user.id ? '0.5' : '1',
+           'transition': 'opacity 0.3s ease'
+         }">
       <span [ngStyle]="{ 
-                'background-color': getStoredColor(user.id),
-                'padding': '8px',
-                'border-radius': '50%',
-                'width': '30px',
-                'height': '30px',
-                'display': 'inline-block',
-                'margin-right': '10px'}">
+            'background-color': getStoredColor(user.id),
+            'padding': '8px',
+            'border-radius': '50%',
+            'width': '30px',
+            'height': '30px',
+            'display': 'inline-block',
+            'margin-right': '10px'}">
       </span>
       <div class="user-text ms-1">
         <span class="fw-bold">{{ user.nombreCompleto }}</span>&nbsp;

@@ -23,9 +23,9 @@ import { Usuariomin } from '../../../interfaces/usuariomin';
 })
 export class CalendarioAdminComponent {
   solicitud!: SolicitudDescanso;
-  monthDays!: Day[];            // Array completo de días (incluyendo relleno)
+  monthDays!: Day[];
   day!: Day;
-  fullCalendarWeeks!: Day[][];  // Días agrupados en semanas (cada semana es un array de 7 días)
+  fullCalendarWeeks!: Day[][];
   solicitudes: SolicitudDescanso[] = [];
   monthNumber!: number;
   year!: number;
@@ -33,6 +33,7 @@ export class CalendarioAdminComponent {
   status: string = 'true';
   color: Color[] = []
   users!: Signal<Usuariomin[]>;
+  selectedUserId: number | null = null;
 
   // Cabecera con los días de la semana
   weeksDaysName: string[] = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
@@ -188,11 +189,15 @@ export class CalendarioAdminComponent {
       day.available = this.calendar.isDayAvailable(day);
 
       const solicitudParcial: RequestResponse = !solicitudCompleta.estado ? this.isRequested(day) : { estado: false, usuarioId: 0 };
-      // Si el mes fue solicitado completamente, todos los días laborables se marcan como requested
-      if (solicitudCompleta.estado && day.weekDayNumber < 5) {
+      const shouldRender =
+        this.selectedUserId === null ||
+        solicitudParcial.usuarioId === this.selectedUserId ||
+        solicitudCompleta.usuarioId === this.selectedUserId;
+
+      if (solicitudCompleta.estado && day.weekDayNumber < 5 && shouldRender) {
         day.requested = true;
         day.id = solicitudCompleta.usuarioId;
-      } else if (solicitudParcial.estado && day.weekDayNumber < 5) {
+      } else if (solicitudParcial.estado && day.weekDayNumber < 5 && shouldRender) {
         day.requested = true;
         day.id = solicitudParcial.usuarioId;
       } else {
@@ -285,7 +290,26 @@ export class CalendarioAdminComponent {
 
 
   getRandomColor(id: number): string {
-    const colores = ['#A8D0E6', '#FFB6B9', '#C3FBD8', '#FFE6A7'];
+    const colores = [
+      '#A8D0E6', '#FFB6B9', '#C3FBD8', '#FFE6A7',
+      '#B5EAD7', '#FFDAC1', '#E2F0CB', '#C7CEEA',
+      '#F6D6AD', '#FFDEFA', '#D5AAFF', '#F0E6EF',
+      '#F9F7D9', '#A0E7E5', '#B4F8C8', '#FFCBC1',
+      '#FFD3B6', '#D0F4DE', '#E4C1F9', '#FAF3DD',
+      '#F9C6C9', '#D8E2DC', '#FCD5CE', '#A3C4F3',
+      '#D9D7F1', '#B8E0D2', '#FFEFBA', '#F0A6CA',
+      '#EAD5DC', '#D2F6C5', '#FFF5BA', '#BFD7EA',
+      '#FCE1E4', '#B5DAD2', '#F7D1CD', '#E3D4B9',
+      '#F8ECD7', '#F6DFEB', '#C2ECEF', '#DFD3C3',
+      '#F7FFE0', '#F3EAC2', '#FFDFD3', '#C9F2C7',
+      '#EFD6FF', '#E3F9F0', '#F2C6DE', '#FFF3E6',
+      '#FDDDE6', '#DAF4F0', '#FFEDDA', '#F1C6E7',
+      '#D3F8E2', '#E4F9F5', '#FDD9E4', '#E2DBBE',
+      '#F9D1D1', '#E8F6EF', '#D9F1F1', '#FFF1E6',
+      '#C6F1E7', '#FFE6EB', '#FAF0E6', '#F7CFE6',
+      '#F6F5F5', '#F2EBE9', '#FAF4C0', '#E3F6FF'
+    ];
+
 
     const colorAleatorio = colores[Math.floor(Math.random() * colores.length)];
 
