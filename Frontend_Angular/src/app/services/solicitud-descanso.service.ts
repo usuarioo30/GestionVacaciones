@@ -49,6 +49,13 @@ export class SolicitudDescansoService {
   }
 
   orderData = (array: SolicitudDescanso[] | AdminRequest[]) => {
+
+    const isAdminRequest = (item: any): item is AdminRequest => {
+      return 'nombreCompleto' in item && typeof item.nombreCompleto === 'string';
+    };
+    
+    const allAdmins = array.every(isAdminRequest);
+
     switch (this.orderSignal()) {
       case 'id_asc':
         return array.sort((r1, r2) => r1.id - r2.id);
@@ -70,12 +77,73 @@ export class SolicitudDescansoService {
           return Date.parse(r2.fecha_inicio) - Date.parse(r1.fecha_inicio);
         });
 
+      case 'user_asc':
+          if (allAdmins) {
+            return (array as AdminRequest[]).sort((r1, r2) =>
+              r1.nombreCompleto.toLowerCase().trim().localeCompare(
+                r2.nombreCompleto.toLowerCase().trim(),
+                'es'
+              )
+            );
+          } else {
+            return array.sort((r1, r2) => r1.id - r2.id);
+          }
+    
+      case 'user_desc':
+          if (allAdmins) {
+            return(array as AdminRequest[]).sort((r1, r2) =>
+              r2.nombreCompleto.toLowerCase().trim().localeCompare(
+                r1.nombreCompleto.toLowerCase().trim(),
+                'es'
+              )
+            );
+          } else {
+            return array.sort((r1, r2) => r1.id - r2.id);
+          }
+          
+
 
       default:
         return array.sort((r1, r2) => r1.id - r2.id);
 
     }
   }
+
+
+  // orderData = (array: AdminRequest[]) => {
+  //   switch (this.orderSignal()) {
+  //     case 'id_asc':
+  //       return array.sort((r1, r2) => r1.id - r2.id);
+
+  //     case 'id_desc':
+  //       return array.sort((r1, r2) => r2.id - r1.id);
+
+  //     case 'date_asc':
+
+  //       return array.sort((r1, r2) => {
+
+  //         return Date.parse(r1.fecha_inicio) - Date.parse(r2.fecha_inicio);
+  //       });
+
+  //     case 'date_desc':
+
+  //       return array.sort((r1, r2) => {
+
+  //         return Date.parse(r2.fecha_inicio) - Date.parse(r1.fecha_inicio);
+  //       });
+
+  //     case 'user_asc':
+  //       return array.sort((r1, r2) => r1.nombreCompleto.toLowerCase().trim().localeCompare(r2.nombreCompleto.toLowerCase().trim(), "es"));
+
+  //     case 'user_desc':
+  //       return array.sort((r1, r2) => r2.nombreCompleto.toLowerCase().trim().localeCompare(r1.nombreCompleto.toLowerCase().trim(), "es"));
+
+        
+  //     default:
+  //       return array.sort((r1, r2) => r1.id - r2.id);
+
+  //   }
+  // }
 
   getAllSolicitudesDescansoAdmin(): Observable<SolicitudDescanso[]> {
     const token = localStorage.getItem('access_token');
