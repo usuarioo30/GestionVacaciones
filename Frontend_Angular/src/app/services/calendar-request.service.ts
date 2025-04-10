@@ -18,8 +18,17 @@ export class CalendarRequestService {
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
     return this.http.get<SolicitudDescanso[]>(`${this.urlApi}/accepted/${id}`, { headers }).pipe(
       tap(response => {
-        const filtradas = response.filter(status => status.estado === true);
-        this.requestCalendarSignal.set(filtradas);
+        this.requestCalendarSignal.set(response);
+      })
+    );
+  }
+
+  getAcceptedRequest(token: string): Observable<SolicitudDescanso[]> {
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+    return this.http.get<SolicitudDescanso[]>(`${this.urlApi}/accepted`, { headers }).pipe(
+      tap(response => {
+
+        this.requestCalendarSignal.set(response);
       })
     );
   }
