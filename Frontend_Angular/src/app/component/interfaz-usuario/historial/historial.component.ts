@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { jwtDecode } from 'jwt-decode';
 import { FormsModule, NgModel, ReactiveFormsModule } from '@angular/forms';
 import { SolicitudDescanso } from '../../../interfaces/solicitud-descanso';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-historial',
@@ -53,7 +54,6 @@ export class HistorialComponent implements OnInit {
     this.solicitudesService.setFilter(status);
 
   }
-
 
 
 

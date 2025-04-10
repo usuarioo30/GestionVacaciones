@@ -23,7 +23,7 @@
   <!-- Días del calendario -->
   <div class="calendar-weeks">
     <div class="row text-center mb-2" *ngFor="let week of fullCalendarWeeks">
-      <div class="col p-2 calendar-day py-5" *ngFor="let day of week" [ngClass]="{
+      <div class="col p-2 calendar-day py-5 ms-1 me-1 mt-1" *ngFor="let day of week" [ngClass]="{
              'text-muted': !day.isCurrentMonth,
              'bg-light': day.isToday,
              'fw-bold': day.isToday,
