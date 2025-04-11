@@ -229,6 +229,40 @@ def getAllUsers():
 
     except Exception as e:
         return jsonify({"error": "Ha ocurrido un error al obtener los usuarios", "message": str(e)}), 500
+    
+
+
+@app.route('/user/list/min', methods=['GET'])
+@jwt_required()
+def getAllUsersMin():
+    try:
+        claims = get_jwt()
+        rol = claims.get("rol")
+
+        if rol != 'admin':
+            return jsonify({"message": "Acceso no autorizado. Solo los administradores pueden ver este recurso."}), 403
+
+        users =  db.session.query(
+            Usuario.id,
+            Usuario.nombreCompleto,
+            Usuario.username,
+            Usuario.rol
+        ).join(SolicitudDescanso).filter(SolicitudDescanso.estado == 1).group_by(Usuario.id).all()
+
+        users_data = []
+        for user in users:
+            users_data.append({
+                'id': user.id,
+                'nombreCompleto': user.nombreCompleto,
+                'rol': user.rol
+            })
+
+        return jsonify(users_data), 200
+
+    except Exception as e:
+        return jsonify({"error": "Ha ocurrido un error al obtener los usuarios", "message": str(e)}), 500
+
+
 
 @app.route('/user/delete/<int:id>', methods=['DELETE'])
 @jwt_required()
@@ -669,7 +703,31 @@ def getAcceptedUserRequest(user):
         return jsonify({"error": "Ocurrió un error al obtener las solicitudes.", "message": str(e)}), 500
 
 
+@app.route('/request/accepted', methods=['GET'])
+@jwt_required()
+def getAcceptedRequests():
+    try:
+        solicitudes = SolicitudDescanso.query.filter(
+            SolicitudDescanso.estado == True
+        ).all()
 
+        solicitudes_data = []
+        for solicitud in solicitudes:
+            solicitud_info = {
+                "id": solicitud.id,
+                "usuario_id": solicitud.usuario_id,
+                "fecha_inicio": solicitud.fecha_inicio.strftime('%Y-%m-%d %H:%M:%S'),
+                "fecha_fin": solicitud.fecha_fin.strftime('%Y-%m-%d %H:%M:%S'),
+                "fecha_solicitud": solicitud.fecha_solicitud.strftime('%Y-%m-%d %H:%M:%S'),
+                "estado": solicitud.estado,
+                "motivo": solicitud.motivo
+            }
+            solicitudes_data.append(solicitud_info)
+
+        return jsonify(solicitudes_data), 200
+
+    except Exception as e:
+        return jsonify({"error": "Ocurrió un error al obtener las solicitudes.", "message": str(e)}), 500
 
 # Ejecutar el servidor Flask
 if __name__ == '__main__':

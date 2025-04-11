@@ -4,6 +4,7 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { Router, RouterLink, RouterModule } from '@angular/router';
 import { SolicitudDescansoService } from '../../services/solicitud-descanso.service';
+import { jwtDecode } from 'jwt-decode';
 
 @Component({
   selector: 'app-navbar',

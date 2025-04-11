@@ -21,25 +21,15 @@
             <ul class="navbar-nav mx-auto">
               <!-- Calendario -->
               <li class="nav-item mt-2 mb-2 me-3 ms-3 ps-3 pe-3" [routerLinkActive]="'active-link'">
-                <a class="nav-link text-dark" [routerLink]="['/calendario']" routerLinkActive="router-link-active"
-                  aria-label="Calendario">
+                <a class="nav-link text-dark" [routerLink]="isAdmin ? ['/calendario-admin'] : ['/calendario']"
+                  routerLinkActive="router-link-active" aria-label="Calendario">
                   <i class="bi bi-calendar-month fs-4"></i>&nbsp; Calendario
                 </a>
               </li>
 
-              <!-- Mis solicitudes -->
-              <li class="nav-item mt-2 mb-2 me-3 ms-3 ps-3 pe-3" *ngIf="mostrarMisSolicitudes"
-                [routerLinkActive]="'active-link'" [routerLinkActiveOptions]="{ exact: true }">
-                <a class="nav-link text-dark" [routerLink]="['/solicitudes']" routerLinkActive="router-link-active"
-                  aria-label="Mis Solicitudes">
-                  <i class="bi bi-clipboard-check fs-4"></i>&nbsp; Mis Solicitudes
-                </a>
-              </li>
-
               <!-- Solicitudes -->
-              <li class="nav-item mt-2 mb-2 me-3 ms-3 ps-3 pe-3" *ngIf="!mostrarMisSolicitudes"
-                [routerLinkActive]="'active-link'">
-                <a class="nav-link text-dark" [routerLink]="['/solicitudes-admin']"
+              <li class="nav-item mt-2 mb-2 me-3 ms-3 ps-3 pe-3" [routerLinkActive]="'active-link'">
+                <a class="nav-link text-dark" [routerLink]="isAdmin ? ['/solicitudes-admin'] : ['/solicitudes']"
                   routerLinkActive="router-link-active" aria-label="Solicitudes">
                   <i class="bi bi-clipboard-check fs-4"></i>&nbsp; Solicitudes
                 </a>
@@ -47,8 +37,8 @@
 
               <!-- Historial -->
               <li class="nav-item mt-2 mb-2 me-3 ms-3 ps-3 pe-3" [routerLinkActive]="'active-link'">
-                <a class="nav-link text-dark" [routerLink]="isAdmin ? ['/historial-admin'] : ['/historial']" routerLinkActive="router-link-active"
-                  aria-label="Historial">
+                <a class="nav-link text-dark" [routerLink]="isAdmin ? ['/historial-admin'] : ['/historial']"
+                  routerLinkActive="router-link-active" aria-label="Historial">
                   <i class="bi bi-clock fs-4"></i>&nbsp; Historial
                 </a>
               </li>

@@ -14,4 +14,8 @@ export interface Day {
 
   available: boolean; // true: día disponible para descanso/vacaciones; false: no disponible
   requested: boolean; // true: el usuario solicitó (y se aprobó) descanso en ese día
+
+  id: number; //El id del usuario que se ha cogido el día
+
+  color?:string
 }

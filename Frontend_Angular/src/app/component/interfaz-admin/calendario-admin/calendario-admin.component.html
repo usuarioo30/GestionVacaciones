@@ -1,0 +1,71 @@
+<!-- Leyenda -->
+<div class="card shadow-lg mt-5 ms-5 me-5" style="max-width: 400px; background-color: #f8f9fa;">
+  <div class="card-header text-center header-card text-white">
+    <h3 class="mb-0">Leyenda</h3>
+  </div>
+
+  <div class="card-body">
+    <div class="user-legend-item ms-2" (click)="selectedUserId = null; loadCalendar()" style="cursor: pointer;">
+      <div class="user-text">
+        <span class="fw-bold">Calendario completo</span>
+      </div>
+    </div>
+
+    <div *ngFor="let user of users()" class="mt-3 d-flex align-items-center user-legend-item"
+      (click)="selectedUserId = user.id; loadCalendar()" [ngStyle]="{
+           'cursor': 'pointer',
+           'opacity': selectedUserId !== null && selectedUserId !== user.id ? '0.5' : '1',
+           'transition': 'opacity 0.3s ease'
+         }">
+      <span [ngStyle]="{ 
+            'background-color': getStoredColor(user.id),
+            'padding': '8px',
+            'border-radius': '50%',
+            'width': '30px',
+            'height': '30px',
+            'display': 'inline-block',
+            'margin-right': '10px'}">
+      </span>
+      <div class="user-text ms-1">
+        <span class="fw-bold">{{ user.nombreCompleto }}</span>&nbsp;
+        <span class="text-muted">({{ user.rol }})</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Calendario -->
+<div class="container calendar-container py-3 mt-5 mb-5">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+    <button class="btn btn-outline-primary btn-sm mb-2 mb-sm-0" (click)="onPreviousMonth()">&#8249;</button>
+    <h5 class="mb-0 text-center flex-grow-1 px-2">
+      {{ calendar.getMonthName(monthNumber) }} {{ year }}
+    </h5>
+    <button class="btn btn-outline-primary btn-sm mb-2 mb-sm-0" (click)="onNextMonth()">&#8250;</button>
+  </div>
+
+  <div *ngIf="isMonthRequested().estado" class="alert alert-info text-center">
+    Has solicitado vacaciones para todo este mes.
+  </div>
+
+  <div class="row text-center fw-bold border-bottom pb-2 mt-5">
+    <div class="col-1 col-sm" *ngFor="let weekDay of weeksDaysName">
+      {{ weekDay }}
+    </div>
+  </div>
+
+  <div class="calendar-weeks">
+    <div class="row text-center mb-2" *ngFor="let week of fullCalendarWeeks">
+      <div class="col p-2 calendar-day py-5 ms-1 me-1 mt-1" *ngFor="let day of week" [ngClass]="{
+          'text-muted': !day.isCurrentMonth,
+          'bg-light': day.isToday,
+          'fw-bold': day.isToday
+        }" [ngStyle]="{
+          'background-color': getDayBackgroundColor(day),
+          'color': day.isToday ? '#ffffff' : ''
+        }">
+        {{ day.number }}
+      </div>
+    </div>
+  </div>
+</div>
