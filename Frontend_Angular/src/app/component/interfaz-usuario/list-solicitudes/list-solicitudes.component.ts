@@ -109,7 +109,6 @@ export class ListSolicitudesComponent implements OnInit {
         console.error('El usuario_id es nulo');
         return;
       }
-
       const nuevaSolicitud: SolicitudDescanso = {
         ...this.formSolicitudDescanso.value,
         usuario_id: this.usuario_id,
