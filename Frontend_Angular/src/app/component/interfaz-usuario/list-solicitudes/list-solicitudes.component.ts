@@ -119,7 +119,7 @@ export class ListSolicitudesComponent implements OnInit {
 
       this.solicitudDescansoService.checkIfDateHasBeenUsed(nuevaSolicitud.fecha_inicio, nuevaSolicitud.fecha_fin)
       .subscribe({
-        next: isBusy => {
+        next: isBusy => { //Si es true, las fechas ya han sido utilizadas
           if (!isBusy) {
             this.solicitudDescansoService.saveSolicitudDescanso(nuevaSolicitud).subscribe(
             (response) => {
@@ -159,7 +159,7 @@ export class ListSolicitudesComponent implements OnInit {
                 text: 'Hubo un error al registrar tu solicitud. Por favor, inténtalo nuevamente.',
                 confirmButtonText: 'Aceptar'
               });
-              }
+            }
               );
           } else {
             Swal.fire({

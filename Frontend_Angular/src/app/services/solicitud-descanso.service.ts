@@ -163,7 +163,7 @@ export class SolicitudDescansoService {
     return this.http.get<Usuario>(`http://localhost:5000/user/${userId}`, { headers });
   }
 
-  saveSolicitudDescanso(solicitudDescanso: SolicitudDescanso) {
+  saveSolicitudDescanso(solicitudDescanso: SolicitudDescanso): Observable<void> {
     const token = localStorage.getItem('access_token');
 
     if (!token) {
