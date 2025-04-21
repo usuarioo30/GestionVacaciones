@@ -96,3 +96,7 @@
 .weekend-day {
   background-color: #f0f0f0;
 }
+
+.dropdown-item:hover {
+  background-color: #f1f1f1;
+}

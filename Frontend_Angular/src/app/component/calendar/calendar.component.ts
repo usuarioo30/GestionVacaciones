@@ -9,6 +9,7 @@ import Swal from 'sweetalert2';
 import { firstValueFrom } from 'rxjs';
 import { jwtDecode } from 'jwt-decode';
 import { CalendarRequestService } from '../../services/calendar-request.service';
+import { UsuarioService } from '../../services/usuario.service';
 
 @Component({
   selector: 'app-calendar',
@@ -27,6 +28,8 @@ export class CalendarComponent implements OnInit {
   year!: number;
   auth: string = '';
   status: string = 'true';
+  usuarios: any[] = [];
+  loggedInUserId: number = -1;  // Almacenamos el ID del usuario logueado
 
   // Cabecera con los días de la semana
   weeksDaysName: string[] = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
@@ -36,7 +39,8 @@ export class CalendarComponent implements OnInit {
   requestCalendar: CalendarRequestService = inject(CalendarRequestService);
 
   constructor(
-    private router: Router
+    private router: Router,
+    private usuarioService: UsuarioService,
   ) { }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -60,17 +64,36 @@ export class CalendarComponent implements OnInit {
 
       const decodedToken = jwtDecode(token);
       if (decodedToken.sub) {
-        const userId = Number.parseInt(decodedToken.sub);
+        this.loggedInUserId = Number.parseInt(decodedToken.sub);  // Almacenamos el ID del usuario logueado
 
         // Esperamos a que se carguen las solicitudes
         firstValueFrom(
-          this.requestCalendar.getAcceptedUsersSolicitudDescanso(userId, this.auth)
+          this.requestCalendar.getAcceptedUsersSolicitudDescanso(this.loggedInUserId, this.auth)
         ).then(() => {
           this.loadCalendar();
         });
       }
     }
 
+    // Cargar usuarios al inicializar el componente
+    this.loadUsers();
+  }
+
+  // Método para cargar los usuarios
+  loadUsers(): void {
+    this.usuarioService.getAllUsers().subscribe(
+      (response) => {
+        this.usuarios = response.users;  // Asegúrate de que el backend devuelve 'users'
+      },
+      (error) => {
+        console.error('Error al cargar los usuarios:', error);
+      }
+    );
+  }
+
+  // Método que puede ser llamado al seleccionar un usuario del desplegable
+  shareCalendarWithUser(user: any): void {
+    console.log('Calendario compartido con:', user.nombreCompleto);
   }
 
   isMonthRequested(): boolean {
@@ -122,12 +145,12 @@ export class CalendarComponent implements OnInit {
         }
 
         if (laborablesSolicitados === totalLaborablesMes) {
-          return true;
+          return true; // Al menos una solicitud cubre el mes completo
         }
       }
     }
 
-    return false;
+    return false; // Ninguna solicitud cubre el mes completo
   }
 
   isRequested(day: any): boolean {
