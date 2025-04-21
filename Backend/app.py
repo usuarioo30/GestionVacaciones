@@ -229,6 +229,31 @@ def getAllUsers():
 
     except Exception as e:
         return jsonify({"error": "Ha ocurrido un error al obtener los usuarios", "message": str(e)}), 500
+
+@app.route('/user/users', methods=['GET'])
+@jwt_required()
+def getAllUsers2():
+    try:
+        claims = get_jwt()
+        rol = claims.get("rol")
+
+        users = Usuario.query.filter(Usuario.rol == 'user').all()
+
+        users_data = []
+        for user in users:
+            users_data.append({
+                'id': user.id,
+                'nombreCompleto': user.nombreCompleto,
+                'username': user.username,
+                'email': user.email,
+                'rol': user.rol,
+            })
+
+        return jsonify({"users": users_data}), 200
+
+    except Exception as e:
+        return jsonify({"error": "Ha ocurrido un error al obtener los usuarios", "message": str(e)}), 500
+
     
 
 

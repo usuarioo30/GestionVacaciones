@@ -1,4 +1,4 @@
-import { Component, inject, Input, OnInit, SimpleChanges } from '@angular/core';
+import { Component, inject, OnInit, SimpleChanges } from '@angular/core';
 import { CreateCalendarService } from '../../services/createcalendar.service';
 import { Day } from '../../interfaces/day';
 import { CommonModule, DatePipe } from '@angular/common';
@@ -9,6 +9,7 @@ import Swal from 'sweetalert2';
 import { firstValueFrom } from 'rxjs';
 import { jwtDecode } from 'jwt-decode';
 import { CalendarRequestService } from '../../services/calendar-request.service';
+import { UsuarioService } from '../../services/usuario.service';
 
 @Component({
   selector: 'app-calendar',
@@ -19,14 +20,16 @@ import { CalendarRequestService } from '../../services/calendar-request.service'
 export class CalendarComponent implements OnInit {
 
   solicitud!: SolicitudDescanso;
-  monthDays!: Day[];            // Array completo de días (incluyendo relleno)
+  monthDays!: Day[];
   day!: Day;
-  fullCalendarWeeks!: Day[][];  // Días agrupados en semanas (cada semana es un array de 7 días)
+  fullCalendarWeeks!: Day[][];
   solicitudes: SolicitudDescanso[] = [];
   monthNumber!: number;
   year!: number;
   auth: string = '';
   status: string = 'true';
+  usuarios: any[] = [];
+  loggedInUserId: number = -1;
 
   // Cabecera con los días de la semana
   weeksDaysName: string[] = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
@@ -36,13 +39,13 @@ export class CalendarComponent implements OnInit {
   requestCalendar: CalendarRequestService = inject(CalendarRequestService);
 
   constructor(
-    private router: Router
+    private router: Router,
+    private usuarioService: UsuarioService,
   ) { }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['solicitudes'] && this.monthNumber !== undefined && this.year !== undefined) {
       console.log('Las solicitudes han cambiado:', changes['solicitudes']);
-      // Recargar el calendario en caso de que las solicitudes cambien.
       this.loadCalendar();
     }
   }
@@ -60,32 +63,50 @@ export class CalendarComponent implements OnInit {
 
       const decodedToken = jwtDecode(token);
       if (decodedToken.sub) {
-        const userId = Number.parseInt(decodedToken.sub);
+        this.loggedInUserId = Number.parseInt(decodedToken.sub);
 
-        // Esperamos a que se carguen las solicitudes
         firstValueFrom(
-          this.requestCalendar.getAcceptedUsersSolicitudDescanso(userId, this.auth)
+          this.requestCalendar.getAcceptedUsersSolicitudDescanso(this.loggedInUserId, this.auth)
         ).then(() => {
           this.loadCalendar();
         });
       }
     }
 
+    this.loadUsers();
+  }
+
+  loadUsers(): void {
+    this.usuarioService.getAllUsers().subscribe(
+      (response) => {
+        this.usuarios = response.users;
+  
+        this.usuarios = this.usuarios.sort((a, b) => {
+          if (a.id === this.loggedInUserId) return -1;
+          if (b.id === this.loggedInUserId) return 1;
+          return 0;
+        });
+      },
+      (error) => {
+        console.error('Error al cargar los usuarios:', error);
+      }
+    );
+  }
+
+  shareCalendarWithUser(user: any): void {
+    console.log('Calendario compartido con:', user.nombreCompleto);
   }
 
   isMonthRequested(): boolean {
-    // Si el array de solicitudes no está definido o está vacío, retorna false
     if (!this.solicitudes || this.solicitudes.length === 0) {
       return false;
     }
 
     for (const solicitud of this.solicitudes) {
-      // Si por alguna razón algún elemento es undefined, lo saltamos
       if (!solicitud) {
         continue;
       }
 
-      // Asegúrate de que fecha_inicio y fecha_fin existen en la solicitud.
       if (!solicitud.fecha_inicio || !solicitud.fecha_fin) {
         continue;
       }
@@ -93,7 +114,6 @@ export class CalendarComponent implements OnInit {
       const fecha_inicio = new Date(solicitud.fecha_inicio);
       const fecha_fin = new Date(solicitud.fecha_fin);
 
-      // Solo consideramos solicitudes que están en el mes actual
       if (
         fecha_inicio.getFullYear() === this.year &&
         fecha_inicio.getMonth() === this.monthNumber &&
@@ -103,7 +123,6 @@ export class CalendarComponent implements OnInit {
         const anio = fecha_inicio.getFullYear();
         const mes = fecha_inicio.getMonth();
 
-        // Días laborables del mes completo
         const diasEnMes = new Date(anio, mes + 1, 0).getDate();
         let totalLaborablesMes = 0;
         for (let dia = 1; dia <= diasEnMes; dia++) {
@@ -112,7 +131,6 @@ export class CalendarComponent implements OnInit {
           if (diaSemana !== 0 && diaSemana !== 6) totalLaborablesMes++;
         }
 
-        // Días laborables de la solicitud
         let laborablesSolicitados = 0;
         const fechaActual = new Date(fecha_inicio);
         while (fechaActual <= fecha_fin) {
@@ -122,18 +140,16 @@ export class CalendarComponent implements OnInit {
         }
 
         if (laborablesSolicitados === totalLaborablesMes) {
-          return true; // Al menos una solicitud cubre el mes completo
+          return true;
         }
       }
     }
 
-    return false; // Ninguna solicitud cubre el mes completo
+    return false;
   }
 
   isRequested(day: any): boolean {
-    // Convertimos el objeto "day" a Date
     const dayDate = new Date(day.year, day.monthIndex, day.number);
-    // Verifica si el día está solicitado
     if (!this.requestCalendar.requests() || this.requestCalendar.requests().length === 0) {
       return false;
     }
@@ -166,7 +182,7 @@ export class CalendarComponent implements OnInit {
    */
   loadCalendar() {
     // 1. Verificamos si el mes completo ha sido solicitado
-    const solicitudCompleta: boolean = this.isMonthRequested(); // <- usa tu objeto solicitud
+    const solicitudCompleta: boolean = this.isMonthRequested();
 
     // 2. Días del mes actual
     const currentDays = this.calendar.getMonth(this.monthNumber, this.year);
@@ -175,7 +191,6 @@ export class CalendarComponent implements OnInit {
       day.available = this.calendar.isDayAvailable(day);
 
       const solicitudParcial: boolean = this.isRequested(day);
-      // Si el mes fue solicitado completamente, todos los días laborables se marcan como requested
       if (solicitudCompleta && day.weekDayNumber < 5) {
         day.requested = true;
       } else if (solicitudParcial && day.weekDayNumber < 5) {
@@ -203,7 +218,7 @@ export class CalendarComponent implements OnInit {
       daysToPrepend.forEach(day => {
         day.isCurrentMonth = false;
         day.available = this.calendar.isDayAvailable(day);
-        day.requested = false; // Días de otro mes no se consideran solicitados aquí
+        day.requested = false;
       });
     }
 
@@ -227,7 +242,7 @@ export class CalendarComponent implements OnInit {
       daysToAppend.forEach(day => {
         day.isCurrentMonth = false;
         day.available = this.calendar.isDayAvailable(day);
-        day.requested = false; // No se consideran solicitados
+        day.requested = false;
       });
 
       fullDays = fullDays.concat(daysToAppend);

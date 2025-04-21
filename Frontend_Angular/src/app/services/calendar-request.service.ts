@@ -37,4 +37,18 @@ export class CalendarRequestService {
     return this.requestCalendarSignal;
   }
 
+  // Método para compartir el calendario con otros usuarios
+  shareCalendarWithUsers(userId: string | number, sharedUserIds: any[]): Observable<any> {
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${localStorage.getItem('access_token') || ''}`);
+
+    // Aquí puedes definir el cuerpo de la solicitud para compartir el calendario
+    const body = {
+      userId: userId,
+      sharedUsers: sharedUserIds
+    };
+
+    // Llamada al backend para compartir el calendario
+    return this.http.post(`${this.urlApi}/share`, body, { headers });
+  }
+
 }
