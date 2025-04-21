@@ -7,6 +7,7 @@ from flask_jwt_extended import JWTManager, create_access_token, get_jwt, jwt_req
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import timedelta
+from sqlalchemy import or_
 
 # Configuración de la base de datos y otros parámetros
 class Config:
@@ -44,6 +45,37 @@ class SolicitudDescanso(db.Model):
 
     def __repr__(self):
         return f'<SolicitudDescanso {self.id}>'
+
+
+class ShareCalendar(db.Model):
+    __tablename__ = 'share_calendar'
+
+    owner_id  = db.Column(
+        db.Integer,
+        db.ForeignKey('usuario.id', ondelete='CASCADE'),
+        primary_key=True
+    )
+    shared_id = db.Column(
+        db.Integer,
+        db.ForeignKey('usuario.id', ondelete='CASCADE'),
+        primary_key=True
+    )
+
+    owner = db.relationship(
+        'Usuario',
+        foreign_keys=[owner_id],
+        backref=db.backref('calendarios_compartidos', cascade='all, delete-orphan')
+    )
+    usuario_shared = db.relationship(
+        'Usuario',
+        foreign_keys=[shared_id],
+        backref=db.backref('compartido_por', cascade='all, delete-orphan')
+    )
+
+    def __repr__(self):
+        return (f"<ShareCalendar owner={self.owner_id}({self.owner.username}) "
+                f"→ shared={self.usuario_shared.id}({self.usuario_shared.username})>")
+
 
 
 # Función para crear la aplicación
@@ -706,10 +738,28 @@ def getUserRequest(user):
 @jwt_required()
 def getAcceptedUserRequest(user):
     try:
-        solicitudes = SolicitudDescanso.query.filter(
-            SolicitudDescanso.usuario_id == user,
-            SolicitudDescanso.estado == True
-        ).all()
+        
+        # subconsulta que recoge todos los owner_id que te han compartido calendario
+        owner_ids = (
+            db.session
+            .query(ShareCalendar.owner_id)
+            .filter(ShareCalendar.shared_id == user)
+            .subquery()
+        )
+
+        # consulta principal: estado aceptado y (propias o de los que te han compartido)
+        solicitudes = (
+            SolicitudDescanso.query
+            .filter(
+                SolicitudDescanso.estado == True,
+                or_(
+                    SolicitudDescanso.usuario_id == user,
+                    SolicitudDescanso.usuario_id.in_(owner_ids)
+                )
+            )
+            .all()
+        )
+
 
         solicitudes_data = []
         for solicitud in solicitudes:
