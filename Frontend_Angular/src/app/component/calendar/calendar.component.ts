@@ -79,11 +79,17 @@ export class CalendarComponent implements OnInit {
     this.loadUsers();
   }
 
-  // Método para cargar los usuarios
   loadUsers(): void {
     this.usuarioService.getAllUsers().subscribe(
       (response) => {
-        this.usuarios = response.users;  // Asegúrate de que el backend devuelve 'users'
+        this.usuarios = response.users;
+  
+        // Ordenar los usuarios para que el logueado esté al principio
+        this.usuarios = this.usuarios.sort((a, b) => {
+          if (a.id === this.loggedInUserId) return -1;
+          if (b.id === this.loggedInUserId) return 1;
+          return 0;
+        });
       },
       (error) => {
         console.error('Error al cargar los usuarios:', error);

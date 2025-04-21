@@ -100,3 +100,8 @@
 .dropdown-item:hover {
   background-color: #f1f1f1;
 }
+
+.disabled {
+  background-color: #f0f0f0;
+  color: #999;
+}
