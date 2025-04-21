@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { SolicitudDescansoService } from '../../../services/solicitud-descanso.service';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink, RouterOutlet } from '@angular/router';
+import { Router } from '@angular/router';
 import { SolicitudDescanso } from '../../../interfaces/solicitud-descanso';
 import Swal from 'sweetalert2';
 import { AuthService } from '../../../services/auth.service';
@@ -29,7 +29,6 @@ export class ListSolicitudesComponent implements OnInit {
   constructor(
     private solicitudDescansoService: SolicitudDescansoService,
     private router: Router,
-    private route: ActivatedRoute,
     private fb: FormBuilder,
     private authService: AuthService
   ) {
