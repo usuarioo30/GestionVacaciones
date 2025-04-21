@@ -1,5 +1,5 @@
 import { computed, Injectable, Signal, signal } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { SolicitudDescanso } from '../interfaces/solicitud-descanso';
 import { jwtDecode } from 'jwt-decode';
@@ -108,42 +108,6 @@ export class SolicitudDescansoService {
 
     }
   }
-
-
-  // orderData = (array: AdminRequest[]) => {
-  //   switch (this.orderSignal()) {
-  //     case 'id_asc':
-  //       return array.sort((r1, r2) => r1.id - r2.id);
-
-  //     case 'id_desc':
-  //       return array.sort((r1, r2) => r2.id - r1.id);
-
-  //     case 'date_asc':
-
-  //       return array.sort((r1, r2) => {
-
-  //         return Date.parse(r1.fecha_inicio) - Date.parse(r2.fecha_inicio);
-  //       });
-
-  //     case 'date_desc':
-
-  //       return array.sort((r1, r2) => {
-
-  //         return Date.parse(r2.fecha_inicio) - Date.parse(r1.fecha_inicio);
-  //       });
-
-  //     case 'user_asc':
-  //       return array.sort((r1, r2) => r1.nombreCompleto.toLowerCase().trim().localeCompare(r2.nombreCompleto.toLowerCase().trim(), "es"));
-
-  //     case 'user_desc':
-  //       return array.sort((r1, r2) => r2.nombreCompleto.toLowerCase().trim().localeCompare(r1.nombreCompleto.toLowerCase().trim(), "es"));
-
-        
-  //     default:
-  //       return array.sort((r1, r2) => r1.id - r2.id);
-
-  //   }
-  // }
 
   getAllSolicitudesDescansoAdmin(): Observable<SolicitudDescanso[]> {
     const token = localStorage.getItem('access_token');
@@ -310,6 +274,20 @@ export class SolicitudDescansoService {
           console.log(err);
         }
       });
+  }
+
+  checkIfDateHasBeenUsed(fecha_inicio: string, fecha_fin: string): Observable<boolean> {
+
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      throw new Error('Token no encontrado');
+    }
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+    const body = {"fecha_inicio": fecha_inicio, "fecha_fin": fecha_fin}
+    return this.http.post<SolicitudDescanso[]>(`${this.urlApi}/compare`, body, { headers })
+    .pipe(
+      map((response) => response.length > 0)
+    )
   }
 
 }
