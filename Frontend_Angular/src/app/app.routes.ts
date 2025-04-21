@@ -17,8 +17,8 @@ export const appRoutes: Routes = [
 
 
   // Login
-  { path: '', redirectTo: '/login', pathMatch: 'full' }, // Redirige a la página de login por defecto
-  { path: 'login', component: LoginComponent }, // Ruta para el login
+  { path: '', redirectTo: '/login', pathMatch: 'full' },
+  { path: 'login', component: LoginComponent },
 
   // Admin
   { path: 'listusers', component: ListUsuariosComponent },
@@ -38,5 +38,5 @@ export const appRoutes: Routes = [
   //Historial
   { path: 'historial', component: HistorialComponent },
 
-  { path: '**', redirectTo: '/login' }, // Redirige a login si la ruta no existe
+  { path: '**', redirectTo: '/login' },
 ];

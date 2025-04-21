@@ -1,4 +1,4 @@
-import { Component, inject, Input, OnInit, SimpleChanges } from '@angular/core';
+import { Component, inject, OnInit, SimpleChanges } from '@angular/core';
 import { CreateCalendarService } from '../../services/createcalendar.service';
 import { Day } from '../../interfaces/day';
 import { CommonModule, DatePipe } from '@angular/common';
@@ -29,7 +29,7 @@ export class CalendarComponent implements OnInit {
   auth: string = '';
   status: string = 'true';
   usuarios: any[] = [];
-  loggedInUserId: number = -1;  // Almacenamos el ID del usuario logueado
+  loggedInUserId: number = -1;
 
   // Cabecera con los días de la semana
   weeksDaysName: string[] = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
@@ -46,7 +46,6 @@ export class CalendarComponent implements OnInit {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['solicitudes'] && this.monthNumber !== undefined && this.year !== undefined) {
       console.log('Las solicitudes han cambiado:', changes['solicitudes']);
-      // Recargar el calendario en caso de que las solicitudes cambien.
       this.loadCalendar();
     }
   }
@@ -64,9 +63,8 @@ export class CalendarComponent implements OnInit {
 
       const decodedToken = jwtDecode(token);
       if (decodedToken.sub) {
-        this.loggedInUserId = Number.parseInt(decodedToken.sub);  // Almacenamos el ID del usuario logueado
+        this.loggedInUserId = Number.parseInt(decodedToken.sub);
 
-        // Esperamos a que se carguen las solicitudes
         firstValueFrom(
           this.requestCalendar.getAcceptedUsersSolicitudDescanso(this.loggedInUserId, this.auth)
         ).then(() => {
@@ -75,7 +73,6 @@ export class CalendarComponent implements OnInit {
       }
     }
 
-    // Cargar usuarios al inicializar el componente
     this.loadUsers();
   }
 
@@ -84,7 +81,6 @@ export class CalendarComponent implements OnInit {
       (response) => {
         this.usuarios = response.users;
   
-        // Ordenar los usuarios para que el logueado esté al principio
         this.usuarios = this.usuarios.sort((a, b) => {
           if (a.id === this.loggedInUserId) return -1;
           if (b.id === this.loggedInUserId) return 1;
@@ -97,24 +93,20 @@ export class CalendarComponent implements OnInit {
     );
   }
 
-  // Método que puede ser llamado al seleccionar un usuario del desplegable
   shareCalendarWithUser(user: any): void {
     console.log('Calendario compartido con:', user.nombreCompleto);
   }
 
   isMonthRequested(): boolean {
-    // Si el array de solicitudes no está definido o está vacío, retorna false
     if (!this.solicitudes || this.solicitudes.length === 0) {
       return false;
     }
 
     for (const solicitud of this.solicitudes) {
-      // Si por alguna razón algún elemento es undefined, lo saltamos
       if (!solicitud) {
         continue;
       }
 
-      // Asegúrate de que fecha_inicio y fecha_fin existen en la solicitud.
       if (!solicitud.fecha_inicio || !solicitud.fecha_fin) {
         continue;
       }
@@ -122,7 +114,6 @@ export class CalendarComponent implements OnInit {
       const fecha_inicio = new Date(solicitud.fecha_inicio);
       const fecha_fin = new Date(solicitud.fecha_fin);
 
-      // Solo consideramos solicitudes que están en el mes actual
       if (
         fecha_inicio.getFullYear() === this.year &&
         fecha_inicio.getMonth() === this.monthNumber &&
@@ -132,7 +123,6 @@ export class CalendarComponent implements OnInit {
         const anio = fecha_inicio.getFullYear();
         const mes = fecha_inicio.getMonth();
 
-        // Días laborables del mes completo
         const diasEnMes = new Date(anio, mes + 1, 0).getDate();
         let totalLaborablesMes = 0;
         for (let dia = 1; dia <= diasEnMes; dia++) {
@@ -141,7 +131,6 @@ export class CalendarComponent implements OnInit {
           if (diaSemana !== 0 && diaSemana !== 6) totalLaborablesMes++;
         }
 
-        // Días laborables de la solicitud
         let laborablesSolicitados = 0;
         const fechaActual = new Date(fecha_inicio);
         while (fechaActual <= fecha_fin) {
@@ -151,18 +140,16 @@ export class CalendarComponent implements OnInit {
         }
 
         if (laborablesSolicitados === totalLaborablesMes) {
-          return true; // Al menos una solicitud cubre el mes completo
+          return true;
         }
       }
     }
 
-    return false; // Ninguna solicitud cubre el mes completo
+    return false;
   }
 
   isRequested(day: any): boolean {
-    // Convertimos el objeto "day" a Date
     const dayDate = new Date(day.year, day.monthIndex, day.number);
-    // Verifica si el día está solicitado
     if (!this.requestCalendar.requests() || this.requestCalendar.requests().length === 0) {
       return false;
     }
@@ -195,7 +182,7 @@ export class CalendarComponent implements OnInit {
    */
   loadCalendar() {
     // 1. Verificamos si el mes completo ha sido solicitado
-    const solicitudCompleta: boolean = this.isMonthRequested(); // <- usa tu objeto solicitud
+    const solicitudCompleta: boolean = this.isMonthRequested();
 
     // 2. Días del mes actual
     const currentDays = this.calendar.getMonth(this.monthNumber, this.year);
@@ -204,7 +191,6 @@ export class CalendarComponent implements OnInit {
       day.available = this.calendar.isDayAvailable(day);
 
       const solicitudParcial: boolean = this.isRequested(day);
-      // Si el mes fue solicitado completamente, todos los días laborables se marcan como requested
       if (solicitudCompleta && day.weekDayNumber < 5) {
         day.requested = true;
       } else if (solicitudParcial && day.weekDayNumber < 5) {
@@ -232,7 +218,7 @@ export class CalendarComponent implements OnInit {
       daysToPrepend.forEach(day => {
         day.isCurrentMonth = false;
         day.available = this.calendar.isDayAvailable(day);
-        day.requested = false; // Días de otro mes no se consideran solicitados aquí
+        day.requested = false;
       });
     }
 
@@ -256,7 +242,7 @@ export class CalendarComponent implements OnInit {
       daysToAppend.forEach(day => {
         day.isCurrentMonth = false;
         day.available = this.calendar.isDayAvailable(day);
-        day.requested = false; // No se consideran solicitados
+        day.requested = false;
       });
 
       fullDays = fullDays.concat(daysToAppend);
