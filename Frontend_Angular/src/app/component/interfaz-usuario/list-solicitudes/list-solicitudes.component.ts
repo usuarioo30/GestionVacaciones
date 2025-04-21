@@ -117,48 +117,64 @@ export class ListSolicitudesComponent implements OnInit {
         fecha_solicitud: this.getFechaActual()
       };
 
-      console.log(nuevaSolicitud);
+      this.solicitudDescansoService.checkIfDateHasBeenUsed(nuevaSolicitud.fecha_inicio, nuevaSolicitud.fecha_fin)
+      .subscribe({
+        next: isBusy => { //Si es true, las fechas ya han sido utilizadas
+          if (!isBusy) {
+            this.solicitudDescansoService.saveSolicitudDescanso(nuevaSolicitud).subscribe(
+            (response) => {
+              console.log('Solicitud guardada', response);
 
-      this.solicitudDescansoService.saveSolicitudDescanso(nuevaSolicitud).subscribe(
-        (response) => {
-          console.log('Solicitud guardada', response);
+              // Mostrar la alerta de éxito
+              Swal.fire({
+                icon: 'success',
+                title: '¡Solicitud registrada!',
+                text: 'Tu solicitud de descanso ha sido registrada con éxito.',
+                confirmButtonText: 'Aceptar'
+              }).then(() => {
+                // Solo resetear los campos que quieres actualizar
+                this.formSolicitudDescanso.patchValue({
+                  fecha_inicio: '',
+                  fecha_fin: '',
+                  motivo: ''
+                });
 
-          // Mostrar la alerta de éxito
-          Swal.fire({
-            icon: 'success',
-            title: '¡Solicitud registrada!',
-            text: 'Tu solicitud de descanso ha sido registrada con éxito.',
-            confirmButtonText: 'Aceptar'
-          }).then(() => {
-            // Solo resetear los campos que quieres actualizar
-            this.formSolicitudDescanso.patchValue({
-              fecha_inicio: '',
-              fecha_fin: '',
-              motivo: ''
+                this.formSolicitudDescanso.reset({
+                  fecha_solicitud: this.getFechaActual(),
+                  usuario: this.username,
+                  usuario_id: this.usuario_id,
+                });
+                
+                // Refrescar la lista de solicitudes
+                this.findAllSolicitudesDescanso();
+              });
+            },
+            (error) => {
+              console.error('Error al guardar la solicitud', error);
+
+              // Mostrar una alerta de error
+              Swal.fire({
+                icon: 'error',
+                title: '¡Error!',
+                text: 'Hubo un error al registrar tu solicitud. Por favor, inténtalo nuevamente.',
+                confirmButtonText: 'Aceptar'
+              });
+            }
+              );
+          } else {
+            Swal.fire({
+              icon: 'error',
+              title: '¡Error!',
+              text: 'Esasas fechas ya han sido utilizadas. Por favor, selecciona otras fechas.',
+              confirmButtonText: 'Aceptar'
             });
-
-            this.formSolicitudDescanso.reset({
-              fecha_solicitud: this.getFechaActual(),
-              usuario: this.username,
-              usuario_id: this.usuario_id,
-            });
-            
-            // Refrescar la lista de solicitudes
-            this.findAllSolicitudesDescanso();
-          });
+          }
         },
-        (error) => {
-          console.error('Error al guardar la solicitud', error);
+        error: error => console.log("Ha ocurrido un error inesperado: ", error)
+      })
 
-          // Mostrar una alerta de error
-          Swal.fire({
-            icon: 'error',
-            title: '¡Error!',
-            text: 'Hubo un error al registrar tu solicitud. Por favor, inténtalo nuevamente.',
-            confirmButtonText: 'Aceptar'
-          });
-        }
-      );
+
+      
     }
   }
 
