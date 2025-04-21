@@ -27,7 +27,8 @@
              'text-muted': !day.isCurrentMonth,
              'bg-light': day.isToday,
              'fw-bold': day.isToday,
-             'day-requested': day.requested
+             'day-requested': day.requested,
+             'weekend-day': day.weekDayNumber === 5 || day.weekDayNumber === 6
            }">
         {{ day.number }}
       </div>

@@ -246,6 +246,7 @@ export class CalendarioAdminComponent {
     this.loadCalendar();
   }
 
+  // Array para almacenar los colores pasteles
   getRandomColor(id: number): string {
     const colores = [
       '#A8D0E6', '#FFB6B9', '#C3FBD8', '#FFE6A7', '#B5EAD7', '#FFDAC1', '#E2F0CB', '#C7CEEA', '#F6D6AD',

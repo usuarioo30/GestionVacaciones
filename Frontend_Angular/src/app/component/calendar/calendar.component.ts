@@ -19,9 +19,9 @@ import { CalendarRequestService } from '../../services/calendar-request.service'
 export class CalendarComponent implements OnInit {
 
   solicitud!: SolicitudDescanso;
-  monthDays!: Day[];            // Array completo de días (incluyendo relleno)
+  monthDays!: Day[];
   day!: Day;
-  fullCalendarWeeks!: Day[][];  // Días agrupados en semanas (cada semana es un array de 7 días)
+  fullCalendarWeeks!: Day[][];
   solicitudes: SolicitudDescanso[] = [];
   monthNumber!: number;
   year!: number;
@@ -122,12 +122,12 @@ export class CalendarComponent implements OnInit {
         }
 
         if (laborablesSolicitados === totalLaborablesMes) {
-          return true; // Al menos una solicitud cubre el mes completo
+          return true;
         }
       }
     }
 
-    return false; // Ninguna solicitud cubre el mes completo
+    return false;
   }
 
   isRequested(day: any): boolean {
