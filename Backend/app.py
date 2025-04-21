@@ -229,6 +229,31 @@ def getAllUsers():
 
     except Exception as e:
         return jsonify({"error": "Ha ocurrido un error al obtener los usuarios", "message": str(e)}), 500
+
+@app.route('/user/users', methods=['GET'])
+@jwt_required()
+def getAllUsers2():
+    try:
+        claims = get_jwt()
+        rol = claims.get("rol")
+
+        users = Usuario.query.filter(Usuario.rol == 'user').all()
+
+        users_data = []
+        for user in users:
+            users_data.append({
+                'id': user.id,
+                'nombreCompleto': user.nombreCompleto,
+                'username': user.username,
+                'email': user.email,
+                'rol': user.rol,
+            })
+
+        return jsonify({"users": users_data}), 200
+
+    except Exception as e:
+        return jsonify({"error": "Ha ocurrido un error al obtener los usuarios", "message": str(e)}), 500
+
     
 
 
@@ -353,6 +378,8 @@ def editar_usuario(id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'message': 'Error al editar el usuario', 'error': str(e)}), 500
+
+# ----------------Inicio endpoints para las solicitudes de descanso-------------------------------
 
 @app.route('/request/edit/<int:id>', methods=['PUT'])
 @jwt_required()
@@ -728,6 +755,51 @@ def getAcceptedRequests():
 
     except Exception as e:
         return jsonify({"error": "Ocurrió un error al obtener las solicitudes.", "message": str(e)}), 500
+
+@app.route('/request/compare', methods=['POST'])
+@jwt_required()
+def compareRequests():
+
+    try:
+        data = request.get_json() # Esto es para obtener el cuerpo en json
+
+        fecha_inicio_str = data['fecha_inicio']
+        fecha_fin_str = data['fecha_fin']
+
+        if not fecha_inicio_str or not fecha_fin_str:
+            return jsonify({"error": "Faltan fechas en los parámetros."}), 400
+
+        # Convertir strings a datetime
+        fecha_inicio = datetime.strptime(fecha_inicio_str, '%Y-%m-%d')
+        fecha_fin = datetime.strptime(fecha_fin_str, '%Y-%m-%d')
+
+        solicitudes = SolicitudDescanso.query.filter(
+            SolicitudDescanso.estado == True,
+            SolicitudDescanso.fecha_inicio <= fecha_fin,
+            SolicitudDescanso.fecha_fin >= fecha_inicio
+        ).all()
+
+        solicitudes_descanso = []
+
+        for solicitud in solicitudes:
+            solicitud_info = {
+                "id": solicitud.id,
+                "usuario_id": solicitud.usuario_id,
+                "fecha_inicio": solicitud.fecha_inicio.strftime('%Y-%m-%d %H:%M:%S'),
+                "fecha_fin": solicitud.fecha_fin.strftime('%Y-%m-%d %H:%M:%S'),
+                "fecha_solicitud": solicitud.fecha_solicitud.strftime('%Y-%m-%d %H:%M:%S'),
+                "estado": solicitud.estado,
+                "motivo": solicitud.motivo
+            }
+
+            solicitudes_descanso.append(solicitud_info)
+
+        return jsonify(solicitudes_descanso), 200
+
+    except Exception as e:
+        return jsonify({"error": "Ocurrió un error al obtener las solicitudes.", "message": str(e)}), 500
+
+# --------- Fin endpoints para las solicitudes de descanso -------------------
 
 # Ejecutar el servidor Flask
 if __name__ == '__main__':
