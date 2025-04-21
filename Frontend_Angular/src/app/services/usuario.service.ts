@@ -51,6 +51,16 @@ export class UsuarioService {
     return this.http.get(`${this.apiUrl}/list`, { headers });
   }
 
+  getAllUsers(): Observable<any> {
+
+    const token = localStorage.getItem('access_token');
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
+
+    return this.http.get(`${this.apiUrl}/users`, { headers });
+  }
+
   getUsuarioActual(): any {
     const token = localStorage.getItem('access_token');
     if (!token) {
@@ -92,7 +102,7 @@ export class UsuarioService {
   
     try {
       const decodedToken: any = jwtDecode(token);
-      const userId = decodedToken.sub; // Suponiendo que el ID del usuario esté en el token
+      const userId = decodedToken.sub;
   
       const headers = new HttpHeaders({
         'Authorization': `Bearer ${token}`,
