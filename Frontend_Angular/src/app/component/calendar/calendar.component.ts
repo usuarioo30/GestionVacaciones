@@ -5,7 +5,6 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { SolicitudDescanso } from '../../interfaces/solicitud-descanso';
 import { SolicitudDescansoService } from '../../services/solicitud-descanso.service';
-import Swal from 'sweetalert2';
 import { firstValueFrom } from 'rxjs';
 import { jwtDecode } from 'jwt-decode';
 import { CalendarRequestService } from '../../services/calendar-request.service';

@@ -7,6 +7,7 @@ from flask_jwt_extended import JWTManager, create_access_token, get_jwt, jwt_req
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import timedelta
+from sqlalchemy import or_
 
 # Configuración de la base de datos y otros parámetros
 class Config:
@@ -706,10 +707,17 @@ def getUserRequest(user):
 @jwt_required()
 def getAcceptedUserRequest(user):
     try:
-        solicitudes = SolicitudDescanso.query.filter(
-            SolicitudDescanso.usuario_id == user,
-            SolicitudDescanso.estado == True
-        ).all()
+
+        # consulta principal: estado aceptado y (propias o de los que te han compartido)
+        solicitudes = (
+            SolicitudDescanso.query
+            .filter(
+                SolicitudDescanso.estado == True,
+                SolicitudDescanso.usuario_id == user,
+            )
+            .all()
+        )
+
 
         solicitudes_data = []
         for solicitud in solicitudes:
