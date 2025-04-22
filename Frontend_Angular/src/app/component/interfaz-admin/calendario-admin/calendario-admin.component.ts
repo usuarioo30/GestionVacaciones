@@ -12,6 +12,8 @@ import { RequestResponse } from '../../../interfaces/request-response';
 import { Color } from '../../../interfaces/color';
 import { AuthService } from '../../../services/auth.service';
 import { Usuariomin } from '../../../interfaces/usuariomin';
+import { HolidayserviceService } from '../../../services/holidayservice.service';
+import { PublicHoliday } from '../../../interfaces/public-holiday';
 
 
 
@@ -34,6 +36,7 @@ export class CalendarioAdminComponent {
   color: Color[] = []
   users!: Signal<Usuariomin[]>;
   selectedUserId: number | null = null;
+  holidays: PublicHoliday[] = [];
 
   weeksDaysName: string[] = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
 
@@ -41,6 +44,7 @@ export class CalendarioAdminComponent {
   solicitudSrvc: SolicitudDescansoService = inject(SolicitudDescansoService);
   requestCalendar: CalendarRequestService = inject(CalendarRequestService);
   authService: AuthService = inject(AuthService);
+  holidayService: HolidayserviceService = inject(HolidayserviceService);
 
   constructor(
     private router: Router
@@ -70,6 +74,21 @@ export class CalendarioAdminComponent {
 
         firstValueFrom(this.requestCalendar.getAcceptedRequest(this.auth))
           .then(() => {
+
+            this.holidayService.getPublicHolidays(this.year).subscribe({
+              next: (response) => {
+                // filtramos los de Andalucía
+                this.holidays = response.filter(h =>
+                  h.global || (h.counties ?? []).includes('ES-AN')
+                );
+                
+          
+                // 3) Con los festivos ya cargados, generamos el calendario
+                this.loadCalendar();
+              },
+              error: (err) => console.error('No se pudieron cargar festivos:', err)
+            });
+
             this.loadCalendar();
           });
 
@@ -153,7 +172,7 @@ export class CalendarioAdminComponent {
     currentDays.forEach(day => {
       day.isCurrentMonth = true;
       day.available = this.calendar.isDayAvailable(day);
-
+      day.isHoliday = this.isHoliday(day);
       const solicitudParcial: RequestResponse = !solicitudCompleta.estado ? this.isRequested(day) : { estado: false, usuarioId: 0 };
       const shouldRender =
         this.selectedUserId === null ||
@@ -284,6 +303,15 @@ export class CalendarioAdminComponent {
 
   markAsHoliday(day: Day): void {
     day.isHoliday = !day.isHoliday;
+  }
+
+  private isHoliday(day: Day): boolean {
+    return this.holidays.some(h => {
+      // h.date viene como "YYYY-MM-DD"
+      const [y, m, d] = h.date.split('-').map(Number);
+      // m es 1–12 en la cadena, monthIndex es 0–11
+      return y === day.year && (m - 1) === day.monthIndex && d === day.number;
+    });
   }
 
 }
