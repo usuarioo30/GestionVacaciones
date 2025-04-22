@@ -278,12 +278,12 @@ export class CalendarioAdminComponent {
     //   return '#EEEEEE';
     // }
 
-    if (day.requested) {
-      return this.getStoredColor(day.id);
-    }
 
-    
-    return '';
+    return day.requested ? this.getStoredColor(day.id) : '';
+  }
+
+  markAsHoliday(day: Day): void {
+    day.isHoliday = !day.isHoliday;
   }
 
 }
