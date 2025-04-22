@@ -115,6 +115,7 @@ export class CreateCalendarService {
 
     day.number = number;
     day.year = year;
+    day.isHoliday = false;
 
     const date = new Date(year, monthIndex, number);
 

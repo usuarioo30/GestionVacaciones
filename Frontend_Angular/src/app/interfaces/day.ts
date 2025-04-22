@@ -18,4 +18,6 @@ export interface Day {
   id: number; //El id del usuario que se ha cogido el día
 
   color?:string
+
+  isHoliday: boolean;
 }
