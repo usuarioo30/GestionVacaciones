@@ -46,6 +46,43 @@ class SolicitudDescanso(db.Model):
     def __repr__(self):
         return f'<SolicitudDescanso {self.id}>'
 
+class Turno(db.Model):
+    __tablename__ = 'turnos'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    hora_inicio = db.Column(db.Time, nullable=True)       # Puede ser NULL si es Libre u Oficina
+    hora_fin = db.Column(db.Time, nullable=True)
+
+    def __repr__(self):
+        return f"<Turno {self.turno} Día {self.dia_index} {self.hora_inicio}-{self.hora_fin}>"
+
+class Schedule(db.Model):
+    __tablename__ = 'schedules'
+
+    id            = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    usuario_id    = db.Column(db.Integer, db.ForeignKey('usuario.id', ondelete='CASCADE'), nullable=False)
+    horas_totales = db.Column(db.Float, nullable=True)
+
+    turno_lunes_id     = db.Column(db.Integer, db.ForeignKey('turnos.id'), nullable=True)
+    turno_martes_id    = db.Column(db.Integer, db.ForeignKey('turnos.id'), nullable=True)
+    turno_miercoles_id = db.Column(db.Integer, db.ForeignKey('turnos.id'), nullable=True)
+    turno_jueves_id    = db.Column(db.Integer, db.ForeignKey('turnos.id'), nullable=True)
+    turno_viernes_id   = db.Column(db.Integer, db.ForeignKey('turnos.id'), nullable=True)
+    turno_sabado_id    = db.Column(db.Integer, db.ForeignKey('turnos.id'), nullable=True)
+    turno_domingo_id   = db.Column(db.Integer, db.ForeignKey('turnos.id'), nullable=True)
+
+    # Relaciones ORM (no influyen en el esquema, pero te ayudan en Python)
+    usuario        = db.relationship('Usuario', backref=db.backref('schedules', cascade="all, delete-orphan"))
+    turno_lunes    = db.relationship('Turno', foreign_keys=[turno_lunes_id])
+    turno_martes   = db.relationship('Turno', foreign_keys=[turno_martes_id])
+    turno_miercoles= db.relationship('Turno', foreign_keys=[turno_miercoles_id])
+    turno_jueves   = db.relationship('Turno', foreign_keys=[turno_jueves_id])
+    turno_viernes  = db.relationship('Turno', foreign_keys=[turno_viernes_id])
+    turno_sabado   = db.relationship('Turno', foreign_keys=[turno_sabado_id])
+    turno_domingo  = db.relationship('Turno', foreign_keys=[turno_domingo_id])
+
+    def __repr__(self):
+        return f"<Schedule {self.id} – horas_totales={self.horas_totales}>"
 
 # Función para crear la aplicación
 def create_app():
@@ -81,10 +118,31 @@ def crear_usuario_por_defecto():
         db.session.commit()
         print("Usuario por defecto creado: admin")
 
+def crear_turnos_por_defecto():
+    turnos = Turno.query.count() > 0
+    if not turnos:
+        # Crear turnos por defecto
+        
+
+        turnos_por_defecto = [
+            
+            Turno(hora_inicio= datetime.strptime('08:00', "%H:%M").time(), hora_fin=datetime.strptime('17:00', "%H:%M").time()),
+            Turno(hora_inicio=datetime.strptime('08:00', "%H:%M").time(), hora_fin=datetime.strptime('20:00', "%H:%M").time()),
+            Turno(hora_inicio=datetime.strptime('23:30', "%H:%M").time(), hora_fin=datetime.strptime('08:30', "%H:%M").time()),
+            Turno(hora_inicio=datetime.strptime('20:00', "%H:%M").time(), hora_fin=datetime.strptime('08:00', "%H:%M").time()),
+            Turno(hora_inicio=datetime.strptime('15:00', "%H:%M").time(), hora_fin=datetime.strptime('00:00', "%H:%M").time()),
+            Turno(hora_inicio=datetime.strptime('08:00', "%H:%M").time(), hora_fin=datetime.strptime('16:00', "%H:%M").time())
+        ]
+
+        db.session.add_all(turnos_por_defecto)
+        db.session.commit()
+
 # Crear la base de datos y el usuario por defecto
 with app.app_context():
     db.create_all()
     crear_usuario_por_defecto()
+    # Aquí pongo los turnos
+    crear_turnos_por_defecto()
 
 
 # 
