@@ -47,37 +47,6 @@ class SolicitudDescanso(db.Model):
         return f'<SolicitudDescanso {self.id}>'
 
 
-class ShareCalendar(db.Model):
-    __tablename__ = 'share_calendar'
-
-    owner_id  = db.Column(
-        db.Integer,
-        db.ForeignKey('usuario.id', ondelete='CASCADE'),
-        primary_key=True
-    )
-    shared_id = db.Column(
-        db.Integer,
-        db.ForeignKey('usuario.id', ondelete='CASCADE'),
-        primary_key=True
-    )
-
-    owner = db.relationship(
-        'Usuario',
-        foreign_keys=[owner_id],
-        backref=db.backref('calendarios_compartidos', cascade='all, delete-orphan')
-    )
-    usuario_shared = db.relationship(
-        'Usuario',
-        foreign_keys=[shared_id],
-        backref=db.backref('compartido_por', cascade='all, delete-orphan')
-    )
-
-    def __repr__(self):
-        return (f"<ShareCalendar owner={self.owner_id}({self.owner.username}) "
-                f"→ shared={self.usuario_shared.id}({self.usuario_shared.username})>")
-
-
-
 # Función para crear la aplicación
 def create_app():
     app = Flask(__name__)
@@ -738,24 +707,13 @@ def getUserRequest(user):
 @jwt_required()
 def getAcceptedUserRequest(user):
     try:
-        
-        # subconsulta que recoge todos los owner_id que te han compartido calendario
-        owner_ids = (
-            db.session
-            .query(ShareCalendar.owner_id)
-            .filter(ShareCalendar.shared_id == user)
-            .subquery()
-        )
 
         # consulta principal: estado aceptado y (propias o de los que te han compartido)
         solicitudes = (
             SolicitudDescanso.query
             .filter(
                 SolicitudDescanso.estado == True,
-                or_(
-                    SolicitudDescanso.usuario_id == user,
-                    SolicitudDescanso.usuario_id.in_(owner_ids)
-                )
+                SolicitudDescanso.usuario_id == user,
             )
             .all()
         )

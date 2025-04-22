@@ -274,9 +274,9 @@ export class CalendarioAdminComponent {
   }
 
   getDayBackgroundColor(day: Day): string {
-    if (day.weekDayNumber === 5 || day.weekDayNumber === 6) {
-      return '#EEEEEE';
-    }
+    // if (day.weekDayNumber === 5 || day.weekDayNumber === 6) {
+    //   return '#EEEEEE';
+    // }
 
     if (day.requested) {
       return this.getStoredColor(day.id);
