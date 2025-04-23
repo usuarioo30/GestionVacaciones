@@ -7,7 +7,8 @@ from flask_jwt_extended import JWTManager, create_access_token, get_jwt, jwt_req
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import timedelta
-from sqlalchemy import or_
+from DayWeeks import DayOfWeek 
+from sqlalchemy import func, case, literal
 
 # Configuración de la base de datos y otros parámetros
 class Config:
@@ -58,34 +59,31 @@ class Turno(db.Model):
 
 class Schedule(db.Model):
     __tablename__ = 'schedules'
-
-    id            = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    usuario_id    = db.Column(db.Integer, db.ForeignKey('usuario.id', ondelete='CASCADE'), nullable=False)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id', ondelete='CASCADE'), nullable=False)
     horas_totales = db.Column(db.Float, nullable=True)
-    inicio_semana = db.Column(db.Date)  # Fecha de inicio de la semana
-    fin_semana   = db.Column(db.Date)  # Fecha de fin de la semana
+    inicio_semana = db.Column(db.Date, nullable=False)
+    fin_semana = db.Column(db.Date, nullable=False)
 
-
-    turno_lunes_id     = db.Column(db.Integer, db.ForeignKey('turnos.id'), nullable=True)
-    turno_martes_id    = db.Column(db.Integer, db.ForeignKey('turnos.id'), nullable=True)
-    turno_miercoles_id = db.Column(db.Integer, db.ForeignKey('turnos.id'), nullable=True)
-    turno_jueves_id    = db.Column(db.Integer, db.ForeignKey('turnos.id'), nullable=True)
-    turno_viernes_id   = db.Column(db.Integer, db.ForeignKey('turnos.id'), nullable=True)
-    turno_sabado_id    = db.Column(db.Integer, db.ForeignKey('turnos.id'), nullable=True)
-    turno_domingo_id   = db.Column(db.Integer, db.ForeignKey('turnos.id'), nullable=True)
-
-    # Relaciones ORM (no influyen en el esquema, pero te ayudan en Python)
-    usuario        = db.relationship('Usuario', backref=db.backref('schedules', cascade="all, delete-orphan"))
-    turno_lunes    = db.relationship('Turno', foreign_keys=[turno_lunes_id])
-    turno_martes   = db.relationship('Turno', foreign_keys=[turno_martes_id])
-    turno_miercoles= db.relationship('Turno', foreign_keys=[turno_miercoles_id])
-    turno_jueves   = db.relationship('Turno', foreign_keys=[turno_jueves_id])
-    turno_viernes  = db.relationship('Turno', foreign_keys=[turno_viernes_id])
-    turno_sabado   = db.relationship('Turno', foreign_keys=[turno_sabado_id])
-    turno_domingo  = db.relationship('Turno', foreign_keys=[turno_domingo_id])
+    dias = db.relationship('ScheduleDay', back_populates='schedule', cascade='all, delete-orphan')
 
     def __repr__(self):
-        return f"<Schedule {self.id} – horas_totales={self.horas_totales}>"
+        return f'<Schedule {self.id} usuario={self.usuario_id}>'
+
+
+
+class ScheduleDay(db.Model):
+    __tablename__ = 'schedule_days'
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    schedule_id = db.Column(db.Integer, db.ForeignKey('schedules.id', ondelete='CASCADE'), nullable=False)
+    dia = db.Column(db.Enum(DayOfWeek), nullable=False)
+    turno_id = db.Column(db.Integer, db.ForeignKey('turnos.id'), nullable=True)
+
+    schedule = db.relationship('Schedule', back_populates='dias')
+    turno = db.relationship('Turno')
+
+    def __repr__(self):
+        return f'<ScheduleDay {self.id}: schedule={self.schedule_id} dia={self.dia.name} turno={self.turno_id}>'
 
 # Función para crear la aplicación
 def create_app():
@@ -870,20 +868,111 @@ def compareRequests():
 
 # --------- Fin endpoints para las solicitudes de descanso -------------------
 
-@app.route('/turnos', methods=['GET'])
+@app.route('/turnos', methods=['GET']) # para pasarle fecha tiene que ser de esta manera: /turnos?fecha=2023-10-01
 @jwt_required()
 def get_all_turnos():
-
     try:
+        # Obtener la fecha del parámetro en la URL
+        fecha_str = request.args.get('fecha')
+        if fecha_str:
+            try:
+                fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+            except ValueError:
+                return jsonify({"error": "Formato de fecha inválido. Usa YYYY-MM-DD."}), 400
+        else:
+            return jsonify({"error": "Parámetro 'fecha' requerido."}), 400
 
-        
-        turnos = Turno.query.filter()
+        # Consulta con filtrado por fecha
+        horarios = db.session.query(
+            Schedule.id,
+            Usuario.nombreCompleto,
+            Schedule.inicio_semana,
+            Schedule.fin_semana,
+            
+        ).join(Usuario).filter(
+            Schedule.usuario_id == Usuario.id,
+            Schedule.inicio_semana <= fecha,
+            Schedule.fin_semana >= fecha
+        ).all()
+
+
+        horarios_json = []
+
+        for horario in horarios:
+
+            
+            horario_json = {
+                "id": horario.id,
+                "nombre": horario.nombreCompleto,
+                "inicio_semana": horario.inicio_semana.strftime('%Y-%m-%d'),
+                "fin_semana": horario.fin_semana.strftime('%Y-%m-%d'),
+                "turnos": _get_turnos_por_schedule_id(horario.id)
+            }
+
+            horarios_json.append(horario_json)
+
+        return jsonify(horarios_json), 200
 
     except Exception as e:
-        return jsonify({"error": "Ocurrió un error al obtener los turnos.", "message": str(e)}), 500
+        return jsonify({
+            "error": "Ocurrió un error al obtener los turnos.",
+            "message": str(e)
+        }), 500
 
-    return ''
+# Este método es para hacer una consulta repetidas veces
+def _get_turnos_por_schedule_id(schedule_id):
+    try:
+        work_days = db.session.query(
+            ScheduleDay.dia,
+            Turno.hora_inicio,
+            Turno.hora_fin
+        ).outerjoin(
+            Turno, ScheduleDay.turno_id == Turno.id
+        ).filter(
+            ScheduleDay.schedule_id == schedule_id
+        ).all()
 
+        turnos = []
+        for dia, hora_inicio, hora_fin in work_days:
+            turno = {
+                "inicio": hora_inicio.strftime('%H:%M') if hora_inicio else None,
+                "fin": hora_fin.strftime('%H:%M') if hora_fin else None
+            }
+            turnos.append(turno)
+        print(turnos)
+
+        return turnos
+    except Exception as e:
+        print(f"Error al obtener turnos: {e}")
+        return None
+
+
+@app.route('/schedule/<int:schedule_id>/total_horas', methods=['GET'])
+def aaaa(schedule_id):
+    # CASE para segundos, igual que antes
+    diferencia_segundos = case(
+        (Turno.hora_fin >= Turno.hora_inicio,
+         func.TIME_TO_SEC(Turno.hora_fin) - func.TIME_TO_SEC(Turno.hora_inicio)),
+        else_=(func.TIME_TO_SEC(Turno.hora_fin) + literal(86400)
+               - func.TIME_TO_SEC(Turno.hora_inicio))
+    )
+
+    # ← aquí el cambio: sumamos segundos y dividimos por 3600 para obtener horas
+    total_horas_expr = (func.sum(diferencia_segundos) / literal(3600)).label('total_horas')
+
+    total_horas = (
+        db.session.query(total_horas_expr)
+        .select_from(ScheduleDay)
+        .join(Turno, ScheduleDay.turno_id == Turno.id)
+        .filter(ScheduleDay.schedule_id == schedule_id)
+        .scalar()
+    )
+
+    # total_horas es un float (por ejemplo: 27.75 → 27 h 45 min)
+    return jsonify({
+        "schedule_id": schedule_id,
+        "total_horas": round(total_horas, 2)
+    }), 200
 
 # Ejecutar el servidor Flask
 if __name__ == '__main__':

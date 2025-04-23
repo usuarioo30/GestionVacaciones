@@ -14,7 +14,18 @@
             </tr>
         </thead>
         <tbody>
-            <tr></tr>
+            <tr *ngFor="let turno of horarioService.Turnos()">
+                <td>{{turno.id}}</td>
+                <td *ngFor="let dia of turno.turnos">
+                    @if (dia.inicio && dia.fin) {
+                        {{dia.inicio}} - {{dia.fin}}  
+                    } @else {
+                        Libre
+
+                    }
+                </td>
+                <td>{{turno.horasTrabajadas}}</td>
+            </tr>
         </tbody>
     </table>
 
