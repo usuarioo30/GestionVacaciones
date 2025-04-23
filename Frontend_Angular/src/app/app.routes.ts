@@ -11,6 +11,7 @@ import { HistorialComponent } from './component/interfaz-usuario/historial/histo
 import { ListSolicitudesAdminComponent } from './component/interfaz-admin/list-solicitudes-admin/list-solicitudes-admin.component';
 import { HistorialAdminComponent } from './component/interfaz-admin/historial-admin/historial-admin.component';
 import { CalendarioAdminComponent } from './component/interfaz-admin/calendario-admin/calendario-admin.component';
+import { HorarioAdminComponent } from './component/interfaz-admin/horario-admin/horario-admin.component';
 
 
 export const appRoutes: Routes = [
@@ -37,6 +38,8 @@ export const appRoutes: Routes = [
 
   //Historial
   { path: 'historial', component: HistorialComponent },
+
+  {path: 'horario-admin', component: HorarioAdminComponent},
 
   { path: '**', redirectTo: '/login' },
 ];

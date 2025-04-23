@@ -190,6 +190,8 @@ export class CalendarioAdminComponent {
       }
     });
 
+    
+
     let prevMonth: number, prevYear: number;
     if (this.monthNumber === 0) {
       prevMonth = 11;
