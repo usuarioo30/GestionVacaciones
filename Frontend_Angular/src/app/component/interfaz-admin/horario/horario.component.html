@@ -1,0 +1,49 @@
+<div class="container mt-4" *ngIf="turnosArray.length > 0">
+    <div class="mb-5">
+        <h4 class="mb-3">
+            {{ turnosArray[currentSemanaIndex].semana }}
+        </h4>
+
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped align-middle text-center">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Lunes</th>
+                        <th>Martes</th>
+                        <th>Miércoles</th>
+                        <th>Jueves</th>
+                        <th>Viernes</th>
+                        <th>Sábado</th>
+                        <th>Domingo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let usuario of turnosArray[currentSemanaIndex].usuarios">
+                        <td class="fw-bold">{{ usuario.nombre }}</td>
+                        <td>{{ usuario.horario.lunes }}</td>
+                        <td>{{ usuario.horario.martes }}</td>
+                        <td>{{ usuario.horario.miercoles }}</td>
+                        <td>{{ usuario.horario.jueves }}</td>
+                        <td>{{ usuario.horario.viernes }}</td>
+                        <td>{{ usuario.horario.sabado }}</td>
+                        <td>{{ usuario.horario.domingo }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="d-flex justify-content-between mt-3">
+            <button class="btn btn-primary" (click)="semanaAnterior()" [disabled]="currentSemanaIndex === 0">Semana
+                Anterior</button>
+            <button class="btn btn-primary" (click)="siguienteSemana()"
+                [disabled]="currentSemanaIndex === turnosArray.length - 1">Semana Siguiente</button>
+        </div>
+    </div>
+</div>
+
+<div class="container mt-4" *ngIf="turnosArray.length === 0">
+    <div class="alert alert-info text-center" role="alert">
+        No se encontraron turnos para mostrar.
+    </div>
+</div>

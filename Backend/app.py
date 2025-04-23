@@ -8,6 +8,8 @@ from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import timedelta
 from sqlalchemy import or_
+from calendar import monthrange
+
 
 # Configuración de la base de datos y otros parámetros
 class Config:
@@ -46,7 +48,6 @@ class SolicitudDescanso(db.Model):
     def __repr__(self):
         return f'<SolicitudDescanso {self.id}>'
 
-
 class ShareCalendar(db.Model):
     __tablename__ = 'share_calendar'
 
@@ -75,6 +76,52 @@ class ShareCalendar(db.Model):
     def __repr__(self):
         return (f"<ShareCalendar owner={self.owner_id}({self.owner.username}) "
                 f"→ shared={self.usuario_shared.id}({self.usuario_shared.username})>")
+
+class Horario(db.Model):
+    __tablename__ = 'horario'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
+    start = db.Column(db.DateTime, nullable=False)
+    end = db.Column(db.DateTime, nullable=False)
+    user = db.relationship('Usuario', backref='horario')
+
+class Turno(db.Model):
+    __tablename__ = 'turno'
+    id = db.Column(db.Integer, primary_key=True)
+    dia_lunes = db.Column(db.String(50), nullable=False)
+    dia_martes = db.Column(db.String(50), nullable=False)
+    dia_miercoles = db.Column(db.String(50), nullable=False)
+    dia_jueves = db.Column(db.String(50), nullable=False)
+    dia_viernes = db.Column(db.String(50), nullable=False)
+    dia_sabado = db.Column(db.String(50), nullable=False)
+    dia_domingo = db.Column(db.String(50), nullable=False)
+    horas = db.Column(db.Integer, nullable=False)
+    horas_debe = db.Column(db.Integer, nullable=False)
+
+    def __repr__(self):
+        return f'<Turno {self.id}>'
+
+class TurnoAsignado(db.Model):
+    __tablename__ = 'turno_asignado'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
+    turno_id = db.Column(db.Integer, db.ForeignKey('turno.id'), nullable=False)
+    mes = db.Column(db.String(7), nullable=False)  # formato 'YYYY-MM'
+    semana = db.Column(db.Integer, nullable=False)  # 👈 nueva columna
+
+    usuario = db.relationship('Usuario', backref='turnos_asignados')
+    turno = db.relationship('Turno', backref='turno')
+
+
+    def to_dict(self):
+        return {
+            'user_id': self.user_id,
+            'mes': self.mes,
+            'turno': self.turno.to_dict() if self.turno else None  # Si 'turno' es None, evita el error
+        }
+
+
+
 
 
 
@@ -112,10 +159,221 @@ def crear_usuario_por_defecto():
         db.session.commit()
         print("Usuario por defecto creado: admin")
 
+def crear_turnos_por_defecto():
+    # Verifica si los turnos ya existen
+    if not Turno.query.first():  # Si no existen turnos en la base de datos
+        turnos = [
+            Turno(
+                dia_lunes="8:00 a 17:00", dia_martes="8:00 a 17:00", dia_miercoles="Libre", dia_jueves="Libre",
+                dia_viernes="Libre", dia_sabado="8:00 a 20:00", dia_domingo="8:00 a 20:00", horas=40, horas_debe=0
+            ),
+            Turno(
+                dia_lunes="23:30 a 8:30", dia_martes="23:30 a 8:30", dia_miercoles="23:30 a 8:30", dia_jueves="23:30 a 8:30",
+                dia_viernes="23:30 a 8:30", dia_sabado="Libre", dia_domingo="Libre", horas=40, horas_debe=0
+            ),
+            Turno(
+                dia_lunes="Libre", dia_martes="Libre", dia_miercoles="Oficina", dia_jueves="Oficina",
+                dia_viernes="Libre", dia_sabado="20:00 a 8:00", dia_domingo="20:00 a 8:00", horas=40, horas_debe=0
+            ),
+            Turno(
+                dia_lunes="15:00 a 00:00", dia_martes="15:00 a 00:00", dia_miercoles="15:00 a 00:00", dia_jueves="15:00 a 00:00",
+                dia_viernes="15:00 a 00:00", dia_sabado="Libre", dia_domingo="Libre", horas=40, horas_debe=0
+            ),
+            Turno(
+                dia_lunes="Oficina", dia_martes="Oficina", dia_miercoles="Oficina", dia_jueves="8:00 a 16:00",
+                dia_viernes="8:00 a 16:00", dia_sabado="Libre", dia_domingo="Libre", horas=40, horas_debe=0
+            )
+        ]
+        db.session.add_all(turnos)
+        db.session.commit()
+
 # Crear la base de datos y el usuario por defecto
 with app.app_context():
     db.create_all()
     crear_usuario_por_defecto()
+    crear_turnos_por_defecto()
+
+@app.route('/api/usuario/<int:user_id>/turno/<string:mes>', methods=['GET'])
+@jwt_required()
+def obtener_turno_mensual(user_id, mes):
+    asignado = TurnoAsignado.query.filter_by(user_id=user_id, mes=mes).first()
+    
+    if not asignado or not asignado.turno:
+        return jsonify({"error": "No hay turno asignado para este mes"}), 404
+
+    turno = asignado.turno
+    
+    # Convertir el mes a un nombre completo
+    try:
+        anio, mes_num = map(int, mes.split('-'))
+        nombre_mes = datetime(anio, mes_num, 1).strftime('%B')  # Nombre completo del mes en español
+    except ValueError:
+        return jsonify({"error": "Formato de mes incorrecto, usa 'YYYY-MM'"}), 400
+
+    return jsonify({
+        "turno": {
+            "mes": nombre_mes,  # Incluir el nombre del mes
+            "dias": {
+                "lunes": turno.dia_lunes,
+                "martes": turno.dia_martes,
+                "miércoles": turno.dia_miercoles,
+                "jueves": turno.dia_jueves,
+                "viernes": turno.dia_viernes,
+                "sábado": turno.dia_sabado,
+                "domingo": turno.dia_domingo
+            }
+        }
+    })
+
+
+
+@app.route('/api/asignar_turno', methods=['POST'])
+def asignar_turnos_a_usuarios():
+    data = request.get_json()
+
+    user_id = data.get('user_id')
+    turno_id = data.get('turno_id')
+    mes = data.get('mes')  # formato 'YYYY-MM'
+
+    if not user_id or not turno_id or not mes:
+        return {"error": "Faltan parámetros 'user_id', 'turno_id' o 'mes'"}, 400
+
+    usuario = Usuario.query.get(user_id)
+    turno = Turno.query.get(turno_id)
+
+    if not usuario or not turno:
+        return {"error": "Usuario o turno no encontrado"}, 404
+
+    try:
+        anio, mes_num = map(int, mes.split('-'))
+        dias_en_mes = monthrange(anio, mes_num)[1]
+    except ValueError:
+        return {"error": "Formato de mes incorrecto, usa 'YYYY-MM'"}, 400
+
+    fecha_base = datetime(anio, mes_num, 1)
+    primer_dia_mes = fecha_base
+    ultimo_dia_mes = fecha_base.replace(day=dias_en_mes)
+
+    inicio_semana = primer_dia_mes - timedelta(days=primer_dia_mes.weekday())
+    fin_semana = ultimo_dia_mes + timedelta(days=(6 - ultimo_dia_mes.weekday()))
+
+    dias_extendidos = []
+    fecha_actual = inicio_semana
+    while fecha_actual <= fin_semana:
+        dias_extendidos.append(fecha_actual)
+        fecha_actual += timedelta(days=1)
+
+    semanas = [dias_extendidos[i:i + 7] for i in range(0, len(dias_extendidos), 7)]
+
+    # Buscar la posición de la semana que contiene el día 1 del mes → esa será la semana 1
+    semana_inicio_mes = next(
+        i for i, s in enumerate(semanas) if any(d.day == 1 and d.month == mes_num for d in s)
+    )
+
+    # Borrar turnos anteriores del mismo mes
+    TurnoAsignado.query.filter_by(user_id=user_id, mes=mes).delete()
+
+    for i, semana in enumerate(semanas):
+        numero_semana = i - semana_inicio_mes + 1  # La semana con el día 1 es la semana 1
+
+        asignacion = TurnoAsignado(
+            user_id=user_id,
+            turno_id=turno_id,
+            mes=mes,
+            semana=numero_semana
+        )
+        db.session.add(asignacion)
+
+    db.session.commit()
+
+    return {"message": f"Turno asignado correctamente para el mes {mes}"}, 200
+
+
+
+@app.route('/api/actualizar_turnos', methods=['POST'])
+@jwt_required()
+def actualizar_turnos():
+    usuario_id = get_jwt_identity()
+    solicitud_vacaciones = SolicitudDescanso.query.filter_by(usuario_id=usuario_id, estado=True).all()
+
+    
+    for solicitud in solicitud_vacaciones:
+        pass
+
+    return jsonify({"message": "Turnos actualizados correctamente"})
+
+
+@app.route('/api/admin/turnos_semanales', methods=['GET'])
+@jwt_required()
+def obtener_turnos_semanales_admin():
+    turnos_asignados = TurnoAsignado.query.all()
+    resultado = {}
+
+    for asignacion in turnos_asignados:
+        usuario = asignacion.usuario
+        turno = asignacion.turno
+        mes = asignacion.mes
+
+        try:
+            anio, mes_num = map(int, mes.split('-'))
+            nombre_mes = datetime(anio, mes_num, 1).strftime('%B')
+        except ValueError:
+            nombre_mes = 'Mes no válido'
+
+        fecha_base = datetime.strptime(mes + "-01", "%Y-%m-%d")
+        dias_en_mes = monthrange(fecha_base.year, fecha_base.month)[1]
+        primer_dia_mes = fecha_base
+        ultimo_dia_mes = fecha_base.replace(day=dias_en_mes)
+
+        inicio_semana = primer_dia_mes - timedelta(days=primer_dia_mes.weekday())
+        fin_semana = ultimo_dia_mes + timedelta(days=(6 - ultimo_dia_mes.weekday()))
+
+        dias_extendidos = []
+        fecha_actual = inicio_semana
+        while fecha_actual <= fin_semana:
+            dias_extendidos.append(fecha_actual)
+            fecha_actual += timedelta(days=1)
+
+        semanas = [dias_extendidos[i:i+7] for i in range(0, len(dias_extendidos), 7)]
+
+        for idx, semana in enumerate(semanas):
+            if idx + 1 == asignacion.semana:
+                mes_inicio = semana[0].strftime('%B')
+                mes_fin = semana[-1].strftime('%B')
+
+                semana_str = f"Semana del {semana[0].strftime('%d')} {mes_inicio} al {semana[-1].strftime('%d')} - {mes_fin}"
+                dias_semana = ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"]
+                valores_turno = [
+                    turno.dia_lunes, turno.dia_martes, turno.dia_miercoles,
+                    turno.dia_jueves, turno.dia_viernes, turno.dia_sabado, turno.dia_domingo
+                ]
+
+                horario_semana = {}
+                for i, dia in enumerate(semana):
+                    if dia.month == fecha_base.month:
+                        horario_semana[dias_semana[i]] = valores_turno[i]
+                    else:
+                        horario_semana[dias_semana[i]] = '-'
+
+                horario_semana['mes'] = nombre_mes
+                horario_semana['semana_num'] = asignacion.semana
+
+                if mes not in resultado:
+                    resultado[mes] = []
+
+                resultado[mes].append({
+                    "semana": semana_str,
+                    "usuario": usuario.nombreCompleto,
+                    "horario": horario_semana
+                })
+
+    # Ordenamos cada mes por el número de semana relativo
+    resultado_ordenado = {}
+    for mes, semanas in resultado.items():
+        semanas_ordenadas = sorted(semanas, key=lambda x: x['horario']['semana_num'])
+        resultado_ordenado[mes] = semanas_ordenadas
+
+    return jsonify(resultado_ordenado)
 
 
 # 
@@ -128,7 +386,7 @@ def login():
     Endpoint para iniciar sesión y obtener un token JWT
     POST: /login
     Request Body: {"username": username, "password": password}
-    Response: 200 OK {"access_token": token}
+    Response: 200 OK {"access_tokturen": token}
     Response: 401 Unauthorized {"message": "Credenciales inválidas"}
     """
     data = request.get_json()
