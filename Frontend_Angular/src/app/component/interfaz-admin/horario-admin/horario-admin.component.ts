@@ -16,10 +16,31 @@ export class HorarioAdminComponent implements OnInit{
 
  horarioService: HorarioService = inject(HorarioService);
  turnos!: Turno[]
+ fecha!: string
+ fechaAnterior!: string;
+ fechaSiguiente!: string;
 
   ngOnInit(): void {
-    const fecha = new Date(Date.now()).toISOString().split('T')[0];
-    this.horarioService.getTurnosFromAWeek(fecha);
+    this.fecha = new Date(Date.now()).toISOString().split('T')[0];
+    this.fechaAnterior = new Date(new Date(this.fecha).setDate(new Date(this.fecha).getDate() - 7)).toISOString().split('T')[0];
+    this.fechaSiguiente = new Date(new Date(this.fecha).setDate(new Date(this.fecha).getDate() + 7)).toISOString().split('T')[0];
+    this.horarioService.getTurnosFromAWeek(this.fecha);
+  }
+
+  turnoAnterior() {
+    this.fecha = this.fechaAnterior;
+    this.fechaAnterior = new Date(new Date(this.fecha).setDate(new Date(this.fecha).getDate() - 7)).toISOString().split('T')[0];
+    this.fechaSiguiente = new Date(new Date(this.fecha).setDate(new Date(this.fecha).getDate() + 7)).toISOString().split('T')[0];
+    console.log(this.fechaAnterior);
+    this.horarioService.getTurnosFromAWeek(this.fecha);
+  }
+
+  turnoSiguiente() {
+    this.fecha = this.fechaSiguiente;
+    this.fechaSiguiente = new Date(new Date(this.fecha).setDate(new Date(this.fecha).getDate() + 7)).toISOString().split('T')[0];
+    this.fechaAnterior = new Date(new Date(this.fecha).setDate(new Date(this.fecha).getDate() - 7)).toISOString().split('T')[0];
+    this.horarioService.getTurnosFromAWeek(this.fecha);
+    console.log(this.fechaSiguiente);
   }
 
 }
