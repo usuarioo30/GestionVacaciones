@@ -906,7 +906,8 @@ def get_all_turnos():
                 "nombre": horario.nombreCompleto,
                 "inicio_semana": horario.inicio_semana.strftime('%Y-%m-%d'),
                 "fin_semana": horario.fin_semana.strftime('%Y-%m-%d'),
-                "turnos": _get_turnos_por_schedule_id(horario.id)
+                "turnos": _get_turnos_por_schedule_id(horario.id),
+                "horasTrabajadas": getHoursOfWork(horario.id)
             }
 
             horarios_json.append(horario_json)
@@ -939,7 +940,7 @@ def _get_turnos_por_schedule_id(schedule_id):
                 "fin": hora_fin.strftime('%H:%M') if hora_fin else None
             }
             turnos.append(turno)
-        print(turnos)
+        #print(turnos)
 
         return turnos
     except Exception as e:
@@ -947,8 +948,8 @@ def _get_turnos_por_schedule_id(schedule_id):
         return None
 
 
-@app.route('/schedule/<int:schedule_id>/total_horas', methods=['GET'])
-def aaaa(schedule_id):
+#@app.route('/schedule/<int:schedule_id>/total_horas', methods=['GET'])
+def getHoursOfWork(schedule_id):
     # CASE para segundos, igual que antes
     diferencia_segundos = case(
         (Turno.hora_fin >= Turno.hora_inicio,
@@ -969,10 +970,7 @@ def aaaa(schedule_id):
     )
 
     # total_horas es un float (por ejemplo: 27.75 → 27 h 45 min)
-    return jsonify({
-        "schedule_id": schedule_id,
-        "total_horas": round(total_horas, 2)
-    }), 200
+    return round(total_horas, 2)
 
 # Ejecutar el servidor Flask
 if __name__ == '__main__':

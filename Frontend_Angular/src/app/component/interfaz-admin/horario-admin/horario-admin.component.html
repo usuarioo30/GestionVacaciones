@@ -1,3 +1,5 @@
+<h1 *ngIf="horarioService.Turnos() && horarioService.Turnos().length > 0">{{horarioService.Turnos()[0].inicio_semana}}</h1>
+
 <div class="container mt-3">
     <button (click)="turnoAnterior()">Anterior</button>
     <button (click)="turnoSiguiente()">Posterior</button>
@@ -6,7 +8,7 @@
     <table class="table text-center table-bordered table-striped table-hover table-sm">
         <thead>
             <tr>
-                <th>#</th>
+                <th>Nombre</th>
                 <th>Lunes</th>
                 <th>Martes</th>
                 <th>Miércoles</th>
@@ -17,9 +19,9 @@
                 <th>Horas Trabajadas</th>
             </tr>
         </thead>
-        <tbody>
+        <tbody *ngIf="horarioService && horarioService.Turnos().length > 0">
             <tr *ngFor="let turno of horarioService.Turnos()">
-                <td>{{turno.id}}</td>
+                <td>{{turno.nombre}}</td>
                 <td *ngFor="let dia of turno.turnos">
                     @if (dia.inicio && dia.fin) {
                         {{dia.inicio}} - {{dia.fin}}  
@@ -29,6 +31,12 @@
                     }
                 </td>
                 <td>{{turno.horasTrabajadas}}</td>
+            </tr>
+            
+        </tbody>
+        <tbody *ngIf="horarioService.Turnos().length === 0">
+            <tr>
+                <td colspan="9">No hay turnos disponibles</td>
             </tr>
         </tbody>
     </table>
