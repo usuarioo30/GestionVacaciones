@@ -62,6 +62,9 @@ class Schedule(db.Model):
     id            = db.Column(db.Integer, primary_key=True, autoincrement=True)
     usuario_id    = db.Column(db.Integer, db.ForeignKey('usuario.id', ondelete='CASCADE'), nullable=False)
     horas_totales = db.Column(db.Float, nullable=True)
+    inicio_semana = db.Column(db.Date)  # Fecha de inicio de la semana
+    fin_semana   = db.Column(db.Date)  # Fecha de fin de la semana
+
 
     turno_lunes_id     = db.Column(db.Integer, db.ForeignKey('turnos.id'), nullable=True)
     turno_martes_id    = db.Column(db.Integer, db.ForeignKey('turnos.id'), nullable=True)
@@ -866,6 +869,21 @@ def compareRequests():
         return jsonify({"error": "Ocurrió un error al obtener las solicitudes.", "message": str(e)}), 500
 
 # --------- Fin endpoints para las solicitudes de descanso -------------------
+
+@app.route('/turnos', methods=['GET'])
+@jwt_required()
+def get_all_turnos():
+
+    try:
+
+        
+        turnos = Turno.query.filter()
+
+    except Exception as e:
+        return jsonify({"error": "Ocurrió un error al obtener los turnos.", "message": str(e)}), 500
+
+    return ''
+
 
 # Ejecutar el servidor Flask
 if __name__ == '__main__':
