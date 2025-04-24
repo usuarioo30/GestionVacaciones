@@ -9,6 +9,20 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import timedelta
 from sqlalchemy import or_
 from calendar import monthrange
+import locale
+locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfgen import canvas
+import os
+from io import BytesIO
+from flask import send_file
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib import colors
+
+
 
 
 # Configuración de la base de datos y otros parámetros
@@ -348,7 +362,7 @@ def obtener_turnos_semanales_admin():
 
                 semana_str = f"Semana del {semana[0].strftime('%d')} al {semana[-1].strftime('%d')} de {nombre_mes}"
                 horario_semana = dict(zip(dias_semana, semana_completa))
-                horario_semana['mes'] = nombre_mes
+                horario_semana['mes'] = mes
                 horario_semana['semana_num'] = asignacion.semana
 
                 if mes not in resultado:
@@ -366,8 +380,166 @@ def obtener_turnos_semanales_admin():
 
     return jsonify(resultado_ordenado)
 
+@app.route('/api/usuario/<int:user_id>/meses_disponibles', methods=['GET'])
+@jwt_required()
+def obtener_meses_disponibles_por_usuario(user_id):
+    meses = db.session.query(TurnoAsignado.mes).filter_by(user_id=user_id).distinct().all()
+    meses_list = [m[0] for m in meses]
+    return jsonify(meses_list)
+
+@app.route('/api/usuarios_con_turnos', methods=['GET'])
+@jwt_required()
+def obtener_usuarios_con_turnos():
+    # Subconsulta: obtener IDs únicos de usuarios con turnos
+    usuarios_ids = db.session.query(TurnoAsignado.user_id).distinct().all()
+    ids = [id[0] for id in usuarios_ids]
+
+    if not ids:
+        return jsonify([])
+
+    # Obtener usuarios que tienen turnos asignados
+    usuarios = Usuario.query.filter(Usuario.id.in_(ids)).all()
+
+    resultado = [{
+        "id": u.id,
+        "nombreCompleto": u.nombreCompleto
+    } for u in usuarios]
+
+    return jsonify(resultado)
 
 
+@app.route('/api/generar_pdf/<int:user_id>/<string:mes>', methods=['GET'])
+@jwt_required()
+def generar_pdf_turnos(user_id, mes):
+    usuario = Usuario.query.get(user_id)
+    if not usuario:
+        return {"error": "Usuario no encontrado"}, 404
+
+    turnos = TurnoAsignado.query.filter_by(user_id=user_id, mes=mes).order_by(TurnoAsignado.semana).all()
+    if not turnos:
+        return {"error": "No hay turnos asignados para este mes"}, 404
+
+    try:
+        anio, mes_num = map(int, mes.split('-'))
+        dias_en_mes = monthrange(anio, mes_num)[1]
+    except ValueError:
+        return {"error": "Formato de mes incorrecto, usa 'YYYY-MM'"}, 400
+
+    buffer = BytesIO()
+
+    font_path = os.path.join("fonts", "Montserrat-Regular.ttf")
+    if os.path.exists(font_path):
+        pdfmetrics.registerFont(TTFont("Montserrat", font_path))
+        font_name = "Montserrat"
+    else:
+        font_name = "Helvetica"
+
+    # Título para el documento PDF (usado internamente, evita 'anonymous')
+    nombre_mes = datetime(anio, mes_num, 1).strftime('%B')  # Ej: 'abril'
+    pdf_title = f"horario_{usuario.username}_{nombre_mes.capitalize()}_{anio}"
+
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=landscape(A4),
+        leftMargin=40,
+        rightMargin=40,
+        topMargin=40,
+        bottomMargin=40,
+        title=pdf_title  # << ESTA ES LA LÍNEA CLAVE
+    )
+
+    elements = []
+
+    styles = getSampleStyleSheet()
+    title_style = styles["Title"]
+    title_style.fontName = font_name
+    title_style.fontSize = 22
+
+    subtitle_style = styles["Heading2"]
+    subtitle_style.fontName = font_name
+    subtitle_style.fontSize = 14
+
+    elements.append(Paragraph("Horario de Turnos", title_style))
+    elements.append(Spacer(1, 6))
+    elements.append(Paragraph(f"<b>Empleado:</b> {usuario.nombreCompleto}", subtitle_style))
+    elements.append(Paragraph(f"<b>Mes:</b> {nombre_mes.capitalize()} {anio}", subtitle_style))
+    elements.append(Spacer(1, 20))
+
+    encabezado = ['Semana', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+    table_data = [encabezado]
+
+    turnos_por_semana = {t.semana: t.turno for t in turnos}
+    primer_dia = datetime(anio, mes_num, 1)
+    ultimo_dia = datetime(anio, mes_num, dias_en_mes)
+    dia_actual = primer_dia
+    semanas = []
+    semana_actual = []
+
+    while dia_actual <= ultimo_dia:
+        if dia_actual.weekday() == 0 and semana_actual:
+            semanas.append(semana_actual)
+            semana_actual = []
+        semana_actual.append(dia_actual)
+        dia_actual += timedelta(days=1)
+    if semana_actual:
+        semanas.append(semana_actual)
+
+    for i, semana in enumerate(semanas):
+        turno = turnos_por_semana.get(i + 1)
+        fila = ["-" for _ in range(7)]
+
+        semana_inicio = semana[0].day
+        semana_fin = semana[-1].day
+        etiqueta_semana = f"{semana_inicio:02d}-{semana_fin:02d}"
+
+        if turno:
+            valores = [
+                turno.dia_lunes,
+                turno.dia_martes,
+                turno.dia_miercoles,
+                turno.dia_jueves,
+                turno.dia_viernes,
+                turno.dia_sabado,
+                turno.dia_domingo
+            ]
+            for dia in semana:
+                if dia.month == mes_num:
+                    fila[dia.weekday()] = f"{valores[dia.weekday()]}"
+        
+        table_data.append([etiqueta_semana] + fila)
+
+    table = Table(table_data, repeatRows=1, colWidths=[90] + [100]*7)
+    table.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (-1, -1), font_name),
+        ('FONTSIZE', (0, 0), (-1, -1), 12),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#003366")),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('GRID', (0, 0), (-1, -1), 0.8, colors.grey),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor("#f2f2f2")]),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+        ('TOPPADDING', (0, 0), (-1, -1), 10),
+    ]))
+
+    elements.append(table)
+
+    def add_page_number(canvas, doc):
+        canvas.saveState()
+        canvas.setFont(font_name, 10)
+        canvas.drawString(landscape(A4)[0] - 100, 20, f"Página {doc.page}")
+        canvas.restoreState()
+
+    doc.build(elements, onFirstPage=add_page_number, onLaterPages=add_page_number)
+
+    buffer.seek(0)
+
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name=f"{pdf_title}.pdf",
+        mimetype='application/pdf'
+    )
 
 
 
