@@ -121,10 +121,6 @@ class TurnoAsignado(db.Model):
             'turno': self.turno.to_dict() if self.turno else None  # Si 'turno' es None, evita el error
         }
 
-
-
-
-
 class ScheduleDay(db.Model):
     __tablename__ = 'schedule_days'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)

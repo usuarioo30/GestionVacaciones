@@ -1,13 +1,24 @@
-<div class="container mt-4" *ngIf="turnosArray.length > 0">
+<div class="container mt-4" *ngIf="isCargando">
+    <div class="loading text-center mt-5">
+        <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+        Cargando horario...
+    </div>
+</div>
+
+<div class="container mt-4" *ngIf="!isCargando && turnosArray.length > 0">
+
 
 
     <div class="mb-5">
 
-        <div class="d-flex justify-content-between align-items-end mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-3">
             <h4 class="mb-0">
                 {{ turnosArray[currentSemanaIndex].semana }}
             </h4>
             <div class="d-flex align-items-center" style="gap: 0.5rem; width: auto;">
+                <button class="btn btn-danger me-3" data-bs-toggle="modal" data-bs-target="#modalGenerarPDF">
+                    <i class="bi bi-file-pdf"></i>
+                </button>
                 <label for="selectMes" class="form-label fw-bold mb-0">Ir al mes:</label>
                 <select id="selectMes" class="form-select form-select-sm" #mesSelect
                     (change)="irAlMesSeleccionado(mesSelect.value)" style="width: auto; min-width: 10rem;">
@@ -17,8 +28,8 @@
                     </option>
                 </select>
             </div>
-
         </div>
+
 
 
         <div class="table-responsive">
@@ -59,16 +70,11 @@
     </div>
 </div>
 
-<div class="container mt-4" *ngIf="turnosArray.length === 0">
+<div class="container mt-4" *ngIf="!isCargando && turnosArray.length === 0">
     <div class="alert alert-info text-center" role="alert">
         No se encontraron turnos para mostrar.
     </div>
 </div>
-
-<!-- Botón para abrir el modal -->
-<button class="btn btn-secondary mb-4" data-bs-toggle="modal" data-bs-target="#modalGenerarPDF">
-    Generar PDF de Horario Mensual
-</button>
 
 <!-- Modal -->
 <div class="modal fade" id="modalGenerarPDF" tabindex="-1" aria-labelledby="modalGenerarPDFLabel" aria-hidden="true">
