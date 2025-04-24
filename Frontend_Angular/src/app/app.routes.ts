@@ -42,7 +42,7 @@ export const appRoutes: Routes = [
   //Historial
   { path: 'historial', component: HistorialComponent },
 
-  {path: 'horario-admin', component: HorarioAdminComponent},
+  //{path: 'horario-admin', component: HorarioAdminComponent},
 
   { path: '**', redirectTo: '/login' },
 ];
