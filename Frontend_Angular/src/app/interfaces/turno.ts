@@ -1,4 +1,5 @@
 export interface Turno {
+
     lunes: string;
     martes: string;
     miercoles: string;
@@ -6,4 +7,5 @@ export interface Turno {
     viernes: string;
     sabado: string;
     domingo: string;
+
 }

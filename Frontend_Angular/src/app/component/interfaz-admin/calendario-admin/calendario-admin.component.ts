@@ -12,12 +12,15 @@ import { RequestResponse } from '../../../interfaces/request-response';
 import { Color } from '../../../interfaces/color';
 import { AuthService } from '../../../services/auth.service';
 import { Usuariomin } from '../../../interfaces/usuariomin';
+import { HolidayserviceService } from '../../../services/holidayservice.service';
+import { PublicHoliday } from '../../../interfaces/public-holiday';
+import { FestivitiesComponent } from '../../festivities/festivities.component';
 
 
 
 @Component({
   selector: 'app-calendario-admin',
-  imports: [CommonModule],
+  imports: [CommonModule, FestivitiesComponent],
   templateUrl: './calendario-admin.component.html',
   styleUrl: './calendario-admin.component.css'
 })
@@ -34,6 +37,7 @@ export class CalendarioAdminComponent {
   color: Color[] = []
   users!: Signal<Usuariomin[]>;
   selectedUserId: number | null = null;
+  holidays: PublicHoliday[] = [];
 
   weeksDaysName: string[] = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
 
@@ -41,6 +45,7 @@ export class CalendarioAdminComponent {
   solicitudSrvc: SolicitudDescansoService = inject(SolicitudDescansoService);
   requestCalendar: CalendarRequestService = inject(CalendarRequestService);
   authService: AuthService = inject(AuthService);
+  holidayService: HolidayserviceService = inject(HolidayserviceService);
 
   constructor(
     private router: Router
@@ -70,9 +75,23 @@ export class CalendarioAdminComponent {
 
         firstValueFrom(this.requestCalendar.getAcceptedRequest(this.auth))
           .then(() => {
+
+            this.holidayService.getPublicHolidays(this.year).subscribe({
+              next: (response) => {
+                // filtramos los de Andalucía
+                this.holidays = response.filter(h =>
+                  h.global || (h.counties ?? []).includes('ES-AN')
+                );
+                
+          
+                // 3) Con los festivos ya cargados, generamos el calendario
+                this.loadCalendar();
+              },
+              error: (err) => console.error('No se pudieron cargar festivos:', err)
+            });
+
             this.loadCalendar();
           });
-
         this.authService.getUsers(token);
         this.users = computed(() => this.authService.allUsers());
       }
@@ -150,26 +169,29 @@ export class CalendarioAdminComponent {
   loadCalendar() {
     const solicitudCompleta: RequestResponse = this.isMonthRequested();
     const currentDays = this.calendar.getMonth(this.monthNumber, this.year);
+    
     currentDays.forEach(day => {
       day.isCurrentMonth = true;
       day.available = this.calendar.isDayAvailable(day);
-
+      day.isHoliday = this.isHoliday(day);
       const solicitudParcial: RequestResponse = !solicitudCompleta.estado ? this.isRequested(day) : { estado: false, usuarioId: 0 };
       const shouldRender =
         this.selectedUserId === null ||
         solicitudParcial.usuarioId === this.selectedUserId ||
         solicitudCompleta.usuarioId === this.selectedUserId;
 
-      if (solicitudCompleta.estado && day.weekDayNumber < 5 && shouldRender) {
+      if (solicitudCompleta.estado && !day.isHoliday && shouldRender) {
         day.requested = true;
         day.id = solicitudCompleta.usuarioId;
-      } else if (solicitudParcial.estado && day.weekDayNumber < 5 && shouldRender) {
+      } else if (solicitudParcial.estado && !day.isHoliday && shouldRender) {
         day.requested = true;
         day.id = solicitudParcial.usuarioId;
       } else {
         day.requested = false;
       }
     });
+
+    
 
     let prevMonth: number, prevYear: number;
     if (this.monthNumber === 0) {
@@ -230,6 +252,16 @@ export class CalendarioAdminComponent {
     if (this.monthNumber === 11) {
       this.monthNumber = 0;
       this.year++;
+      this.holidayService.getPublicHolidays(this.year).subscribe({
+        next: (response) => {
+          this.holidays = response.filter(h =>
+            h.global || (h.counties ?? []).includes('ES-AN')
+          );
+          // ¡Ahora sí tenemos los holidays correctos: recargamos el calendario aquí!
+          this.loadCalendar();
+        },
+        error: (err) => console.error('No se pudieron cargar festivos:', err)
+      });
     } else {
       this.monthNumber++;
     }
@@ -240,6 +272,15 @@ export class CalendarioAdminComponent {
     if (this.monthNumber === 0) {
       this.monthNumber = 11;
       this.year--;
+      this.holidayService.getPublicHolidays(this.year).subscribe({
+        next: (response) => {
+          this.holidays = response.filter(h =>
+            h.global || (h.counties ?? []).includes('ES-AN')
+          );
+          this.loadCalendar() //si no está esto aquí no se carga correctamente
+        },
+        error: (err) => console.error('No se pudieron cargar festivos:', err)
+      });
     } else {
       this.monthNumber--;
     }
@@ -274,16 +315,25 @@ export class CalendarioAdminComponent {
   }
 
   getDayBackgroundColor(day: Day): string {
-    if (day.weekDayNumber === 5 || day.weekDayNumber === 6) {
-      return '#EEEEEE';
-    }
+    // if (day.weekDayNumber === 5 || day.weekDayNumber === 6) {
+    //   return '#EEEEEE';
+    // }
 
-    if (day.requested) {
-      return this.getStoredColor(day.id);
-    }
 
-    
-    return '';
+    return day.requested ? this.getStoredColor(day.id) : '';
+  }
+
+  markAsHoliday(day: Day): void {
+    day.isHoliday = !day.isHoliday;
+  }
+
+  private isHoliday(day: Day): boolean {
+    return this.holidays.some(h => {
+      // h.date viene como "YYYY-MM-DD"
+      const [y, m, d] = h.date.split('-').map(Number);
+      // m es 1–12 en la cadena, monthIndex es 0–11
+      return y === day.year && (m - 1) === day.monthIndex && d === day.number;
+    });
   }
 
 }

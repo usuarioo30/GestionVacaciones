@@ -1,19 +1,21 @@
 import { Component, inject, OnInit, SimpleChanges } from '@angular/core';
 import { CreateCalendarService } from '../../services/createcalendar.service';
 import { Day } from '../../interfaces/day';
-import { CommonModule, DatePipe } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { SolicitudDescanso } from '../../interfaces/solicitud-descanso';
 import { SolicitudDescansoService } from '../../services/solicitud-descanso.service';
-import Swal from 'sweetalert2';
 import { firstValueFrom } from 'rxjs';
 import { jwtDecode } from 'jwt-decode';
 import { CalendarRequestService } from '../../services/calendar-request.service';
 import { UsuarioService } from '../../services/usuario.service';
+import { HolidayserviceService } from '../../services/holidayservice.service';
+import { PublicHoliday } from '../../interfaces/public-holiday';
+import { FestivitiesComponent } from '../festivities/festivities.component';
 
 @Component({
   selector: 'app-calendar',
-  imports: [CommonModule],
+  imports: [CommonModule, FestivitiesComponent],
   templateUrl: './calendar.component.html',
   styleUrls: ['./calendar.component.css']
 })
@@ -30,6 +32,7 @@ export class CalendarComponent implements OnInit {
   status: string = 'true';
   usuarios: any[] = [];
   loggedInUserId: number = -1;
+  holidays!: PublicHoliday[];
 
   // Cabecera con los días de la semana
   weeksDaysName: string[] = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
@@ -37,6 +40,7 @@ export class CalendarComponent implements OnInit {
   calendar: CreateCalendarService = inject(CreateCalendarService);
   solicitudSrvc: SolicitudDescansoService = inject(SolicitudDescansoService);
   requestCalendar: CalendarRequestService = inject(CalendarRequestService);
+  holidayService: HolidayserviceService = inject(HolidayserviceService);
 
   constructor(
     private router: Router,
@@ -52,29 +56,46 @@ export class CalendarComponent implements OnInit {
 
   ngOnInit() {
     const token = localStorage.getItem("access_token");
-
     if (!token) {
       this.router.navigateByUrl("/login");
-    } else {
-      const currentMonthData = this.calendar.getCurrentMonth();
-      this.monthNumber = currentMonthData[0].monthIndex;
-      this.year = currentMonthData[0].year;
-      this.auth = token;
-
-      const decodedToken = jwtDecode(token);
-      if (decodedToken.sub) {
-        this.loggedInUserId = Number.parseInt(decodedToken.sub);
-
-        firstValueFrom(
-          this.requestCalendar.getAcceptedUsersSolicitudDescanso(this.loggedInUserId, this.auth)
-        ).then(() => {
-          this.loadCalendar();
-        });
-      }
+      return;
     }
-
+  
+    // 1) Primero obtén mes/año inicial:
+    const [current] = this.calendar.getCurrentMonth();
+    this.monthNumber = current.monthIndex;
+    this.year        = current.year;
+  
+    // 2) Ahora que this.year está inicializado, haz la petición de festivos:
+    this.holidayService.getPublicHolidays(this.year).subscribe({
+      next: (response) => {
+        // filtramos los de Andalucía
+        this.holidays = response.filter(h =>
+          h.global || (h.counties ?? []).includes('ES-AN')
+        );
+        
+  
+        // 3) Con los festivos ya cargados, generamos el calendario
+        this.loadCalendar();
+      },
+      error: (err) => console.error('No se pudieron cargar festivos:', err)
+    });
+  
+    // 4) Si luego necesitas la lógica de solicitudes de usuario:
+    const decoded: any = jwtDecode(token);
+    if (decoded.sub) {
+      this.loggedInUserId = decoded.sub;
+      firstValueFrom(
+        this.requestCalendar.getAcceptedUsersSolicitudDescanso(this.loggedInUserId, token)
+      ).then(() => {
+        // Si tu loadCalendar vuelve a pintar, podrías simplemente llamarlo otra vez aquí
+        this.loadCalendar();
+      });
+    }
+  
     this.loadUsers();
   }
+  
 
   loadUsers(): void {
     this.usuarioService.getAllUsers().subscribe(
@@ -93,9 +114,6 @@ export class CalendarComponent implements OnInit {
     );
   }
 
-  shareCalendarWithUser(user: any): void {
-    console.log('Calendario compartido con:', user.nombreCompleto);
-  }
 
   isMonthRequested(): boolean {
     if (!this.solicitudes || this.solicitudes.length === 0) {
@@ -189,14 +207,15 @@ export class CalendarComponent implements OnInit {
     currentDays.forEach(day => {
       day.isCurrentMonth = true;
       day.available = this.calendar.isDayAvailable(day);
-
+      day.isHoliday = this.isHoliday(day);
       const solicitudParcial: boolean = this.isRequested(day);
-      if (solicitudCompleta && day.weekDayNumber < 5) {
+      if (solicitudCompleta && !day.isHoliday) {
         day.requested = true;
-      } else if (solicitudParcial && day.weekDayNumber < 5) {
+      } else if (solicitudParcial && !day.isHoliday) {
         day.requested = true;
       } else {
         day.requested = false;
+        
       }
     });
 
@@ -265,6 +284,16 @@ export class CalendarComponent implements OnInit {
     if (this.monthNumber === 11) {
       this.monthNumber = 0;
       this.year++;
+      this.holidayService.getPublicHolidays(this.year).subscribe({
+        next: (response) => {
+          this.holidays = response.filter(h =>
+            h.global || (h.counties ?? []).includes('ES-AN')
+          );
+          // ¡Ahora sí tenemos los holidays correctos: recargamos el calendario aquí!
+          this.loadCalendar();
+        },
+        error: (err) => console.error('No se pudieron cargar festivos:', err)
+      });
     } else {
       this.monthNumber++;
     }
@@ -275,9 +304,27 @@ export class CalendarComponent implements OnInit {
     if (this.monthNumber === 0) {
       this.monthNumber = 11;
       this.year--;
+      this.holidayService.getPublicHolidays(this.year).subscribe({
+        next: (response) => {
+          this.holidays = response.filter(h =>
+            h.global || (h.counties ?? []).includes('ES-AN')
+          );
+          this.loadCalendar() //si no está esto aquí no se carga correctamente
+        },
+        error: (err) => console.error('No se pudieron cargar festivos:', err)
+      });
     } else {
       this.monthNumber--;
     }
     this.loadCalendar();
+  }
+
+  private isHoliday(day: Day): boolean {
+    return this.holidays.some(h => {
+      // h.date viene como "YYYY-MM-DD"
+      const [y, m, d] = h.date.split('-').map(Number);
+      // m es 1–12 en la cadena, monthIndex es 0–11
+      return y === day.year && (m - 1) === day.monthIndex && d === day.number;
+    });
   }
 }

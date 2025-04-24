@@ -7,6 +7,7 @@ from flask_jwt_extended import JWTManager, create_access_token, get_jwt, jwt_req
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import timedelta
+
 from sqlalchemy import or_
 from calendar import monthrange
 import locale
@@ -22,7 +23,8 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib import colors
 
-
+from DayWeeks import DayOfWeek 
+from sqlalchemy import func, case, literal
 
 
 # Configuración de la base de datos y otros parámetros
@@ -62,34 +64,24 @@ class SolicitudDescanso(db.Model):
     def __repr__(self):
         return f'<SolicitudDescanso {self.id}>'
 
+
 class ShareCalendar(db.Model):
     __tablename__ = 'share_calendar'
 
-    owner_id  = db.Column(
-        db.Integer,
-        db.ForeignKey('usuario.id', ondelete='CASCADE'),
-        primary_key=True
-    )
-    shared_id = db.Column(
-        db.Integer,
-        db.ForeignKey('usuario.id', ondelete='CASCADE'),
-        primary_key=True
-    )
 
-    owner = db.relationship(
-        'Usuario',
-        foreign_keys=[owner_id],
-        backref=db.backref('calendarios_compartidos', cascade='all, delete-orphan')
-    )
-    usuario_shared = db.relationship(
-        'Usuario',
-        foreign_keys=[shared_id],
-        backref=db.backref('compartido_por', cascade='all, delete-orphan')
-    )
+class Schedule(db.Model):
+    __tablename__ = 'schedules'
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id', ondelete='CASCADE'), nullable=False)
+    horas_totales = db.Column(db.Float, nullable=True)
+    inicio_semana = db.Column(db.Date, nullable=False)
+    fin_semana = db.Column(db.Date, nullable=False)
+
+    dias = db.relationship('ScheduleDay', back_populates='schedule', cascade='all, delete-orphan')
 
     def __repr__(self):
-        return (f"<ShareCalendar owner={self.owner_id}({self.owner.username}) "
-                f"→ shared={self.usuario_shared.id}({self.usuario_shared.username})>")
+        return f'<Schedule {self.id} usuario={self.usuario_id}>'
+
 
 class Horario(db.Model):
     __tablename__ = 'horario'
@@ -138,6 +130,18 @@ class TurnoAsignado(db.Model):
 
 
 
+class ScheduleDay(db.Model):
+    __tablename__ = 'schedule_days'
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    schedule_id = db.Column(db.Integer, db.ForeignKey('schedules.id', ondelete='CASCADE'), nullable=False)
+    dia = db.Column(db.Enum(DayOfWeek), nullable=False)
+    turno_id = db.Column(db.Integer, db.ForeignKey('turnos.id'), nullable=True)
+
+    schedule = db.relationship('Schedule', back_populates='dias')
+    turno = db.relationship('Turno')
+
+    def __repr__(self):
+        return f'<ScheduleDay {self.id}: schedule={self.schedule_id} dia={self.dia.name} turno={self.turno_id}>'
 
 # Función para crear la aplicación
 def create_app():
@@ -540,6 +544,7 @@ def generar_pdf_turnos(user_id, mes):
         download_name=f"{pdf_title}.pdf",
         mimetype='application/pdf'
     )
+
 
 
 
@@ -1165,24 +1170,13 @@ def getUserRequest(user):
 @jwt_required()
 def getAcceptedUserRequest(user):
     try:
-        
-        # subconsulta que recoge todos los owner_id que te han compartido calendario
-        owner_ids = (
-            db.session
-            .query(ShareCalendar.owner_id)
-            .filter(ShareCalendar.shared_id == user)
-            .subquery()
-        )
 
         # consulta principal: estado aceptado y (propias o de los que te han compartido)
         solicitudes = (
             SolicitudDescanso.query
             .filter(
                 SolicitudDescanso.estado == True,
-                or_(
-                    SolicitudDescanso.usuario_id == user,
-                    SolicitudDescanso.usuario_id.in_(owner_ids)
-                )
+                SolicitudDescanso.usuario_id == user,
             )
             .all()
         )
@@ -1277,6 +1271,110 @@ def compareRequests():
         return jsonify({"error": "Ocurrió un error al obtener las solicitudes.", "message": str(e)}), 500
 
 # --------- Fin endpoints para las solicitudes de descanso -------------------
+
+@app.route('/turnos', methods=['GET']) # para pasarle fecha tiene que ser de esta manera: /turnos?fecha=2023-10-01
+@jwt_required()
+def get_all_turnos():
+    try:
+        # Obtener la fecha del parámetro en la URL
+        fecha_str = request.args.get('fecha')
+        if fecha_str:
+            try:
+                fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+            except ValueError:
+                return jsonify({"error": "Formato de fecha inválido. Usa YYYY-MM-DD."}), 400
+        else:
+            return jsonify({"error": "Parámetro 'fecha' requerido."}), 400
+
+        # Consulta con filtrado por fecha
+        horarios = db.session.query(
+            Schedule.id,
+            Usuario.nombreCompleto,
+            Schedule.inicio_semana,
+            Schedule.fin_semana,
+            
+        ).join(Usuario).filter(
+            Schedule.usuario_id == Usuario.id,
+            Schedule.inicio_semana <= fecha,
+            Schedule.fin_semana >= fecha
+        ).all()
+
+
+        horarios_json = []
+
+        for horario in horarios:
+
+            
+            horario_json = {
+                "id": horario.id,
+                "nombre": horario.nombreCompleto,
+                "inicio_semana": horario.inicio_semana.strftime('%Y-%m-%d'),
+                "fin_semana": horario.fin_semana.strftime('%Y-%m-%d'),
+                "turnos": _get_turnos_por_schedule_id(horario.id),
+                "horasTrabajadas": getHoursOfWork(horario.id)
+            }
+
+            horarios_json.append(horario_json)
+
+        return jsonify(horarios_json), 200
+
+    except Exception as e:
+        return jsonify({
+            "error": "Ocurrió un error al obtener los turnos.",
+            "message": str(e)
+        }), 500
+
+# Este método es para hacer una consulta repetidas veces
+def _get_turnos_por_schedule_id(schedule_id):
+    try:
+        work_days = db.session.query(
+            ScheduleDay.dia,
+            Turno.hora_inicio,
+            Turno.hora_fin
+        ).outerjoin(
+            Turno, ScheduleDay.turno_id == Turno.id
+        ).filter(
+            ScheduleDay.schedule_id == schedule_id
+        ).all()
+
+        turnos = []
+        for dia, hora_inicio, hora_fin in work_days:
+            turno = {
+                "inicio": hora_inicio.strftime('%H:%M') if hora_inicio else None,
+                "fin": hora_fin.strftime('%H:%M') if hora_fin else None
+            }
+            turnos.append(turno)
+        #print(turnos)
+
+        return turnos
+    except Exception as e:
+        print(f"Error al obtener turnos: {e}")
+        return None
+
+
+#@app.route('/schedule/<int:schedule_id>/total_horas', methods=['GET'])
+def getHoursOfWork(schedule_id):
+    # CASE para segundos, igual que antes
+    diferencia_segundos = case(
+        (Turno.hora_fin >= Turno.hora_inicio,
+         func.TIME_TO_SEC(Turno.hora_fin) - func.TIME_TO_SEC(Turno.hora_inicio)),
+        else_=(func.TIME_TO_SEC(Turno.hora_fin) + literal(86400)
+               - func.TIME_TO_SEC(Turno.hora_inicio))
+    )
+
+    # ← aquí el cambio: sumamos segundos y dividimos por 3600 para obtener horas
+    total_horas_expr = (func.sum(diferencia_segundos) / literal(3600)).label('total_horas')
+
+    total_horas = (
+        db.session.query(total_horas_expr)
+        .select_from(ScheduleDay)
+        .join(Turno, ScheduleDay.turno_id == Turno.id)
+        .filter(ScheduleDay.schedule_id == schedule_id)
+        .scalar()
+    )
+
+    # total_horas es un float (por ejemplo: 27.75 → 27 h 45 min)
+    return round(total_horas, 2)
 
 # Ejecutar el servidor Flask
 if __name__ == '__main__':

@@ -1,12 +1,15 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
+
 import { Injectable } from '@angular/core';
 import { jwtDecode } from 'jwt-decode';
 import { Observable } from 'rxjs';
+
 
 @Injectable({
   providedIn: 'root'
 })
 export class HorarioService {
+
   private apiUrl = 'http://localhost:5000/api';
 
   constructor(private http: HttpClient) { }
@@ -43,4 +46,5 @@ export class HorarioService {
       responseType: 'blob'
     });
   }
+
 }

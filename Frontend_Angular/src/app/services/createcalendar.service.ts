@@ -41,7 +41,6 @@ export class CreateCalendarService {
       days.push(this.createDay(index, monthIndex, year));
 
     }
-
     return days;
   }
 
@@ -115,6 +114,7 @@ export class CreateCalendarService {
 
     day.number = number;
     day.year = year;
+    day.isHoliday = false;
 
     const date = new Date(year, monthIndex, number);
 

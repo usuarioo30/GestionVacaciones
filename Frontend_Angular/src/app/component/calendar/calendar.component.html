@@ -1,16 +1,12 @@
 <div class="dropdown mt-3 ms-3">
-  <button class="btn btn-primary dropdown-toggle d-flex align-items-center shadow-sm" type="button"
-    data-bs-toggle="dropdown" aria-expanded="false">
-    <i class="bi bi-share me-2"></i>
-    Compartir mi calendario
-  </button>
+
 
   <ul class="dropdown-menu border-0 mt-2 rounded-3 shadow-lg" style="background-color: #ffffff;">
     <li *ngFor="let user of usuarios">
       <a class="dropdown-item d-flex justify-content-between align-items-center px-3 py-2" href="#" 
          [class.disabled]="user.id === loggedInUserId" 
          [attr.aria-disabled]="user.id === loggedInUserId ? true : null" 
-         (click)="user.id !== loggedInUserId ? shareCalendarWithUser(user) : null">
+         >
         <span>{{ user.nombreCompleto }}</span>&nbsp;
         <span *ngIf="user.id === loggedInUserId" class="badge bg-primary text-white">Yo</span>
       </a>
@@ -18,6 +14,7 @@
   </ul>
 </div>
 
+<app-festivities [year]="year" [monthNumber]="monthNumber"></app-festivities>
 
 <div class="container calendar-container py-3 mt-4 mb-5">
   <!-- Cabecera -->
@@ -45,11 +42,12 @@
   <div class="calendar-weeks">
     <div class="row text-center mb-2" *ngFor="let week of fullCalendarWeeks">
       <div class="col p-2 calendar-day py-5 ms-1 me-1 mt-1" *ngFor="let day of week" [ngClass]="{
+             'markedHoliday': day.isHoliday,
              'text-muted': !day.isCurrentMonth,
              'bg-light': day.isToday,
              'fw-bold': day.isToday,
              'day-requested': day.requested,
-             'weekend-day': day.weekDayNumber === 5 || day.weekDayNumber === 6
+             
            }">
         {{ day.number }}
       </div>
