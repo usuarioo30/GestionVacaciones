@@ -254,33 +254,30 @@ def asignar_turnos_a_usuarios():
     primer_dia_mes = fecha_base
     ultimo_dia_mes = fecha_base.replace(day=dias_en_mes)
 
-    inicio_semana = primer_dia_mes - timedelta(days=primer_dia_mes.weekday())
-    fin_semana = ultimo_dia_mes + timedelta(days=(6 - ultimo_dia_mes.weekday()))
+    # Construir semanas SOLO dentro del mes
+    semanas = []
+    semana_actual = []
 
-    dias_extendidos = []
-    fecha_actual = inicio_semana
-    while fecha_actual <= fin_semana:
-        dias_extendidos.append(fecha_actual)
-        fecha_actual += timedelta(days=1)
+    for dia in (primer_dia_mes + timedelta(days=i) for i in range(dias_en_mes)):
+        if dia.weekday() == 0 and semana_actual:  # lunes → nueva semana
+            semanas.append(semana_actual)
+            semana_actual = []
+        semana_actual.append(dia)
 
-    semanas = [dias_extendidos[i:i + 7] for i in range(0, len(dias_extendidos), 7)]
-
-    # Buscar la posición de la semana que contiene el día 1 del mes → esa será la semana 1
-    semana_inicio_mes = next(
-        i for i, s in enumerate(semanas) if any(d.day == 1 and d.month == mes_num for d in s)
-    )
+    # Asegurarse de que si la última semana quedó incompleta, la agregamos también
+    if semana_actual:
+        semanas.append(semana_actual)
 
     # Borrar turnos anteriores del mismo mes
     TurnoAsignado.query.filter_by(user_id=user_id, mes=mes).delete()
 
+    # Asignar turnos por semana (dentro del mes únicamente)
     for i, semana in enumerate(semanas):
-        numero_semana = i - semana_inicio_mes + 1  # La semana con el día 1 es la semana 1
-
         asignacion = TurnoAsignado(
             user_id=user_id,
             turno_id=turno_id,
             mes=mes,
-            semana=numero_semana
+            semana=i + 1  # semana relativa al mes
         )
         db.session.add(asignacion)
 
@@ -320,41 +317,37 @@ def obtener_turnos_semanales_admin():
         except ValueError:
             nombre_mes = 'Mes no válido'
 
-        fecha_base = datetime.strptime(mes + "-01", "%Y-%m-%d")
-        dias_en_mes = monthrange(fecha_base.year, fecha_base.month)[1]
-        primer_dia_mes = fecha_base
-        ultimo_dia_mes = fecha_base.replace(day=dias_en_mes)
+        dias_en_mes = monthrange(anio, mes_num)[1]
+        primer_dia_mes = datetime(anio, mes_num, 1)
+        ultimo_dia_mes = datetime(anio, mes_num, dias_en_mes)
 
-        inicio_semana = primer_dia_mes - timedelta(days=primer_dia_mes.weekday())
-        fin_semana = ultimo_dia_mes + timedelta(days=(6 - ultimo_dia_mes.weekday()))
+        dias_semana = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']
+        valores_turno = [
+            turno.dia_lunes, turno.dia_martes, turno.dia_miercoles,
+            turno.dia_jueves, turno.dia_viernes, turno.dia_sabado, turno.dia_domingo
+        ]
 
-        dias_extendidos = []
-        fecha_actual = inicio_semana
-        while fecha_actual <= fin_semana:
-            dias_extendidos.append(fecha_actual)
-            fecha_actual += timedelta(days=1)
+        semanas = []
+        semana_actual = []
 
-        semanas = [dias_extendidos[i:i+7] for i in range(0, len(dias_extendidos), 7)]
+        for i in range(dias_en_mes):
+            dia_actual = primer_dia_mes + timedelta(days=i)
+            if dia_actual.weekday() == 0 and semana_actual:
+                semanas.append(semana_actual)
+                semana_actual = []
+            semana_actual.append(dia_actual)
+
+        if semana_actual:
+            semanas.append(semana_actual)
 
         for idx, semana in enumerate(semanas):
             if idx + 1 == asignacion.semana:
-                mes_inicio = semana[0].strftime('%B')
-                mes_fin = semana[-1].strftime('%B')
+                semana_completa = ["-" for _ in range(7)]
+                for dia in semana:
+                    semana_completa[dia.weekday()] = valores_turno[dia.weekday()]
 
-                semana_str = f"Semana del {semana[0].strftime('%d')} {mes_inicio} al {semana[-1].strftime('%d')} - {mes_fin}"
-                dias_semana = ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"]
-                valores_turno = [
-                    turno.dia_lunes, turno.dia_martes, turno.dia_miercoles,
-                    turno.dia_jueves, turno.dia_viernes, turno.dia_sabado, turno.dia_domingo
-                ]
-
-                horario_semana = {}
-                for i, dia in enumerate(semana):
-                    if dia.month == fecha_base.month:
-                        horario_semana[dias_semana[i]] = valores_turno[i]
-                    else:
-                        horario_semana[dias_semana[i]] = '-'
-
+                semana_str = f"Semana del {semana[0].strftime('%d')} al {semana[-1].strftime('%d')} de {nombre_mes}"
+                horario_semana = dict(zip(dias_semana, semana_completa))
                 horario_semana['mes'] = nombre_mes
                 horario_semana['semana_num'] = asignacion.semana
 
@@ -367,13 +360,17 @@ def obtener_turnos_semanales_admin():
                     "horario": horario_semana
                 })
 
-    # Ordenamos cada mes por el número de semana relativo
-    resultado_ordenado = {}
-    for mes, semanas in resultado.items():
-        semanas_ordenadas = sorted(semanas, key=lambda x: x['horario']['semana_num'])
-        resultado_ordenado[mes] = semanas_ordenadas
+    resultado_ordenado = {
+        mes: sorted(semanas, key=lambda x: x['horario']['semana_num']) for mes, semanas in resultado.items()
+    }
 
     return jsonify(resultado_ordenado)
+
+
+
+
+
+
 
 
 # 

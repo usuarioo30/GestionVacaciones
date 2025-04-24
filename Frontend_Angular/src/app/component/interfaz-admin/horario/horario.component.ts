@@ -26,27 +26,27 @@ export class HorarioComponent {
     this.horarioService.obtenerTurnosSemanales().subscribe(
       (data: Record<string, any>) => {
         const agrupadoPorSemana: Record<string, { nombre: string, horario: any }[]> = {};
-  
+
         Object.values(data).forEach((semanas: any[]) => {
           semanas.forEach((entrada) => {
             const semana = entrada.semana;
             const usuario = entrada.usuario;
             const horario = entrada.horario;
-  
+
             if (!agrupadoPorSemana[semana]) {
               agrupadoPorSemana[semana] = [];
             }
-  
+
             agrupadoPorSemana[semana].push({ nombre: usuario, horario });
           });
         });
-  
+
         // Convierte el objeto agrupado en array ordenado por fecha de semana (ya vienen ordenadas del backend)
         this.turnosArray = Object.entries(agrupadoPorSemana).map(([semana, usuarios]) => ({
           semana,
           usuarios
         }));
-  
+
         const primerTurno = this.turnosArray[0]?.usuarios[0]?.horario;
         if (primerTurno) {
           this.mesActual = primerTurno.mes;
@@ -57,10 +57,10 @@ export class HorarioComponent {
       }
     );
   }
-  
-  
-  
-  
+
+
+
+
 
 
   obtenerNombreMes(mes: string): string {
