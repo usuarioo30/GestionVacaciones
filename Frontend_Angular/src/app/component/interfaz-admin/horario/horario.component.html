@@ -1,0 +1,107 @@
+<div class="container mt-4" *ngIf="turnosArray.length > 0">
+
+
+    <div class="mb-5">
+
+        <div class="d-flex justify-content-between align-items-end mb-3">
+            <h4 class="mb-0">
+                {{ turnosArray[currentSemanaIndex].semana }}
+            </h4>
+            <div class="d-flex align-items-center" style="gap: 0.5rem; width: auto;">
+                <label for="selectMes" class="form-label fw-bold mb-0">Ir al mes:</label>
+                <select id="selectMes" class="form-select form-select-sm" #mesSelect
+                    (change)="irAlMesSeleccionado(mesSelect.value)" style="width: auto; min-width: 10rem;">
+                    <option value="" disabled selected>Selecciona un mes</option>
+                    <option *ngFor="let mes of mesesDisponibles" [value]="mes">
+                        {{ obtenerNombreMes(mes) }}
+                    </option>
+                </select>
+            </div>
+
+        </div>
+
+
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped align-middle text-center">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Lunes</th>
+                        <th>Martes</th>
+                        <th>Miércoles</th>
+                        <th>Jueves</th>
+                        <th>Viernes</th>
+                        <th>Sábado</th>
+                        <th>Domingo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let usuario of turnosArray[currentSemanaIndex].usuarios">
+                        <td class="fw-bold">{{ usuario.nombre }}</td>
+                        <td>{{ usuario.horario.lunes }}</td>
+                        <td>{{ usuario.horario.martes }}</td>
+                        <td>{{ usuario.horario.miercoles }}</td>
+                        <td>{{ usuario.horario.jueves }}</td>
+                        <td>{{ usuario.horario.viernes }}</td>
+                        <td>{{ usuario.horario.sabado }}</td>
+                        <td>{{ usuario.horario.domingo }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="d-flex justify-content-between mt-3">
+            <button class="btn btn-primary" (click)="semanaAnterior()" [disabled]="currentSemanaIndex === 0">Semana
+                Anterior</button>
+            <button class="btn btn-primary" (click)="siguienteSemana()"
+                [disabled]="currentSemanaIndex === turnosArray.length - 1">Semana Siguiente</button>
+        </div>
+    </div>
+</div>
+
+<div class="container mt-4" *ngIf="turnosArray.length === 0">
+    <div class="alert alert-info text-center" role="alert">
+        No se encontraron turnos para mostrar.
+    </div>
+</div>
+
+<!-- Botón para abrir el modal -->
+<button class="btn btn-secondary mb-4" data-bs-toggle="modal" data-bs-target="#modalGenerarPDF">
+    Generar PDF de Horario Mensual
+</button>
+
+<!-- Modal -->
+<div class="modal fade" id="modalGenerarPDF" tabindex="-1" aria-labelledby="modalGenerarPDFLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalGenerarPDFLabel">Generar PDF de Horario</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="usuarioSelect" class="form-label">Seleccionar Usuario</label>
+                    <select id="usuarioSelect" class="form-select" [(ngModel)]="usuarioSeleccionado"
+                        (change)="cargarMesesDelUsuario()">
+                        <option [value]="0" disabled selected>Seleccione un usuario</option>
+                        <option *ngFor="let usuario of usuarios" [value]="usuario.id">{{ usuario.nombreCompleto }}
+                        </option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="mesSelect" class="form-label">Seleccionar Mes</label>
+                    <select id="mesSelect" class="form-select" [(ngModel)]="mesSeleccionado">
+                        <option *ngFor="let mes of mesesUsuario" [value]="mes">{{ obtenerNombreMes(mes) }}</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" (click)="descargarPDF()"
+                    [disabled]="!usuarioSeleccionado || !mesSeleccionado">
+                    Descargar PDF
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
