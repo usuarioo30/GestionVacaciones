@@ -64,11 +64,6 @@ class SolicitudDescanso(db.Model):
     def __repr__(self):
         return f'<SolicitudDescanso {self.id}>'
 
-
-class ShareCalendar(db.Model):
-    __tablename__ = 'share_calendar'
-
-
 class Schedule(db.Model):
     __tablename__ = 'schedules'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -135,7 +130,7 @@ class ScheduleDay(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     schedule_id = db.Column(db.Integer, db.ForeignKey('schedules.id', ondelete='CASCADE'), nullable=False)
     dia = db.Column(db.Enum(DayOfWeek), nullable=False)
-    turno_id = db.Column(db.Integer, db.ForeignKey('turnos.id'), nullable=True)
+    turno_id = db.Column(db.Integer, db.ForeignKey('turno.id'), nullable=True)
 
     schedule = db.relationship('Schedule', back_populates='dias')
     turno = db.relationship('Turno')
