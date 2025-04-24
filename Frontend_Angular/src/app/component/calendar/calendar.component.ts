@@ -11,10 +11,11 @@ import { CalendarRequestService } from '../../services/calendar-request.service'
 import { UsuarioService } from '../../services/usuario.service';
 import { HolidayserviceService } from '../../services/holidayservice.service';
 import { PublicHoliday } from '../../interfaces/public-holiday';
+import { FestivitiesComponent } from '../festivities/festivities.component';
 
 @Component({
   selector: 'app-calendar',
-  imports: [CommonModule],
+  imports: [CommonModule, FestivitiesComponent],
   templateUrl: './calendar.component.html',
   styleUrls: ['./calendar.component.css']
 })
@@ -208,9 +209,9 @@ export class CalendarComponent implements OnInit {
       day.available = this.calendar.isDayAvailable(day);
       day.isHoliday = this.isHoliday(day);
       const solicitudParcial: boolean = this.isRequested(day);
-      if (solicitudCompleta) {
+      if (solicitudCompleta && !day.isHoliday) {
         day.requested = true;
-      } else if (solicitudParcial) {
+      } else if (solicitudParcial && !day.isHoliday) {
         day.requested = true;
       } else {
         day.requested = false;
@@ -283,6 +284,16 @@ export class CalendarComponent implements OnInit {
     if (this.monthNumber === 11) {
       this.monthNumber = 0;
       this.year++;
+      this.holidayService.getPublicHolidays(this.year).subscribe({
+        next: (response) => {
+          this.holidays = response.filter(h =>
+            h.global || (h.counties ?? []).includes('ES-AN')
+          );
+          // ¡Ahora sí tenemos los holidays correctos: recargamos el calendario aquí!
+          this.loadCalendar();
+        },
+        error: (err) => console.error('No se pudieron cargar festivos:', err)
+      });
     } else {
       this.monthNumber++;
     }
@@ -293,6 +304,15 @@ export class CalendarComponent implements OnInit {
     if (this.monthNumber === 0) {
       this.monthNumber = 11;
       this.year--;
+      this.holidayService.getPublicHolidays(this.year).subscribe({
+        next: (response) => {
+          this.holidays = response.filter(h =>
+            h.global || (h.counties ?? []).includes('ES-AN')
+          );
+          this.loadCalendar() //si no está esto aquí no se carga correctamente
+        },
+        error: (err) => console.error('No se pudieron cargar festivos:', err)
+      });
     } else {
       this.monthNumber--;
     }

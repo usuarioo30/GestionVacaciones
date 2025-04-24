@@ -14,12 +14,13 @@ import { AuthService } from '../../../services/auth.service';
 import { Usuariomin } from '../../../interfaces/usuariomin';
 import { HolidayserviceService } from '../../../services/holidayservice.service';
 import { PublicHoliday } from '../../../interfaces/public-holiday';
+import { FestivitiesComponent } from '../../festivities/festivities.component';
 
 
 
 @Component({
   selector: 'app-calendario-admin',
-  imports: [CommonModule],
+  imports: [CommonModule, FestivitiesComponent],
   templateUrl: './calendario-admin.component.html',
   styleUrl: './calendario-admin.component.css'
 })
@@ -91,7 +92,6 @@ export class CalendarioAdminComponent {
 
             this.loadCalendar();
           });
-
         this.authService.getUsers(token);
         this.users = computed(() => this.authService.allUsers());
       }
@@ -169,6 +169,7 @@ export class CalendarioAdminComponent {
   loadCalendar() {
     const solicitudCompleta: RequestResponse = this.isMonthRequested();
     const currentDays = this.calendar.getMonth(this.monthNumber, this.year);
+    
     currentDays.forEach(day => {
       day.isCurrentMonth = true;
       day.available = this.calendar.isDayAvailable(day);
@@ -179,10 +180,10 @@ export class CalendarioAdminComponent {
         solicitudParcial.usuarioId === this.selectedUserId ||
         solicitudCompleta.usuarioId === this.selectedUserId;
 
-      if (solicitudCompleta.estado && day.weekDayNumber < 5 && shouldRender) {
+      if (solicitudCompleta.estado && !day.isHoliday && shouldRender) {
         day.requested = true;
         day.id = solicitudCompleta.usuarioId;
-      } else if (solicitudParcial.estado && day.weekDayNumber < 5 && shouldRender) {
+      } else if (solicitudParcial.estado && !day.isHoliday && shouldRender) {
         day.requested = true;
         day.id = solicitudParcial.usuarioId;
       } else {
@@ -251,6 +252,16 @@ export class CalendarioAdminComponent {
     if (this.monthNumber === 11) {
       this.monthNumber = 0;
       this.year++;
+      this.holidayService.getPublicHolidays(this.year).subscribe({
+        next: (response) => {
+          this.holidays = response.filter(h =>
+            h.global || (h.counties ?? []).includes('ES-AN')
+          );
+          // ¡Ahora sí tenemos los holidays correctos: recargamos el calendario aquí!
+          this.loadCalendar();
+        },
+        error: (err) => console.error('No se pudieron cargar festivos:', err)
+      });
     } else {
       this.monthNumber++;
     }
@@ -261,6 +272,15 @@ export class CalendarioAdminComponent {
     if (this.monthNumber === 0) {
       this.monthNumber = 11;
       this.year--;
+      this.holidayService.getPublicHolidays(this.year).subscribe({
+        next: (response) => {
+          this.holidays = response.filter(h =>
+            h.global || (h.counties ?? []).includes('ES-AN')
+          );
+          this.loadCalendar() //si no está esto aquí no se carga correctamente
+        },
+        error: (err) => console.error('No se pudieron cargar festivos:', err)
+      });
     } else {
       this.monthNumber--;
     }
