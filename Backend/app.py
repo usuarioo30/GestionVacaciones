@@ -316,8 +316,8 @@ def actualizar_turnos():
 @app.route('/api/admin/turnos_semanales', methods=['GET'])
 @jwt_required()
 def obtener_turnos_semanales_admin():
-    turnos_asignados = TurnoAsignado.query.all()
-    resultado = {}
+    turnos_asignados = TurnoAsignado.query.all() # Llamada a la tabla
+    resultado = {} # Diccionario para almacenar los resultados
 
     for asignacion in turnos_asignados:
         usuario = asignacion.usuario
@@ -325,12 +325,12 @@ def obtener_turnos_semanales_admin():
         mes = asignacion.mes
 
         try:
-            anio, mes_num = map(int, mes.split('-'))
-            nombre_mes = datetime(anio, mes_num, 1).strftime('%B')
+            anio, mes_num = map(int, mes.split('-')) # Convierte la fecha a YYYY-MM
+            nombre_mes = datetime(anio, mes_num, 1).strftime('%B') # Nombre del mes en español
         except ValueError:
             nombre_mes = 'Mes no válido'
 
-        dias_en_mes = monthrange(anio, mes_num)[1]
+        dias_en_mes = monthrange(anio, mes_num)[1] # Calcula cuantos días tiene el mes
         primer_dia_mes = datetime(anio, mes_num, 1)
         ultimo_dia_mes = datetime(anio, mes_num, dias_en_mes)
 
@@ -340,27 +340,30 @@ def obtener_turnos_semanales_admin():
             turno.dia_jueves, turno.dia_viernes, turno.dia_sabado, turno.dia_domingo
         ]
 
+        # Generación semanas del mes
+
         semanas = []
         semana_actual = []
 
         for i in range(dias_en_mes):
-            dia_actual = primer_dia_mes + timedelta(days=i)
-            if dia_actual.weekday() == 0 and semana_actual:
+            dia_actual = primer_dia_mes + timedelta(days=i) # Agrupa por semana
+            if dia_actual.weekday() == 0 and semana_actual: # Si es lunes agrega la semana y crea otra nueva
                 semanas.append(semana_actual)
                 semana_actual = []
-            semana_actual.append(dia_actual)
+            semana_actual.append(dia_actual) # Añade los días a la semana actual
 
         if semana_actual:
-            semanas.append(semana_actual)
+            semanas.append(semana_actual) # Agrega la última semana que quede
 
         for idx, semana in enumerate(semanas):
-            if idx + 1 == asignacion.semana:
-                semana_completa = ["-" for _ in range(7)]
-                for dia in semana:
-                    semana_completa[dia.weekday()] = valores_turno[dia.weekday()]
+            if idx + 1 == asignacion.semana: # Si la semana coincide con la asignación
 
-                semana_str = f"Semana del {semana[0].strftime('%d')} al {semana[-1].strftime('%d')} de {nombre_mes}"
-                horario_semana = dict(zip(dias_semana, semana_completa))
+                semana_completa = ["-" for _ in range(7)] #inicializa una semana vacía con - para cada día
+                for dia in semana:
+                    semana_completa[dia.weekday()] = valores_turno[dia.weekday()] # Para cada día asigna el valor del turno correspondiente
+
+                semana_str = f"Semana del {semana[0].strftime('%d')} al {semana[-1].strftime('%d')} de {nombre_mes}" #Genera una cadena para la semana
+                horario_semana = dict(zip(dias_semana, semana_completa)) # Une los nombres de los días con los valores del turno
                 horario_semana['mes'] = mes
                 horario_semana['semana_num'] = asignacion.semana
 
@@ -370,14 +373,37 @@ def obtener_turnos_semanales_admin():
                 resultado[mes].append({
                     "semana": semana_str,
                     "usuario": usuario.nombreCompleto,
-                    "horario": horario_semana
+                    "horario": horario_semana,
+                    "horas_trabajadas": get_horas_turno(usuario.id, mes, asignacion.semana).json['horas']
                 })
+
+                # Agrupa las semanas por mes y los va añadiendo al diccionario resultado
 
     resultado_ordenado = {
         mes: sorted(semanas, key=lambda x: x['horario']['semana_num']) for mes, semanas in resultado.items()
     }
 
+    # Ordena las semanas por número de semana dentro de cada mes
+
     return jsonify(resultado_ordenado)
+
+
+def get_horas_turno(user_id, mes, semana):
+
+    if not user_id or not mes or semana is None:
+        return jsonify({'error': 'Faltan parámetros: user_id, mes o semana'}), 400
+
+    resultado = db.session.query(Turno.horas).join(TurnoAsignado, Turno.id == TurnoAsignado.turno_id).filter(
+        TurnoAsignado.user_id == user_id,
+        TurnoAsignado.mes == mes,
+        TurnoAsignado.semana == semana
+    ).first()
+
+    if not resultado:
+        return jsonify({'horas': None, 'mensaje': 'No se encontró turno asignado'}), 404
+
+    return jsonify({'horas': resultado[0]})
+
 
 @app.route('/api/usuario/<int:user_id>/meses_disponibles', methods=['GET'])
 @jwt_required()

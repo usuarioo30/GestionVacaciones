@@ -4,6 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { TurnosSemanales } from '../../../interfaces/turnos-semanales';
+import { TurnosMes } from '../../../interfaces/turnos-mes';
 
 @Component({
   selector: 'app-horario',
@@ -12,7 +13,7 @@ import { TurnosSemanales } from '../../../interfaces/turnos-semanales';
   styleUrl: './horario.component.css'
 })
 export class HorarioComponent {
-  turnosArray: { semana: string, usuarios: { nombre: string, horario: any }[] }[] = [];
+  turnosArray: { semana: string, usuarios: { nombre: string, horario: any, horas_trabajadas:number }[] }[] = [];
   currentSemanaIndex: number = 0; // Índice para la semana actual
   mesActual: string = ''; // Guardamos el mes actual para mostrarlo en el HTML
   mesesDisponibles: string[] = [];
@@ -23,8 +24,7 @@ export class HorarioComponent {
   mesSeleccionado: string = '';
 
   constructor(
-    private horarioService: HorarioService,
-    private http: HttpClient
+    private horarioService: HorarioService
   ) { }
 
   ngOnInit(): void {
@@ -89,27 +89,28 @@ export class HorarioComponent {
   cargarTurnosSemanales(): void {
     this.horarioService.obtenerTurnosSemanales().subscribe(
       (data: Record<string, any>) => {
-        const agrupadoPorSemana: Record<string, { nombre: string, horario: any }[]> = {};
-
+        const agrupadoPorSemana: Record<string, { nombre: string, horario: any, horas_trabajadas: number }[]> = {};
+  
         Object.values(data).forEach((semanas: any[]) => {
           semanas.forEach((entrada) => {
             const semana = entrada.semana;
             const usuario = entrada.usuario;
             const horario = entrada.horario;
-
+            const horas_trabajadas = entrada.horas_trabajadas;
+  
             if (!agrupadoPorSemana[semana]) {
               agrupadoPorSemana[semana] = [];
             }
-
-            agrupadoPorSemana[semana].push({ nombre: usuario, horario });
+  
+            agrupadoPorSemana[semana].push({ nombre: usuario, horario, horas_trabajadas });
           });
         });
-
+  
         this.turnosArray = Object.entries(agrupadoPorSemana).map(([semana, usuarios]) => ({
           semana,
-          usuarios
+          usuarios // cada `usuario` tiene: nombre, horario, horas_trabajadas
         }));
-
+  
         // Obtener lista de meses únicos en formato 'YYYY-MM'
         const mesesSet = new Set<string>();
         this.turnosArray.forEach(turno => {
@@ -118,7 +119,7 @@ export class HorarioComponent {
             mesesSet.add(mes);
           }
         });
-
+  
         this.mesesDisponibles = Array.from(mesesSet);
       },
       (error) => {
@@ -126,6 +127,7 @@ export class HorarioComponent {
       }
     );
   }
+  
 
   irAlMesSeleccionado(mes: string): void {
     const index = this.turnosArray.findIndex(turno =>
