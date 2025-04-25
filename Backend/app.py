@@ -77,6 +77,15 @@ class Schedule(db.Model):
     def __repr__(self):
         return f'<Schedule {self.id} usuario={self.usuario_id}>'
 
+class LocalHolidays(db.Model):
+    __tablename__ = 'local_holidays'
+
+    date = db.Column(db.Date, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+
+    def __repr__(self):
+        return f'<LocalHoliday {self.number} {self.year}>'
+
 
 class Horario(db.Model):
     __tablename__ = 'horario'
@@ -1401,7 +1410,7 @@ def _get_turnos_por_schedule_id(schedule_id):
         return None
 
 
-#@app.route('/schedule/<int:schedule_id>/total_horas', methods=['GET'])
+
 def getHoursOfWork(schedule_id):
     # CASE para segundos, igual que antes
     diferencia_segundos = case(
@@ -1424,6 +1433,15 @@ def getHoursOfWork(schedule_id):
 
     # total_horas es un float (por ejemplo: 27.75 → 27 h 45 min)
     return round(total_horas, 2)
+
+
+def setNewLocalHoliday():
+    try:
+        data = request.get_json()
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Error al agregar el día festivo", "message": str(e)}), 500
 
 # Ejecutar el servidor Flask
 if __name__ == '__main__':

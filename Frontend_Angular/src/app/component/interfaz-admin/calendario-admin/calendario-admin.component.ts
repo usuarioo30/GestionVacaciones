@@ -15,12 +15,13 @@ import { Usuariomin } from '../../../interfaces/usuariomin';
 import { HolidayserviceService } from '../../../services/holidayservice.service';
 import { PublicHoliday } from '../../../interfaces/public-holiday';
 import { FestivitiesComponent } from '../../festivities/festivities.component';
+import { NewHolidayComponent } from '../../modal/new-holiday/new-holiday.component';
 
 
 
 @Component({
   selector: 'app-calendario-admin',
-  imports: [CommonModule, FestivitiesComponent],
+  imports: [CommonModule, FestivitiesComponent, NewHolidayComponent],
   templateUrl: './calendario-admin.component.html',
   styleUrl: './calendario-admin.component.css'
 })
@@ -38,6 +39,8 @@ export class CalendarioAdminComponent {
   users!: Signal<Usuariomin[]>;
   selectedUserId: number | null = null;
   holidays: PublicHoliday[] = [];
+  openModal: boolean = false;
+  selectedDay!: Day;
 
   weeksDaysName: string[] = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
 
@@ -325,7 +328,10 @@ export class CalendarioAdminComponent {
 
   markAsHoliday(day: Day): void {
     day.isHoliday = !day.isHoliday;
+    
   }
+
+
 
   private isHoliday(day: Day): boolean {
     return this.holidays.some(h => {
