@@ -41,7 +41,6 @@ export class CreateCalendarService {
       days.push(this.createDay(index, monthIndex, year));
 
     }
-
     return days;
   }
 

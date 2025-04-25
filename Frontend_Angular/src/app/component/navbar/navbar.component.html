@@ -27,6 +27,14 @@
                 </a>
               </li>
 
+              <!-- Horario -->
+              <li *ngIf="isAdmin" class="nav-item mt-2 mb-2 me-3 ms-3 ps-3 pe-3" [routerLinkActive]="'active-link'">
+                <a class="nav-link text-dark" [routerLink]="['/horario']" routerLinkActive="router-link-active"
+                  aria-label="Horario">
+                  <i class="bi bi-calendar-month fs-4"></i>&nbsp; Horario
+                </a>
+              </li>
+
               <!-- Solicitudes -->
               <li class="nav-item mt-2 mb-2 me-3 ms-3 ps-3 pe-3" [routerLinkActive]="'active-link'">
                 <a class="nav-link text-dark" [routerLink]="isAdmin ? ['/solicitudes-admin'] : ['/solicitudes']"
