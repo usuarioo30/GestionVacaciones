@@ -359,10 +359,17 @@ def obtener_turnos_semanales_admin():
             if idx + 1 == asignacion.semana: # Si la semana coincide con la asignación
 
                 semana_completa = ["-" for _ in range(7)] #inicializa una semana vacía con - para cada día
+
+                vacations = checkIfHasVacationsOnDate(usuario.id, semana[0], semana[-1]) # Verifica si tiene vacaciones en esa semana
+
                 for dia in semana:
-                    semana_completa[dia.weekday()] = valores_turno[dia.weekday()] # Para cada día asigna el valor del turno correspondiente
+                    if len(vacations) > 0: # Si tiene vacaciones asigna "VACACIONES" a la semana
+                        semana_completa[dia.weekday()] = "Vacaciones"
+                    else:
+                        semana_completa[dia.weekday()] = valores_turno[dia.weekday()] # Para cada día asigna el valor del turno correspondiente
 
                 semana_str = f"Semana del {semana[0].strftime('%d')} al {semana[-1].strftime('%d')} de {nombre_mes}" #Genera una cadena para la semana
+                
                 horario_semana = dict(zip(dias_semana, semana_completa)) # Une los nombres de los días con los valores del turno
                 horario_semana['mes'] = mes
                 horario_semana['semana_num'] = asignacion.semana
@@ -374,7 +381,8 @@ def obtener_turnos_semanales_admin():
                     "semana": semana_str,
                     "usuario": usuario.nombreCompleto,
                     "horario": horario_semana,
-                    "horas_trabajadas": get_horas_turno(usuario.id, mes, asignacion.semana).json['horas']
+                    "horas_trabajadas": 0 if len(vacations) > 0 else get_horas_turno(usuario.id, mes, asignacion.semana).json['horas']
+
                 })
 
                 # Agrupa las semanas por mes y los va añadiendo al diccionario resultado
@@ -387,6 +395,18 @@ def obtener_turnos_semanales_admin():
 
     return jsonify(resultado_ordenado)
 
+
+def checkIfHasVacationsOnDate(usuario_id, fecha_inicio, fecha_fin):
+
+    vacations = SolicitudDescanso.query.filter(
+        SolicitudDescanso.usuario_id == usuario_id,
+        SolicitudDescanso.fecha_inicio <= fecha_fin,
+        SolicitudDescanso.fecha_fin >= fecha_inicio,
+        SolicitudDescanso.estado == True
+        
+    ).all()
+
+    return vacations
 
 def get_horas_turno(user_id, mes, semana):
 
@@ -436,21 +456,22 @@ def obtener_usuarios_con_turnos():
 @app.route('/api/generar_pdf/<int:user_id>/<string:mes>', methods=['GET'])
 @jwt_required()
 def generar_pdf_turnos(user_id, mes):
-    usuario = Usuario.query.get(user_id)
+
+    usuario = Usuario.query.get(user_id) # Obtener el usuario
     if not usuario:
         return {"error": "Usuario no encontrado"}, 404
 
-    turnos = TurnoAsignado.query.filter_by(user_id=user_id, mes=mes).order_by(TurnoAsignado.semana).all()
+    turnos = TurnoAsignado.query.filter_by(user_id=user_id, mes=mes).order_by(TurnoAsignado.semana).all() # Obtener y validar los turnos
     if not turnos:
         return {"error": "No hay turnos asignados para este mes"}, 404
 
     try:
-        anio, mes_num = map(int, mes.split('-'))
+        anio, mes_num = map(int, mes.split('-')) # Parseo de año y mes y cálculo de días del mes
         dias_en_mes = monthrange(anio, mes_num)[1]
     except ValueError:
         return {"error": "Formato de mes incorrecto, usa 'YYYY-MM'"}, 400
 
-    buffer = BytesIO()
+    buffer = BytesIO() #Prepara el buffer y la fuente tipografica
 
     font_path = os.path.join("fonts", "Montserrat-Regular.ttf")
     if os.path.exists(font_path):
@@ -518,15 +539,22 @@ def generar_pdf_turnos(user_id, mes):
         etiqueta_semana = f"{semana_inicio:02d}-{semana_fin:02d}"
 
         if turno:
-            valores = [
-                turno.dia_lunes,
-                turno.dia_martes,
-                turno.dia_miercoles,
-                turno.dia_jueves,
-                turno.dia_viernes,
-                turno.dia_sabado,
-                turno.dia_domingo
-            ]
+
+            vacations = checkIfHasVacationsOnDate(usuario.id, semana[0], semana[-1]) # Verifica si tiene vacaciones en esa semana
+
+            if len(vacations) == 0: # Si tiene vacaciones asigna "VACACIONES" a la semana
+
+                valores = [
+                    turno.dia_lunes,
+                    turno.dia_martes,
+                    turno.dia_miercoles,
+                    turno.dia_jueves,
+                    turno.dia_viernes,
+                    turno.dia_sabado,
+                    turno.dia_domingo
+                ]
+            else:
+                valores = ["Vacaciones" for _ in range(7)]
             for dia in semana:
                 if dia.month == mes_num:
                     fila[dia.weekday()] = f"{valores[dia.weekday()]}"
