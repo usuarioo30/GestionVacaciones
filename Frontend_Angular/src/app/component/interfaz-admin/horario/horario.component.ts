@@ -162,11 +162,6 @@ export class HorarioComponent {
     return nombreMes;
   }
 
-
-
-
-
-
   siguienteSemana(): void {
     if (this.currentSemanaIndex < this.turnosArray.length - 1) {
       this.currentSemanaIndex++;
