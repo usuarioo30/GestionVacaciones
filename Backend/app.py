@@ -350,14 +350,11 @@ def actualizar_turno():
 @app.route('/api/turnos_disponibles', methods=['GET'])
 @jwt_required()
 def obtener_turnos_disponibles():
-    # Obtener todos los turnos que no están asignados a ningún usuario
     turnos_disponibles = db.session.query(Turno).outerjoin(TurnoAsignado, Turno.id == TurnoAsignado.turno_id).filter(TurnoAsignado.id == None).all()
 
-    # Si no hay turnos disponibles
     if not turnos_disponibles:
         return jsonify({"message": "No hay turnos disponibles"}), 404
 
-    # Crear una lista de turnos disponibles para enviar como respuesta
     turnos_list = []
     for turno in turnos_disponibles:
         turnos_list.append({
@@ -373,7 +370,8 @@ def obtener_turnos_disponibles():
             "horas_debe": turno.horas_debe
         })
 
-    return jsonify({"turnos_disponibles": turnos_list}), 200
+    return jsonify(turnos_list), 200
+
 
 
 

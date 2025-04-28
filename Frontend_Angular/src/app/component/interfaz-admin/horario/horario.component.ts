@@ -23,8 +23,11 @@ export class HorarioComponent {
   mesesUsuario: string[] = [];
   mesSeleccionado: string = '';
 
+  semanaSeleccionada: string = '';
+  nuevoTurnoSeleccionado: string = '';
   isCargando: boolean = true;
 
+  turnosDisponibles: any[] = []; // Turnos disponibles para seleccionar
 
   constructor(
     private horarioService: HorarioService,
@@ -34,12 +37,21 @@ export class HorarioComponent {
   ngOnInit(): void {
     this.cargarTurnosSemanales();
     this.cargarUsuarios();
+    this.cargarTurnosDisponibles(); // Cargar turnos disponibles
   }
 
   cargarUsuarios(): void {
     this.horarioService.obtenerUsuarios().subscribe(
       (res) => this.usuarios = res,
       (err) => console.error('Error cargando usuarios:', err)
+    );
+  }
+
+  cargarTurnosDisponibles(): void {
+    // Este método debería cargar los turnos disponibles que el backend ofrece
+    this.horarioService.obtenerTurnosDisponibles().subscribe(
+      (res) => this.turnosDisponibles = res,
+      (err) => console.error('Error cargando turnos disponibles:', err)
     );
   }
 
@@ -172,5 +184,25 @@ export class HorarioComponent {
     if (this.currentSemanaIndex > 0) {
       this.currentSemanaIndex--;
     }
+  }
+
+  actualizarTurno(): void {
+    const user_id = this.usuarioSeleccionado;
+    const mes = this.mesSeleccionado;
+    const semana = this.semanaSeleccionada;
+    const nuevo_turno_id = this.nuevoTurnoSeleccionado;
+
+    const data = { user_id, mes, semana, nuevo_turno_id };
+
+    this.http.post('/api/actualizar_turno', data).subscribe(
+      (response) => {
+        alert('Turno actualizado correctamente');
+        this.cargarTurnosSemanales(); // Volver a cargar los turnos actualizados
+      },
+      (error) => {
+        console.error('Error al actualizar el turno', error);
+        alert('No se pudo actualizar el turno');
+      }
+    );
   }
 }
