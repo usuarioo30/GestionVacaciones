@@ -45,4 +45,16 @@ export class HorarioService {
     });
   }
 
+  actualizarTurno(payload: any): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/actualizar_turno`, payload, {
+      headers: this.getAuthHeaders()
+    });
+  }
+  
+  obtenerTurnosDisponibles(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/turnos_disponibles`, {
+      headers: this.getAuthHeaders()
+    });
+  }
+
 }

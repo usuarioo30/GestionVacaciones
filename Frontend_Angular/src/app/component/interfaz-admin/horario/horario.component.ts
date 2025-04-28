@@ -5,6 +5,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { TurnosSemanales } from '../../../interfaces/turnos-semanales';
 import { TurnosMes } from '../../../interfaces/turnos-mes';
+import bootstrap from 'bootstrap';
+
 
 @Component({
   selector: 'app-horario',
@@ -23,6 +25,12 @@ export class HorarioComponent {
   mesesUsuario: string[] = [];
   mesSeleccionado: string = '';
 
+  semanaSeleccionada: number = 0;
+  nuevoTurnoSeleccionado: number = 0;
+  isCargando: boolean = true;
+
+  turnosDisponibles: any[] = []; // Turnos disponibles para seleccionar
+
   constructor(
     private horarioService: HorarioService
   ) { }
@@ -30,12 +38,21 @@ export class HorarioComponent {
   ngOnInit(): void {
     this.cargarTurnosSemanales();
     this.cargarUsuarios();
+    this.cargarTurnosDisponibles(); // Cargar turnos disponibles
   }
 
   cargarUsuarios(): void {
     this.horarioService.obtenerUsuarios().subscribe(
       (res) => this.usuarios = res,
       (err) => console.error('Error cargando usuarios:', err)
+    );
+  }
+
+  cargarTurnosDisponibles(): void {
+    // Este método debería cargar los turnos disponibles que el backend ofrece
+    this.horarioService.obtenerTurnosDisponibles().subscribe(
+      (res) => this.turnosDisponibles = res,
+      (err) => console.error('Error cargando turnos disponibles:', err)
     );
   }
 
@@ -49,23 +66,23 @@ export class HorarioComponent {
   descargarPDF(): void {
     const usuarioId = Number(this.usuarioSeleccionado);
     const usuario = this.usuarios.find(u => Number(u.id) === usuarioId);
-  
+
     if (!usuario) {
       console.error('Usuario no encontrado');
       alert("No se pudo encontrar el usuario seleccionado.");
       return;
     }
-  
+
     // Obtener el nombre del mes y el año
     const [anio, mes] = this.mesSeleccionado.split('-');
     const nombreMes = this.obtenerNombreMes(this.mesSeleccionado);
-  
+
     // Usamos el nombre (o nombreCompleto, si prefieres) del usuario
     const nombreUsuario = usuario.nombre || usuario.nombreCompleto || 'usuario';
-  
+
     // Formatear el nombre del archivo
     const nombreArchivo = `horario_${nombreUsuario.toLowerCase()}_${nombreMes.toLowerCase()}_${anio}.pdf`;
-  
+
     // Llamar al servicio para generar el PDF
     this.horarioService.generarPDF(this.usuarioSeleccionado, this.mesSeleccionado).subscribe(
       (blob: Blob) => {
@@ -75,6 +92,13 @@ export class HorarioComponent {
         a.download = nombreArchivo;
         a.click();
         window.URL.revokeObjectURL(url);
+
+        // Limpiar el formulario
+        this.usuarioSeleccionado = 0;
+        this.mesSeleccionado = '';
+
+        // Aquí ya no es necesario manipular el modal, Angular se encarga de ello
+        // El modal se cerrará automáticamente porque ya estamos limpiando los valores del formulario.
       },
       (err) => {
         console.error('Error generando el PDF:', err);
@@ -82,28 +106,25 @@ export class HorarioComponent {
       }
     );
   }
-  
-  
-
 
   cargarTurnosSemanales(): void {
+    this.isCargando = true;
+  
     this.horarioService.obtenerTurnosSemanales().subscribe(
       (data: Record<string, any>) => {
-        const agrupadoPorSemana: Record<string, { nombre: string, horario: any, horas_trabajadas: number }[]> = {};
+        const agrupadoPorSemana: Record<string, { nombre: string, horario: any }[]> = {};
   
         Object.values(data).forEach((semanas: any[]) => {
           semanas.forEach((entrada) => {
             const semana = entrada.semana;
             const usuario = entrada.usuario;
             const horario = entrada.horario;
-            const horas_trabajadas = entrada.horas_trabajadas;
   
             if (!agrupadoPorSemana[semana]) {
               agrupadoPorSemana[semana] = [];
             }
-  
-            agrupadoPorSemana[semana].push({ nombre: usuario, horario, horas_trabajadas });
-          });
+            agrupadoPorSemana[semana].push({ nombre: usuario, horario });
+
         });
   
         this.turnosArray = Object.entries(agrupadoPorSemana).map(([semana, usuarios]) => ({
@@ -111,7 +132,7 @@ export class HorarioComponent {
           usuarios // cada `usuario` tiene: nombre, horario, horas_trabajadas
         }));
   
-        // Obtener lista de meses únicos en formato 'YYYY-MM'
+
         const mesesSet = new Set<string>();
         this.turnosArray.forEach(turno => {
           const mes = turno.usuarios[0]?.horario?.mes;
@@ -121,9 +142,11 @@ export class HorarioComponent {
         });
   
         this.mesesDisponibles = Array.from(mesesSet);
+        this.isCargando = false;
       },
       (error) => {
         console.error('Error al cargar los turnos', error);
+        this.isCargando = false;
       }
     );
   }
@@ -153,11 +176,6 @@ export class HorarioComponent {
     return nombreMes;
   }
 
-
-
-
-
-
   siguienteSemana(): void {
     if (this.currentSemanaIndex < this.turnosArray.length - 1) {
       this.currentSemanaIndex++;
@@ -169,4 +187,37 @@ export class HorarioComponent {
       this.currentSemanaIndex--;
     }
   }
+
+  actualizarTurno(): void {
+    if (!this.usuarioSeleccionado || !this.mesSeleccionado
+        || !this.semanaSeleccionada || !this.nuevoTurnoSeleccionado) {
+      alert('Complete todos los campos');
+      return;
+    }
+  
+    const payload = {
+      user_id: this.usuarioSeleccionado,
+      mes: this.mesSeleccionado,
+      semana: this.semanaSeleccionada,
+      nuevo_turno_id: this.nuevoTurnoSeleccionado
+    };
+  
+    this.horarioService.actualizarTurno(payload).subscribe({
+      next: () => {
+        // Limpiar los selects para la próxima vez
+        this.usuarioSeleccionado    = 0;
+        this.mesSeleccionado        = '';
+        this.semanaSeleccionada     = 0;
+        this.nuevoTurnoSeleccionado = 0;
+  
+        alert('Turno actualizado correctamente');
+        this.cargarTurnosSemanales();
+      },
+      error: err => {
+        console.error('Error al actualizar el turno', err);
+        alert('No se pudo actualizar el turno');
+      }
+    });
+  }
+  
 }

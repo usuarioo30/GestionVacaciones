@@ -7,7 +7,6 @@ from flask_jwt_extended import JWTManager, create_access_token, get_jwt, jwt_req
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import timedelta
-
 from sqlalchemy import or_
 from calendar import monthrange
 import locale
@@ -116,8 +115,8 @@ class TurnoAsignado(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
     turno_id = db.Column(db.Integer, db.ForeignKey('turno.id'), nullable=False)
-    mes = db.Column(db.String(7), nullable=False)  # formato 'YYYY-MM'
-    semana = db.Column(db.Integer, nullable=False)  # 👈 nueva columna
+    mes = db.Column(db.String(7), nullable=False)
+    semana = db.Column(db.Integer, nullable=False)
 
     usuario = db.relationship('Usuario', backref='turnos_asignados')
     turno = db.relationship('Turno', backref='turno')
@@ -127,12 +126,8 @@ class TurnoAsignado(db.Model):
         return {
             'user_id': self.user_id,
             'mes': self.mes,
-            'turno': self.turno.to_dict() if self.turno else None  # Si 'turno' es None, evita el error
+            'turno': self.turno.to_dict() if self.turno else None
         }
-
-
-
-
 
 class ScheduleDay(db.Model):
     __tablename__ = 'schedule_days'
@@ -215,47 +210,13 @@ with app.app_context():
     crear_usuario_por_defecto()
     crear_turnos_por_defecto()
 
-@app.route('/api/usuario/<int:user_id>/turno/<string:mes>', methods=['GET'])
-@jwt_required()
-def obtener_turno_mensual(user_id, mes):
-    asignado = TurnoAsignado.query.filter_by(user_id=user_id, mes=mes).first()
-    
-    if not asignado or not asignado.turno:
-        return jsonify({"error": "No hay turno asignado para este mes"}), 404
-
-    turno = asignado.turno
-    
-    # Convertir el mes a un nombre completo
-    try:
-        anio, mes_num = map(int, mes.split('-'))
-        nombre_mes = datetime(anio, mes_num, 1).strftime('%B')  # Nombre completo del mes en español
-    except ValueError:
-        return jsonify({"error": "Formato de mes incorrecto, usa 'YYYY-MM'"}), 400
-
-    return jsonify({
-        "turno": {
-            "mes": nombre_mes,  # Incluir el nombre del mes
-            "dias": {
-                "lunes": turno.dia_lunes,
-                "martes": turno.dia_martes,
-                "miércoles": turno.dia_miercoles,
-                "jueves": turno.dia_jueves,
-                "viernes": turno.dia_viernes,
-                "sábado": turno.dia_sabado,
-                "domingo": turno.dia_domingo
-            }
-        }
-    })
-
-
-
 @app.route('/api/asignar_turno', methods=['POST'])
 def asignar_turnos_a_usuarios():
     data = request.get_json()
 
     user_id = data.get('user_id')
     turno_id = data.get('turno_id')
-    mes = data.get('mes')  # formato 'YYYY-MM'
+    mes = data.get('mes')
 
     if not user_id or not turno_id or not mes:
         return {"error": "Faltan parámetros 'user_id', 'turno_id' o 'mes'"}, 400
@@ -266,8 +227,25 @@ def asignar_turnos_a_usuarios():
     if not usuario or not turno:
         return {"error": "Usuario o turno no encontrado"}, 404
 
+    # Verificar si ya existe una asignación de turno para este usuario en el mes
+    turno_existente = TurnoAsignado.query.filter_by(user_id=user_id, mes=mes).first()
+    if turno_existente:
+        return {"error": "Este usuario ya tiene un turno asignado para el mes indicado"}, 409
+
+    # Calcular el mes anterior
+    anio, mes_num = map(int, mes.split('-'))
+    mes_anterior = (mes_num - 1) if mes_num > 1 else 12
+    anio_anterior = anio if mes_num > 1 else anio - 1
+    mes_anterior_str = f"{anio_anterior}-{mes_anterior:02d}"
+
+    # Verificar si el usuario tiene asignado el mismo turno en el mes anterior
+    turno_mes_anterior = TurnoAsignado.query.filter_by(user_id=user_id, mes=mes_anterior_str).first()
+    if turno_mes_anterior and turno_mes_anterior.turno_id == turno_id:
+        return {"error": "El usuario ya tiene asignado este turno en el mes anterior"}, 409
+
+    # Si no hay conflicto, asignamos el nuevo turno
+
     try:
-        anio, mes_num = map(int, mes.split('-'))
         dias_en_mes = monthrange(anio, mes_num)[1]
     except ValueError:
         return {"error": "Formato de mes incorrecto, usa 'YYYY-MM'"}, 400
@@ -281,7 +259,7 @@ def asignar_turnos_a_usuarios():
     semana_actual = []
 
     for dia in (primer_dia_mes + timedelta(days=i) for i in range(dias_en_mes)):
-        if dia.weekday() == 0 and semana_actual:  # lunes → nueva semana
+        if dia.weekday() == 0 and semana_actual:
             semanas.append(semana_actual)
             semana_actual = []
         semana_actual.append(dia)
@@ -299,7 +277,7 @@ def asignar_turnos_a_usuarios():
             user_id=user_id,
             turno_id=turno_id,
             mes=mes,
-            semana=i + 1  # semana relativa al mes
+            semana=i + 1
         )
         db.session.add(asignacion)
 
@@ -308,18 +286,99 @@ def asignar_turnos_a_usuarios():
     return {"message": f"Turno asignado correctamente para el mes {mes}"}, 200
 
 
-
-@app.route('/api/actualizar_turnos', methods=['POST'])
+@app.route('/api/actualizar_turno', methods=['PUT'])
 @jwt_required()
-def actualizar_turnos():
-    usuario_id = get_jwt_identity()
-    solicitud_vacaciones = SolicitudDescanso.query.filter_by(usuario_id=usuario_id, estado=True).all()
+def actualizar_turno():
+    data = request.get_json()
 
+    user_id = data.get('user_id')
+    mes = data.get('mes')
+    semana = data.get('semana')
+    nuevo_turno_id = data.get('nuevo_turno_id')
+
+    if not user_id or not mes or not semana or not nuevo_turno_id:
+        return jsonify({"error": "Faltan parámetros requeridos"}), 400
+
+    asignacion = TurnoAsignado.query.filter_by(
+        user_id=user_id, mes=mes, semana=semana
+    ).first()
+    if not asignacion:
+        return jsonify({"error": "No se encontró asignación para ese usuario, mes y semana"}), 404
+
+    conflicto = TurnoAsignado.query.filter(
+        TurnoAsignado.turno_id == nuevo_turno_id,
+        TurnoAsignado.mes == mes,
+        TurnoAsignado.semana == semana,
+        TurnoAsignado.user_id != user_id
+    ).first()
+    if conflicto:
+        return jsonify({"error": "Ese turno ya está asignado a otro usuario en esa semana"}), 409
+
+    asignacion.turno_id = nuevo_turno_id
+    db.session.commit()
+    return jsonify({
+        "message": f"Turno actualizado correctamente para la semana {semana} del mes {mes}"
+    }), 200
+
+@app.route('/api/usuario/<int:user_id>/turno/<string:mes>', methods=['GET'])
+@jwt_required()
+def obtener_turno_mensual(user_id, mes):
+    asignado = TurnoAsignado.query.filter_by(user_id=user_id, mes=mes).first()
     
-    for solicitud in solicitud_vacaciones:
-        pass
+    if not asignado or not asignado.turno:
+        return jsonify({"error": "No hay turno asignado para este mes"}), 404
 
-    return jsonify({"message": "Turnos actualizados correctamente"})
+    turno = asignado.turno
+    
+    # Convertir el mes a un nombre completo
+    try:
+        anio, mes_num = map(int, mes.split('-'))
+        nombre_mes = datetime(anio, mes_num, 1).strftime('%B')
+    except ValueError:
+        return jsonify({"error": "Formato de mes incorrecto, usa 'YYYY-MM'"}), 400
+
+    return jsonify({
+        "turno": {
+            "mes": nombre_mes,
+            "dias": {
+                "lunes": turno.dia_lunes,
+                "martes": turno.dia_martes,
+                "miércoles": turno.dia_miercoles,
+                "jueves": turno.dia_jueves,
+                "viernes": turno.dia_viernes,
+                "sábado": turno.dia_sabado,
+                "domingo": turno.dia_domingo
+            }
+        }
+    })
+
+@app.route('/api/turnos_disponibles', methods=['GET'])
+@jwt_required()
+def obtener_turnos_disponibles():
+    turnos_disponibles = db.session.query(Turno).outerjoin(TurnoAsignado, Turno.id == TurnoAsignado.turno_id).filter(TurnoAsignado.id == None).all()
+
+    if not turnos_disponibles:
+        return jsonify({"message": "No hay turnos disponibles"}), 404
+
+    turnos_list = []
+    for turno in turnos_disponibles:
+        turnos_list.append({
+            "id": turno.id,
+            "lunes": turno.dia_lunes,
+            "martes": turno.dia_martes,
+            "miercoles": turno.dia_miercoles,
+            "jueves": turno.dia_jueves,
+            "viernes": turno.dia_viernes,
+            "sabado": turno.dia_sabado,
+            "domingo": turno.dia_domingo,
+            "horas": turno.horas,
+            "horas_debe": turno.horas_debe
+        })
+
+    return jsonify(turnos_list), 200
+
+
+
 
 
 @app.route('/api/admin/turnos_semanales', methods=['GET'])
@@ -444,14 +503,12 @@ def obtener_meses_disponibles_por_usuario(user_id):
 @app.route('/api/usuarios_con_turnos', methods=['GET'])
 @jwt_required()
 def obtener_usuarios_con_turnos():
-    # Subconsulta: obtener IDs únicos de usuarios con turnos
     usuarios_ids = db.session.query(TurnoAsignado.user_id).distinct().all()
     ids = [id[0] for id in usuarios_ids]
 
     if not ids:
         return jsonify([])
 
-    # Obtener usuarios que tienen turnos asignados
     usuarios = Usuario.query.filter(Usuario.id.in_(ids)).all()
 
     resultado = [{
@@ -460,7 +517,6 @@ def obtener_usuarios_con_turnos():
     } for u in usuarios]
 
     return jsonify(resultado)
-
 
 @app.route('/api/generar_pdf/<int:user_id>/<string:mes>', methods=['GET'])
 @jwt_required()
@@ -602,11 +658,6 @@ def generar_pdf_turnos(user_id, mes):
         download_name=f"{pdf_title}.pdf",
         mimetype='application/pdf'
     )
-
-
-
-
-
 
 # 
 # POST: /login
