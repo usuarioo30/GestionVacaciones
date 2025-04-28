@@ -309,43 +309,40 @@ def asignar_turnos_a_usuarios():
     return {"message": f"Turno asignado correctamente para el mes {mes}"}, 200
 
 
-@app.route('/api/actualizar_turno', methods=['POST'])
+@app.route('/api/actualizar_turno', methods=['PUT'])
 @jwt_required()
 def actualizar_turno():
     data = request.get_json()
 
-    # Recogemos los parámetros del JSON
     user_id = data.get('user_id')
     mes = data.get('mes')
     semana = data.get('semana')
     nuevo_turno_id = data.get('nuevo_turno_id')
 
-    # Verificamos si los parámetros esenciales están presentes
     if not user_id or not mes or not semana or not nuevo_turno_id:
         return jsonify({"error": "Faltan parámetros requeridos"}), 400
 
-    # Buscar la asignación actual del usuario
-    asignacion = TurnoAsignado.query.filter_by(user_id=user_id, mes=mes, semana=semana).first()
-
+    asignacion = TurnoAsignado.query.filter_by(
+        user_id=user_id, mes=mes, semana=semana
+    ).first()
     if not asignacion:
-        return jsonify({"error": "No se encontró asignación existente para ese usuario, mes y semana"}), 404
+        return jsonify({"error": "No se encontró asignación para ese usuario, mes y semana"}), 404
 
-    # Verificar si otro usuario ya tiene ese turno asignado para esa semana en ese mes
     conflicto = TurnoAsignado.query.filter(
         TurnoAsignado.turno_id == nuevo_turno_id,
         TurnoAsignado.mes == mes,
         TurnoAsignado.semana == semana,
-        TurnoAsignado.user_id != user_id  # Aseguramos que no sea el mismo usuario
+        TurnoAsignado.user_id != user_id
     ).first()
-
     if conflicto:
-        return jsonify({"error": "Ese turno ya está asignado a otro usuario para esa semana"}), 409
+        return jsonify({"error": "Ese turno ya está asignado a otro usuario en esa semana"}), 409
 
-    # Si no hay conflicto, actualizamos la asignación con el nuevo turno
     asignacion.turno_id = nuevo_turno_id
     db.session.commit()
+    return jsonify({
+        "message": f"Turno actualizado correctamente para la semana {semana} del mes {mes}"
+    }), 200
 
-    return jsonify({"message": f"Turno actualizado correctamente para la semana {semana} del mes {mes}"}), 200
 
 @app.route('/api/turnos_disponibles', methods=['GET'])
 @jwt_required()
