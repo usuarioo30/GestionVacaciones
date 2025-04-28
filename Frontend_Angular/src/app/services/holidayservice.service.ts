@@ -31,7 +31,7 @@ export class HolidayserviceService {
     })
   }
 
-  monthHolidays() {
+  monthHolidays(): Signal<PublicHoliday[]> {
     return this.holidaySignal.asReadonly();
   }
 }

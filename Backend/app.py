@@ -1444,7 +1444,17 @@ def setNewLocalHoliday():
         db.session.rollback()
         return jsonify({"error": "Error al agregar el día festivo", "message": str(e)}), 500
 
+@app.route('/api/local-holiday/all', methods=['GET'])
+@jwt_required()
+def getAllLocalHolidays():
+    local_holidays = LocalHolidays.query.all()
+    return jsonify([{
+        "date": holiday.date.strftime('%Y-%m-%d'),
+        "name": holiday.name
+    } for holiday in local_holidays]), 200
+
 @app.route('/api/local-holiday', methods=['GET'])
+@jwt_required()
 def getLocalHolidays():
     try:
 
