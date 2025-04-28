@@ -149,11 +149,11 @@
         <div class="mb-3">
           <label for="semanaSelect" class="form-label">Seleccionar Semana</label>
           <select id="semanaSelect" class="form-select" [(ngModel)]="semanaSeleccionada">
-            <option *ngFor="let semana of turnosArray" [value]="semana.semana">
-              {{ semana.semana }}
+            <option [ngValue]="0" disabled>Seleccione una semana</option>
+            <option *ngFor="let turno of turnosArray; let i = index" [ngValue]="i + 1">
+              {{ turno.semana }}
             </option>
           </select>
-
         </div>
 
         <div class="mb-3">
@@ -166,7 +166,7 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-primary" (click)="actualizarTurno()"
+        <button class="btn btn-primary" data-bs-dismiss="modal" (click)="actualizarTurno()"
           [disabled]="!usuarioSeleccionado || !mesSeleccionado || !semanaSeleccionada || !nuevoTurnoSeleccionado">
           Actualizar Turno
         </button>

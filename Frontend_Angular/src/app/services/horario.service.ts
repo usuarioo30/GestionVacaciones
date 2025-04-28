@@ -48,7 +48,7 @@ export class HorarioService {
   }
 
   actualizarTurno(payload: any): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/actualizar_turno`, payload, {
+    return this.http.put<any>(`${this.apiUrl}/actualizar_turno`, payload, {
       headers: this.getAuthHeaders()
     });
   }

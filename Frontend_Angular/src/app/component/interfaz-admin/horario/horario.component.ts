@@ -23,8 +23,8 @@ export class HorarioComponent {
   mesesUsuario: string[] = [];
   mesSeleccionado: string = '';
 
-  semanaSeleccionada: string = '';
-  nuevoTurnoSeleccionado: string = '';
+  semanaSeleccionada: number = 0;
+  nuevoTurnoSeleccionado: number = 0;
   isCargando: boolean = true;
 
   turnosDisponibles: any[] = []; // Turnos disponibles para seleccionar
@@ -187,22 +187,35 @@ export class HorarioComponent {
   }
 
   actualizarTurno(): void {
-    const user_id = this.usuarioSeleccionado;
-    const mes = this.mesSeleccionado;
-    const semana = this.semanaSeleccionada;
-    const nuevo_turno_id = this.nuevoTurnoSeleccionado;
-
-    const data = { user_id, mes, semana, nuevo_turno_id };
-
-    this.http.post('/api/actualizar_turno', data).subscribe(
-      (response) => {
+    if (!this.usuarioSeleccionado || !this.mesSeleccionado
+        || !this.semanaSeleccionada || !this.nuevoTurnoSeleccionado) {
+      alert('Complete todos los campos');
+      return;
+    }
+  
+    const payload = {
+      user_id: this.usuarioSeleccionado,
+      mes: this.mesSeleccionado,
+      semana: this.semanaSeleccionada,
+      nuevo_turno_id: this.nuevoTurnoSeleccionado
+    };
+  
+    this.horarioService.actualizarTurno(payload).subscribe({
+      next: () => {
+        // Limpiar los selects para la próxima vez
+        this.usuarioSeleccionado    = 0;
+        this.mesSeleccionado        = '';
+        this.semanaSeleccionada     = 0;
+        this.nuevoTurnoSeleccionado = 0;
+  
         alert('Turno actualizado correctamente');
-        this.cargarTurnosSemanales(); // Volver a cargar los turnos actualizados
+        this.cargarTurnosSemanales();
       },
-      (error) => {
-        console.error('Error al actualizar el turno', error);
+      error: err => {
+        console.error('Error al actualizar el turno', err);
         alert('No se pudo actualizar el turno');
       }
-    );
+    });
   }
+  
 }

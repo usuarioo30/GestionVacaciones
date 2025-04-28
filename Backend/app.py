@@ -201,38 +201,6 @@ with app.app_context():
     crear_usuario_por_defecto()
     crear_turnos_por_defecto()
 
-@app.route('/api/usuario/<int:user_id>/turno/<string:mes>', methods=['GET'])
-@jwt_required()
-def obtener_turno_mensual(user_id, mes):
-    asignado = TurnoAsignado.query.filter_by(user_id=user_id, mes=mes).first()
-    
-    if not asignado or not asignado.turno:
-        return jsonify({"error": "No hay turno asignado para este mes"}), 404
-
-    turno = asignado.turno
-    
-    # Convertir el mes a un nombre completo
-    try:
-        anio, mes_num = map(int, mes.split('-'))
-        nombre_mes = datetime(anio, mes_num, 1).strftime('%B')
-    except ValueError:
-        return jsonify({"error": "Formato de mes incorrecto, usa 'YYYY-MM'"}), 400
-
-    return jsonify({
-        "turno": {
-            "mes": nombre_mes,
-            "dias": {
-                "lunes": turno.dia_lunes,
-                "martes": turno.dia_martes,
-                "miércoles": turno.dia_miercoles,
-                "jueves": turno.dia_jueves,
-                "viernes": turno.dia_viernes,
-                "sábado": turno.dia_sabado,
-                "domingo": turno.dia_domingo
-            }
-        }
-    })
-
 @app.route('/api/asignar_turno', methods=['POST'])
 def asignar_turnos_a_usuarios():
     data = request.get_json()
@@ -343,6 +311,37 @@ def actualizar_turno():
         "message": f"Turno actualizado correctamente para la semana {semana} del mes {mes}"
     }), 200
 
+@app.route('/api/usuario/<int:user_id>/turno/<string:mes>', methods=['GET'])
+@jwt_required()
+def obtener_turno_mensual(user_id, mes):
+    asignado = TurnoAsignado.query.filter_by(user_id=user_id, mes=mes).first()
+    
+    if not asignado or not asignado.turno:
+        return jsonify({"error": "No hay turno asignado para este mes"}), 404
+
+    turno = asignado.turno
+    
+    # Convertir el mes a un nombre completo
+    try:
+        anio, mes_num = map(int, mes.split('-'))
+        nombre_mes = datetime(anio, mes_num, 1).strftime('%B')
+    except ValueError:
+        return jsonify({"error": "Formato de mes incorrecto, usa 'YYYY-MM'"}), 400
+
+    return jsonify({
+        "turno": {
+            "mes": nombre_mes,
+            "dias": {
+                "lunes": turno.dia_lunes,
+                "martes": turno.dia_martes,
+                "miércoles": turno.dia_miercoles,
+                "jueves": turno.dia_jueves,
+                "viernes": turno.dia_viernes,
+                "sábado": turno.dia_sabado,
+                "domingo": turno.dia_domingo
+            }
+        }
+    })
 
 @app.route('/api/turnos_disponibles', methods=['GET'])
 @jwt_required()
@@ -449,14 +448,12 @@ def obtener_meses_disponibles_por_usuario(user_id):
 @app.route('/api/usuarios_con_turnos', methods=['GET'])
 @jwt_required()
 def obtener_usuarios_con_turnos():
-    # Subconsulta: obtener IDs únicos de usuarios con turnos
     usuarios_ids = db.session.query(TurnoAsignado.user_id).distinct().all()
     ids = [id[0] for id in usuarios_ids]
 
     if not ids:
         return jsonify([])
 
-    # Obtener usuarios que tienen turnos asignados
     usuarios = Usuario.query.filter(Usuario.id.in_(ids)).all()
 
     resultado = [{
