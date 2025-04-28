@@ -1439,8 +1439,67 @@ def setNewLocalHoliday():
     try:
         data = request.get_json()
 
+
     except Exception as e:
         db.session.rollback()
+        return jsonify({"error": "Error al agregar el día festivo", "message": str(e)}), 500
+
+@app.route('/api/local-holiday', methods=['GET'])
+def getLocalHolidays():
+    try:
+
+        date = request.args.get('date')
+
+        # Obtener el día de la semana
+        dia_semana = datetime.strptime(date, '%Y-%m-%d')
+
+        # Obtener los días festivos locales
+        local_holidays = LocalHolidays.query.filter(
+            LocalHolidays.date == dia_semana
+        ).all()
+
+        # Crear una lista de días festivos locales
+        
+        if len(local_holidays) == 0:
+            response = {
+                "isHoliday": False,
+            }
+            return jsonify(response), 200
+        response = {
+            "isHoliday": True,
+        }
+
+        return jsonify(response), 200
+
+    except Exception as e:
+        return jsonify({"error": "Error al obtener los días festivos locales", "message": str(e)}), 500
+
+
+@app.route('/api/local-holiday/add', methods=['POST'])
+@jwt_required()
+def addNewLocalHoliday():
+    try:
+        data = request.get_json()
+
+        date = data.get("fecha")  # Obtén el string de la fecha
+        try:
+            formatted_date = datetime.strptime(date, '%Y-%m-%d')  # Convierte el string a datetime
+        except ValueError:
+            return jsonify({"error": "Formato de fecha inválido. Usa 'YYYY-MM-DD'."}), 400
+        
+        name = data.get("name")
+
+        localHoliday = LocalHolidays(date=formatted_date, name=name)
+
+        db.session.add(localHoliday)
+        db.session.commit()
+
+        return jsonify({
+            "date": localHoliday.date.strftime('%Y-%m-%d'),
+            "name": localHoliday.name
+        }), 200
+
+    except Exception as e:
         return jsonify({"error": "Error al agregar el día festivo", "message": str(e)}), 500
 
 # Ejecutar el servidor Flask
