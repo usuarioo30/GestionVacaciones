@@ -4,7 +4,9 @@ import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { TurnosSemanales } from '../../../interfaces/turnos-semanales';
+import { TurnosMes } from '../../../interfaces/turnos-mes';
 import bootstrap from 'bootstrap';
+
 
 @Component({
   selector: 'app-horario',
@@ -13,7 +15,7 @@ import bootstrap from 'bootstrap';
   styleUrl: './horario.component.css'
 })
 export class HorarioComponent {
-  turnosArray: { semana: string, usuarios: { nombre: string, horario: any }[] }[] = [];
+  turnosArray: { semana: string, usuarios: { nombre: string, horario: any, horas_trabajadas:number }[] }[] = [];
   currentSemanaIndex: number = 0; // Índice para la semana actual
   mesActual: string = ''; // Guardamos el mes actual para mostrarlo en el HTML
   mesesDisponibles: string[] = [];
@@ -30,8 +32,7 @@ export class HorarioComponent {
   turnosDisponibles: any[] = []; // Turnos disponibles para seleccionar
 
   constructor(
-    private horarioService: HorarioService,
-    private http: HttpClient
+    private horarioService: HorarioService
   ) { }
 
   ngOnInit(): void {
@@ -122,16 +123,16 @@ export class HorarioComponent {
             if (!agrupadoPorSemana[semana]) {
               agrupadoPorSemana[semana] = [];
             }
-  
             agrupadoPorSemana[semana].push({ nombre: usuario, horario });
-          });
+
         });
   
         this.turnosArray = Object.entries(agrupadoPorSemana).map(([semana, usuarios]) => ({
           semana,
-          usuarios
+          usuarios // cada `usuario` tiene: nombre, horario, horas_trabajadas
         }));
   
+
         const mesesSet = new Set<string>();
         this.turnosArray.forEach(turno => {
           const mes = turno.usuarios[0]?.horario?.mes;
@@ -149,6 +150,7 @@ export class HorarioComponent {
       }
     );
   }
+  
 
   irAlMesSeleccionado(mes: string): void {
     const index = this.turnosArray.findIndex(turno =>

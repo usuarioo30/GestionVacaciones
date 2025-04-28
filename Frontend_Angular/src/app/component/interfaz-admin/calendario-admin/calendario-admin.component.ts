@@ -5,7 +5,7 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { SolicitudDescanso } from '../../../interfaces/solicitud-descanso';
 import { SolicitudDescansoService } from '../../../services/solicitud-descanso.service';
-import { firstValueFrom } from 'rxjs';
+import { catchError, firstValueFrom, map, of } from 'rxjs';
 import { jwtDecode } from 'jwt-decode';
 import { CreateCalendarService } from '../../../services/createcalendar.service';
 import { RequestResponse } from '../../../interfaces/request-response';
@@ -15,12 +15,14 @@ import { Usuariomin } from '../../../interfaces/usuariomin';
 import { HolidayserviceService } from '../../../services/holidayservice.service';
 import { PublicHoliday } from '../../../interfaces/public-holiday';
 import { FestivitiesComponent } from '../../festivities/festivities.component';
+import { NewHolidayComponent } from '../../modal/new-holiday/new-holiday.component';
+import { NewHolidayService } from '../../../services/new-holiday.service';
 
 
 
 @Component({
   selector: 'app-calendario-admin',
-  imports: [CommonModule, FestivitiesComponent],
+  imports: [CommonModule, FestivitiesComponent, NewHolidayComponent],
   templateUrl: './calendario-admin.component.html',
   styleUrl: './calendario-admin.component.css'
 })
@@ -38,6 +40,8 @@ export class CalendarioAdminComponent {
   users!: Signal<Usuariomin[]>;
   selectedUserId: number | null = null;
   holidays: PublicHoliday[] = [];
+  openModal: boolean = false;
+  selectedDay!: Day;
 
   weeksDaysName: string[] = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
 
@@ -46,6 +50,8 @@ export class CalendarioAdminComponent {
   requestCalendar: CalendarRequestService = inject(CalendarRequestService);
   authService: AuthService = inject(AuthService);
   holidayService: HolidayserviceService = inject(HolidayserviceService);
+  localHolidayService: NewHolidayService = inject(NewHolidayService);
+
 
   constructor(
     private router: Router
@@ -170,10 +176,15 @@ export class CalendarioAdminComponent {
     const solicitudCompleta: RequestResponse = this.isMonthRequested();
     const currentDays = this.calendar.getMonth(this.monthNumber, this.year);
     
-    currentDays.forEach(day => {
+    currentDays.forEach(async day => {
       day.isCurrentMonth = true;
       day.available = this.calendar.isDayAvailable(day);
       day.isHoliday = this.isHoliday(day);
+
+      if (!day.isHoliday) {
+        day.isHoliday = await this.isLocalHoliday(day);
+      }
+
       const solicitudParcial: RequestResponse = !solicitudCompleta.estado ? this.isRequested(day) : { estado: false, usuarioId: 0 };
       const shouldRender =
         this.selectedUserId === null ||
@@ -325,7 +336,10 @@ export class CalendarioAdminComponent {
 
   markAsHoliday(day: Day): void {
     day.isHoliday = !day.isHoliday;
+    
   }
+
+
 
   private isHoliday(day: Day): boolean {
     return this.holidays.some(h => {
@@ -334,6 +348,14 @@ export class CalendarioAdminComponent {
       // m es 1–12 en la cadena, monthIndex es 0–11
       return y === day.year && (m - 1) === day.monthIndex && d === day.number;
     });
+  }
+
+  private async isLocalHoliday(day: Day): Promise<boolean> {
+
+    const date = `${day.year}-0${day.monthIndex}-${day.number}`
+    const response = await firstValueFrom(this.localHolidayService.checkIfDateIsLocalHoliday(date))
+    return response.isHoliday;
+
   }
 
 }

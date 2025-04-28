@@ -1,6 +1,7 @@
 import { Component, inject, Input, OnChanges, OnInit, SimpleChanges } from '@angular/core';
 import { HolidayserviceService } from '../../services/holidayservice.service';
 import { NgFor, NgIf } from '@angular/common';
+import { NewHolidayService } from '../../services/new-holiday.service';
 
 @Component({
   selector: 'app-festivities',
@@ -14,9 +15,11 @@ export class FestivitiesComponent implements OnInit, OnChanges{
   
 
   holidayService: HolidayserviceService = inject(HolidayserviceService);
+  localHolidayService: NewHolidayService = inject(NewHolidayService);
   
   ngOnInit(): void {
     this.holidayService.getHolidaysFromAMonth(this.year, this.monthNumber);
+    this.localHolidayService.getAllHolidays();
   }
 
   ngOnChanges(changes: SimpleChanges): void {

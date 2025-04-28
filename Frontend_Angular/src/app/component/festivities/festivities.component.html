@@ -12,8 +12,17 @@
         </div>
 
         <div *ngIf="holidayService.monthHolidays()().length > 0" class="user-text">
+          <h4>Festividades Autonómicas y Nacionales</h4>
           <span class="fw-bold d-block" *ngFor="let holiday of holidayService.monthHolidays()()">{{holiday.localName}}: {{formatDateString(holiday.date)}}</span>
         </div>
+
+        <hr>
+
+        <div *ngIf="localHolidayService.LocalHolidays().length > 0">
+          <h4>Días no laborables</h4>
+          <span class="fw-bold d-block" *ngFor="let localHoliday of localHolidayService.LocalHolidays()">{{localHoliday.name}}: {{formatDateString(localHoliday.date)}}</span>
+        </div>
+
       </div>
     </div>
   </div>

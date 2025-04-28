@@ -1,0 +1,15 @@
+<div class="modal-backdrop">
+    <div class="modal-content">
+        <h1>Añadir Festivo</h1>
+      <form class="form" [formGroup]="newHolidayForm" (submit)="submit()">
+        <label class="form-label" for="name">Nombre del festivo local</label>
+        <input class="form-control" type="text" formControlName="name">
+        <small *ngIf="inValidField('name')">
+            <span class="text-danger">El nombre del festivo local debe tener al menos 3 caracteres</span>
+        </small>
+        <button type="submit">Enviar</button>
+      </form>
+      <button (click)="close()">Cerrar</button>
+      <p>{{day.number}}</p>
+    </div>
+  </div>

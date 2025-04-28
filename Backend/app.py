@@ -76,6 +76,15 @@ class Schedule(db.Model):
     def __repr__(self):
         return f'<Schedule {self.id} usuario={self.usuario_id}>'
 
+class LocalHolidays(db.Model):
+    __tablename__ = 'local_holidays'
+
+    date = db.Column(db.Date, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+
+    def __repr__(self):
+        return f'<LocalHoliday {self.number} {self.year}>'
+
 
 class Horario(db.Model):
     __tablename__ = 'horario'
@@ -375,8 +384,8 @@ def obtener_turnos_disponibles():
 @app.route('/api/admin/turnos_semanales', methods=['GET'])
 @jwt_required()
 def obtener_turnos_semanales_admin():
-    turnos_asignados = TurnoAsignado.query.all()
-    resultado = {}
+    turnos_asignados = TurnoAsignado.query.all() # Llamada a la tabla
+    resultado = {} # Diccionario para almacenar los resultados
 
     for asignacion in turnos_asignados:
         usuario = asignacion.usuario
@@ -384,12 +393,12 @@ def obtener_turnos_semanales_admin():
         mes = asignacion.mes
 
         try:
-            anio, mes_num = map(int, mes.split('-'))
-            nombre_mes = datetime(anio, mes_num, 1).strftime('%B')
+            anio, mes_num = map(int, mes.split('-')) # Convierte la fecha a YYYY-MM
+            nombre_mes = datetime(anio, mes_num, 1).strftime('%B') # Nombre del mes en español
         except ValueError:
             nombre_mes = 'Mes no válido'
 
-        dias_en_mes = monthrange(anio, mes_num)[1]
+        dias_en_mes = monthrange(anio, mes_num)[1] # Calcula cuantos días tiene el mes
         primer_dia_mes = datetime(anio, mes_num, 1)
         ultimo_dia_mes = datetime(anio, mes_num, dias_en_mes)
 
@@ -399,27 +408,37 @@ def obtener_turnos_semanales_admin():
             turno.dia_jueves, turno.dia_viernes, turno.dia_sabado, turno.dia_domingo
         ]
 
+        # Generación semanas del mes
+
         semanas = []
         semana_actual = []
 
         for i in range(dias_en_mes):
-            dia_actual = primer_dia_mes + timedelta(days=i)
-            if dia_actual.weekday() == 0 and semana_actual:
+            dia_actual = primer_dia_mes + timedelta(days=i) # Agrupa por semana
+            if dia_actual.weekday() == 0 and semana_actual: # Si es lunes agrega la semana y crea otra nueva
                 semanas.append(semana_actual)
                 semana_actual = []
-            semana_actual.append(dia_actual)
+            semana_actual.append(dia_actual) # Añade los días a la semana actual
 
         if semana_actual:
-            semanas.append(semana_actual)
+            semanas.append(semana_actual) # Agrega la última semana que quede
 
         for idx, semana in enumerate(semanas):
-            if idx + 1 == asignacion.semana:
-                semana_completa = ["-" for _ in range(7)]
-                for dia in semana:
-                    semana_completa[dia.weekday()] = valores_turno[dia.weekday()]
+            if idx + 1 == asignacion.semana: # Si la semana coincide con la asignación
 
-                semana_str = f"Semana del {semana[0].strftime('%d')} al {semana[-1].strftime('%d')} de {nombre_mes}"
-                horario_semana = dict(zip(dias_semana, semana_completa))
+                semana_completa = ["-" for _ in range(7)] #inicializa una semana vacía con - para cada día
+
+                vacations = checkIfHasVacationsOnDate(usuario.id, semana[0], semana[-1]) # Verifica si tiene vacaciones en esa semana
+
+                for dia in semana:
+                    if len(vacations) > 0: # Si tiene vacaciones asigna "VACACIONES" a la semana
+                        semana_completa[dia.weekday()] = "Vacaciones"
+                    else:
+                        semana_completa[dia.weekday()] = valores_turno[dia.weekday()] # Para cada día asigna el valor del turno correspondiente
+
+                semana_str = f"Semana del {semana[0].strftime('%d')} al {semana[-1].strftime('%d')} de {nombre_mes}" #Genera una cadena para la semana
+                
+                horario_semana = dict(zip(dias_semana, semana_completa)) # Une los nombres de los días con los valores del turno
                 horario_semana['mes'] = mes
                 horario_semana['semana_num'] = asignacion.semana
 
@@ -429,14 +448,50 @@ def obtener_turnos_semanales_admin():
                 resultado[mes].append({
                     "semana": semana_str,
                     "usuario": usuario.nombreCompleto,
-                    "horario": horario_semana
+                    "horario": horario_semana,
+                    "horas_trabajadas": 0 if len(vacations) > 0 else get_horas_turno(usuario.id, mes, asignacion.semana).json['horas']
+
                 })
+
+                # Agrupa las semanas por mes y los va añadiendo al diccionario resultado
 
     resultado_ordenado = {
         mes: sorted(semanas, key=lambda x: x['horario']['semana_num']) for mes, semanas in resultado.items()
     }
 
+    # Ordena las semanas por número de semana dentro de cada mes
+
     return jsonify(resultado_ordenado)
+
+
+def checkIfHasVacationsOnDate(usuario_id, fecha_inicio, fecha_fin):
+
+    vacations = SolicitudDescanso.query.filter(
+        SolicitudDescanso.usuario_id == usuario_id,
+        SolicitudDescanso.fecha_inicio <= fecha_fin,
+        SolicitudDescanso.fecha_fin >= fecha_inicio,
+        SolicitudDescanso.estado == True
+        
+    ).all()
+
+    return vacations
+
+def get_horas_turno(user_id, mes, semana):
+
+    if not user_id or not mes or semana is None:
+        return jsonify({'error': 'Faltan parámetros: user_id, mes o semana'}), 400
+
+    resultado = db.session.query(Turno.horas).join(TurnoAsignado, Turno.id == TurnoAsignado.turno_id).filter(
+        TurnoAsignado.user_id == user_id,
+        TurnoAsignado.mes == mes,
+        TurnoAsignado.semana == semana
+    ).first()
+
+    if not resultado:
+        return jsonify({'horas': None, 'mensaje': 'No se encontró turno asignado'}), 404
+
+    return jsonify({'horas': resultado[0]})
+
 
 @app.route('/api/usuario/<int:user_id>/meses_disponibles', methods=['GET'])
 @jwt_required()
@@ -466,21 +521,22 @@ def obtener_usuarios_con_turnos():
 @app.route('/api/generar_pdf/<int:user_id>/<string:mes>', methods=['GET'])
 @jwt_required()
 def generar_pdf_turnos(user_id, mes):
-    usuario = Usuario.query.get(user_id)
+
+    usuario = Usuario.query.get(user_id) # Obtener el usuario
     if not usuario:
         return {"error": "Usuario no encontrado"}, 404
 
-    turnos = TurnoAsignado.query.filter_by(user_id=user_id, mes=mes).order_by(TurnoAsignado.semana).all()
+    turnos = TurnoAsignado.query.filter_by(user_id=user_id, mes=mes).order_by(TurnoAsignado.semana).all() # Obtener y validar los turnos
     if not turnos:
         return {"error": "No hay turnos asignados para este mes"}, 404
 
     try:
-        anio, mes_num = map(int, mes.split('-'))
+        anio, mes_num = map(int, mes.split('-')) # Parseo de año y mes y cálculo de días del mes
         dias_en_mes = monthrange(anio, mes_num)[1]
     except ValueError:
         return {"error": "Formato de mes incorrecto, usa 'YYYY-MM'"}, 400
 
-    buffer = BytesIO()
+    buffer = BytesIO() #Prepara el buffer y la fuente tipografica
 
     font_path = os.path.join("fonts", "Montserrat-Regular.ttf")
     if os.path.exists(font_path):
@@ -548,15 +604,22 @@ def generar_pdf_turnos(user_id, mes):
         etiqueta_semana = f"{semana_inicio:02d}-{semana_fin:02d}"
 
         if turno:
-            valores = [
-                turno.dia_lunes,
-                turno.dia_martes,
-                turno.dia_miercoles,
-                turno.dia_jueves,
-                turno.dia_viernes,
-                turno.dia_sabado,
-                turno.dia_domingo
-            ]
+
+            vacations = checkIfHasVacationsOnDate(usuario.id, semana[0], semana[-1]) # Verifica si tiene vacaciones en esa semana
+
+            if len(vacations) == 0: # Si tiene vacaciones asigna "VACACIONES" a la semana
+
+                valores = [
+                    turno.dia_lunes,
+                    turno.dia_martes,
+                    turno.dia_miercoles,
+                    turno.dia_jueves,
+                    turno.dia_viernes,
+                    turno.dia_sabado,
+                    turno.dia_domingo
+                ]
+            else:
+                valores = ["Vacaciones" for _ in range(7)]
             for dia in semana:
                 if dia.month == mes_num:
                     fila[dia.weekday()] = f"{valores[dia.weekday()]}"
@@ -1398,7 +1461,7 @@ def _get_turnos_por_schedule_id(schedule_id):
         return None
 
 
-#@app.route('/schedule/<int:schedule_id>/total_horas', methods=['GET'])
+
 def getHoursOfWork(schedule_id):
     # CASE para segundos, igual que antes
     diferencia_segundos = case(
@@ -1421,6 +1484,84 @@ def getHoursOfWork(schedule_id):
 
     # total_horas es un float (por ejemplo: 27.75 → 27 h 45 min)
     return round(total_horas, 2)
+
+
+def setNewLocalHoliday():
+    try:
+        data = request.get_json()
+
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Error al agregar el día festivo", "message": str(e)}), 500
+
+@app.route('/api/local-holiday/all', methods=['GET'])
+@jwt_required()
+def getAllLocalHolidays():
+    local_holidays = LocalHolidays.query.all()
+    return jsonify([{
+        "date": holiday.date.strftime('%Y-%m-%d'),
+        "name": holiday.name
+    } for holiday in local_holidays]), 200
+
+@app.route('/api/local-holiday', methods=['GET'])
+@jwt_required()
+def getLocalHolidays():
+    try:
+
+        date = request.args.get('date')
+
+        # Obtener el día de la semana
+        dia_semana = datetime.strptime(date, '%Y-%m-%d')
+
+        # Obtener los días festivos locales
+        local_holidays = LocalHolidays.query.filter(
+            LocalHolidays.date == dia_semana
+        ).all()
+
+        # Crear una lista de días festivos locales
+        
+        if len(local_holidays) == 0:
+            response = {
+                "isHoliday": False,
+            }
+            return jsonify(response), 200
+        response = {
+            "isHoliday": True,
+        }
+
+        return jsonify(response), 200
+
+    except Exception as e:
+        return jsonify({"error": "Error al obtener los días festivos locales", "message": str(e)}), 500
+
+
+@app.route('/api/local-holiday/add', methods=['POST'])
+@jwt_required()
+def addNewLocalHoliday():
+    try:
+        data = request.get_json()
+
+        date = data.get("fecha")  # Obtén el string de la fecha
+        try:
+            formatted_date = datetime.strptime(date, '%Y-%m-%d')  # Convierte el string a datetime
+        except ValueError:
+            return jsonify({"error": "Formato de fecha inválido. Usa 'YYYY-MM-DD'."}), 400
+        
+        name = data.get("name")
+
+        localHoliday = LocalHolidays(date=formatted_date, name=name)
+
+        db.session.add(localHoliday)
+        db.session.commit()
+
+        return jsonify({
+            "date": localHoliday.date.strftime('%Y-%m-%d'),
+            "name": localHoliday.name
+        }), 200
+
+    except Exception as e:
+        return jsonify({"error": "Error al agregar el día festivo", "message": str(e)}), 500
 
 # Ejecutar el servidor Flask
 if __name__ == '__main__':
