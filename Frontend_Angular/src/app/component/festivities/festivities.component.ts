@@ -2,6 +2,7 @@ import { Component, inject, Input, OnChanges, OnInit, SimpleChanges } from '@ang
 import { HolidayserviceService } from '../../services/holidayservice.service';
 import { NgFor, NgIf } from '@angular/common';
 import { NewHolidayService } from '../../services/new-holiday.service';
+import { LocalHoliday } from '../../interfaces/local-holiday';
 
 @Component({
   selector: 'app-festivities',
@@ -13,18 +14,35 @@ export class FestivitiesComponent implements OnInit, OnChanges{
   @Input() year!: number;
   @Input() monthNumber!: number;
   
+  localHolidays: LocalHoliday[] = [];
 
   holidayService: HolidayserviceService = inject(HolidayserviceService);
   localHolidayService: NewHolidayService = inject(NewHolidayService);
   
   ngOnInit(): void {
     this.holidayService.getHolidaysFromAMonth(this.year, this.monthNumber);
-    this.localHolidayService.getAllHolidays();
+    const formatedDate = `${this.year}-${String(this.monthNumber + 1).padStart(2, '0')}`
+    this.localHolidayService.checkIfDateIsLocalHoliday(formatedDate)
+    .subscribe({
+      next: response => this.localHolidays = response,
+      error: err => {
+        alert('Error fetching local holidays:');
+        this.localHolidays = []; // Set to empty array on error
+      }
+    });
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['year'] || changes['monthNumber']) { //Si cambia el año o mes pido los festivos de ese mes
-      this.holidayService.getHolidaysFromAMonth(this.year, this.monthNumber);
+      const formatedDate = `${this.year}-${String(this.monthNumber + 1).padStart(2, '0')}`
+      this.localHolidayService.checkIfDateIsLocalHoliday(formatedDate)
+      .subscribe({
+        next: response => this.localHolidays = response,
+        error: err => {
+          console.error('Error fetching local holidays:', err);
+          this.localHolidays = []; // Set to empty array on error
+        }
+      });
     }
   }
 

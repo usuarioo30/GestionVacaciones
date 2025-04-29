@@ -48,7 +48,6 @@ export class CalendarioAdminComponent {
   weeksDaysName: string[] = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
 
   calendar: CreateCalendarService = inject(CreateCalendarService);
-  solicitudSrvc: SolicitudDescansoService = inject(SolicitudDescansoService);
   requestCalendar: CalendarRequestService = inject(CalendarRequestService);
   authService: AuthService = inject(AuthService);
   holidayService: HolidayserviceService = inject(HolidayserviceService);
