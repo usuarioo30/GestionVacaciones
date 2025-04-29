@@ -60,7 +60,7 @@ export class NewHolidayComponent {
 
   close() {
     this.closeModal.emit(false);
-    
+    window.location.reload();
   }
 
 }
