@@ -352,33 +352,25 @@ def obtener_turno_mensual(user_id, mes):
         }
     })
 
-@app.route('/api/turnos_disponibles', methods=['GET'])
+@app.route('/api/turnos_disponibles/<mes>/<int:semana>', methods=['GET'])
 @jwt_required()
-def obtener_turnos_disponibles():
-    turnos_disponibles = db.session.query(Turno).outerjoin(TurnoAsignado, Turno.id == TurnoAsignado.turno_id).filter(TurnoAsignado.id == None).all()
+def obtener_turnos_disponibles(mes, semana):
+    # Asumiendo que la relación TurnoAsignado contiene mes y semana
+    subquery = db.session.query(TurnoAsignado.turno_id).filter_by(mes=mes, semana=semana)
+
+    turnos_disponibles = db.session.query(Turno)\
+        .filter(~Turno.id.in_(subquery))\
+        .all()
 
     if not turnos_disponibles:
-        return jsonify({"message": "No hay turnos disponibles"}), 404
+        return jsonify({"message": "No hay turnos disponibles para ese mes y semana"}), 404
 
-    turnos_list = []
-    for turno in turnos_disponibles:
-        turnos_list.append({
-            "id": turno.id,
-            "lunes": turno.dia_lunes,
-            "martes": turno.dia_martes,
-            "miercoles": turno.dia_miercoles,
-            "jueves": turno.dia_jueves,
-            "viernes": turno.dia_viernes,
-            "sabado": turno.dia_sabado,
-            "domingo": turno.dia_domingo,
-            "horas": turno.horas,
-            "horas_debe": turno.horas_debe
-        })
+
+    turnos_list = [{
+        "id": turno.id,
+    } for turno in turnos_disponibles]
 
     return jsonify(turnos_list), 200
-
-
-
 
 
 @app.route('/api/admin/turnos_semanales', methods=['GET'])

@@ -132,6 +132,7 @@
       <div class="modal-body">
         <div class="mb-3">
           <label for="usuarioSelect" class="form-label">Seleccionar Usuario</label>
+          <!-- Usuario -->
           <select id="usuarioSelect" class="form-select" [(ngModel)]="usuarioSeleccionado"
             (change)="cargarMesesDelUsuario()">
             <option [value]="0" disabled selected>Seleccione un usuario</option>
@@ -141,28 +142,37 @@
 
         <div class="mb-3">
           <label for="mesSelect" class="form-label">Seleccionar Mes</label>
-          <select id="mesSelect" class="form-select" [(ngModel)]="mesSeleccionado">
+          <!-- Mes -->
+          <select id="mesSelect" class="form-select" [(ngModel)]="mesSeleccionado" [disabled]="!usuarioSeleccionado">
+            <option [value]="''" disabled selected>Seleccione un mes</option>
             <option *ngFor="let mes of mesesUsuario" [value]="mes">{{ obtenerNombreMes(mes) }}</option>
           </select>
         </div>
 
         <div class="mb-3">
           <label for="semanaSelect" class="form-label">Seleccionar Semana</label>
-          <select id="semanaSelect" class="form-select" [(ngModel)]="semanaSeleccionada">
-            <option [ngValue]="0" disabled>Seleccione una semana</option>
+          <!-- Semana -->
+          <select id="semanaSelect" class="form-select" [(ngModel)]="semanaSeleccionada"
+            [disabled]="!usuarioSeleccionado || !mesSeleccionado"
+            (change)="cargarTurnosDisponibles(mesSeleccionado, semanaSeleccionada)">
+            <option [ngValue]="0" disabled selected>Seleccione una semana</option>
             <option *ngFor="let turno of turnosArray; let i = index" [ngValue]="i + 1">
               {{ turno.semana }}
             </option>
           </select>
+
         </div>
 
         <div class="mb-3">
           <label for="nuevoTurnoSelect" class="form-label">Seleccionar Nuevo Turno</label>
-          <select id="nuevoTurnoSelect" class="form-select" [(ngModel)]="nuevoTurnoSeleccionado">
+          <select id="nuevoTurnoSelect" class="form-select" [(ngModel)]="nuevoTurnoSeleccionado"
+            [disabled]="!usuarioSeleccionado || !mesSeleccionado || !semanaSeleccionada">
+            <option [value]="0" disabled selected>Seleccione un nuevo turno</option>
             <option *ngFor="let turno of turnosDisponibles" [value]="turno.id">
               {{ turno.id }}
             </option>
           </select>
+
         </div>
       </div>
       <div class="modal-footer">

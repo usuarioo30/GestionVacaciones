@@ -37,7 +37,6 @@ export class HorarioComponent {
   ngOnInit(): void {
     this.cargarTurnosSemanales();
     this.cargarUsuarios();
-    this.cargarTurnosDisponibles(); // Cargar turnos disponibles
   }
 
   cargarUsuarios(): void {
@@ -47,13 +46,21 @@ export class HorarioComponent {
     );
   }
 
-  cargarTurnosDisponibles(): void {
-    // Este método debería cargar los turnos disponibles que el backend ofrece
-    this.horarioService.obtenerTurnosDisponibles().subscribe(
+  cargarTurnosDisponibles(mes: string, semana: number): void {
+    if (!mes || !semana) {
+      console.warn('Mes y semana son requeridos para cargar los turnos disponibles');
+      return;
+    }
+  
+    this.horarioService.obtenerTurnosDisponibles(mes, semana).subscribe(
       (res) => this.turnosDisponibles = res,
-      (err) => console.error('Error cargando turnos disponibles:', err)
+      (err) => {
+        console.error('Error cargando turnos disponibles:', err);
+        this.turnosDisponibles = []; // limpiar si no hay
+      }
     );
   }
+  
 
   cargarMesesDelUsuario(): void {
     this.horarioService.obtenerMesesPorUsuario(this.usuarioSeleccionado).subscribe(

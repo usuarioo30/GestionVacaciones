@@ -2,12 +2,10 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
-
 @Injectable({
   providedIn: 'root'
 })
 export class HorarioService {
-
   private apiUrl = 'http://localhost:5000/api';
 
   constructor(private http: HttpClient) { }
@@ -31,7 +29,6 @@ export class HorarioService {
     });
   }
 
-
   obtenerMesesPorUsuario(userId: number): Observable<string[]> {
     return this.http.get<string[]>(`${this.apiUrl}/usuario/${userId}/meses_disponibles`, {
       headers: this.getAuthHeaders()
@@ -50,11 +47,10 @@ export class HorarioService {
       headers: this.getAuthHeaders()
     });
   }
-  
-  obtenerTurnosDisponibles(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/turnos_disponibles`, {
+
+  obtenerTurnosDisponibles(mes: string, semana: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/turnos_disponibles/${mes}/${semana}`, {
       headers: this.getAuthHeaders()
     });
   }
-
 }
