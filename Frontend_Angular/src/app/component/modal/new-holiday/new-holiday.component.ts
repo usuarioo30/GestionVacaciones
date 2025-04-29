@@ -30,7 +30,7 @@ export class NewHolidayComponent {
   submit() {
     if (this.newHolidayForm.valid) {
       const name = this.newHolidayForm.get('name')?.value;
-      const startDate = this.day.year + '-' + this.day.monthIndex + '-' + this.day.number;
+      const startDate = this.day.year + '-' + (this.day.monthIndex + 1) + '-' + this.day.number;
       //alert(name+" "+startDate);
 
       this.service.addNewHoliday(startDate, name).subscribe({
