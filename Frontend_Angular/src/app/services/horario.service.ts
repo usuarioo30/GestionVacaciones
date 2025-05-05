@@ -17,6 +17,14 @@ export class HorarioService {
     });
   }
 
+  obtenerTurnosPorDia(userId: number, mes: string): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/usuario/${userId}/turnos_dia/${mes}`);
+  }
+
+  /**
+   * Obtiene los turnos semanales para todos los usuarios, tal como lo devuelve el backend actualizado.
+   * La estructura es un diccionario por mes, luego por semana, luego los turnos por día.
+   */
   obtenerTurnosSemanales(): Observable<any> {
     return this.http.get<any>(`${this.apiUrl}/admin/turnos_semanales`, {
       headers: this.getAuthHeaders()
@@ -47,6 +55,16 @@ export class HorarioService {
       headers: this.getAuthHeaders()
     });
   }
+
+  actualizarTurnoDiario(usuarioId: number, fecha: string, turnoId: number): Observable<any> {
+    const body = {
+      user_id: usuarioId,
+      fecha: fecha,
+      turno_id: turnoId
+    };
+  
+    return this.http.put(`${this.apiUrl}/actualizar_turno_diario`, body);
+  }  
 
   obtenerTurnosDisponibles(mes: string, semana: number): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/turnos_disponibles/${mes}/${semana}`, {

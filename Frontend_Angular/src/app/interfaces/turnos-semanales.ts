@@ -1,7 +1,15 @@
-import { Turno } from "./turno";
-
 export interface TurnosSemanales {
-    [semana: string]: {
-        [nombre: string]: Turno;
-      };
+  [mes: string]: {
+    nombre_mes: string;
+    semanas: {
+      semana: string;
+      usuario: string;
+      horario: {
+        dia: string;
+        turno: string;
+      }[];
+      horas_trabajadas: number;
+      semana_num: number;
+    }[];
+  };
 }
