@@ -9,40 +9,44 @@ import { LocalHoliday } from '../../interfaces/local-holiday';
   imports: [NgFor, NgIf],
   templateUrl: './festivities.component.html'
 })
-export class FestivitiesComponent implements OnInit, OnChanges{
+export class FestivitiesComponent implements OnInit, OnChanges {
 
   @Input() year!: number;
   @Input() monthNumber!: number;
-  
+
   localHolidays: LocalHoliday[] = [];
 
   holidayService: HolidayserviceService = inject(HolidayserviceService);
   localHolidayService: NewHolidayService = inject(NewHolidayService);
-  
+
   ngOnInit(): void {
     this.holidayService.getHolidaysFromAMonth(this.year, this.monthNumber);
     const formatedDate = `${this.year}-${String(this.monthNumber + 1).padStart(2, '0')}`
+
     this.localHolidayService.checkIfDateIsLocalHoliday(formatedDate)
-    .subscribe({
-      next: response => this.localHolidays = response,
-      error: err => {
-        alert('Error fetching local holidays:');
-        this.localHolidays = []; // Set to empty array on error
-      }
-    });
+      .subscribe({
+        next: response => this.localHolidays = response,
+        error: () => {
+          alert('Error fetching local holidays:');
+          this.localHolidays = []; // Set to empty array on error
+        }
+      });
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['year'] || changes['monthNumber']) { //Si cambia el año o mes pido los festivos de ese mes
+
+      this.holidayService.getHolidaysFromAMonth(this.year, this.monthNumber);
+
       const formatedDate = `${this.year}-${String(this.monthNumber + 1).padStart(2, '0')}`
       this.localHolidayService.checkIfDateIsLocalHoliday(formatedDate)
-      .subscribe({
-        next: response => this.localHolidays = response,
-        error: err => {
-          console.error('Error fetching local holidays:', err);
-          this.localHolidays = []; // Set to empty array on error
-        }
-      });
+        .subscribe({
+          next: response => this.localHolidays = response,
+          error: err => {
+            console.error('Error fetching local holidays:', err);
+            this.localHolidays = []; // Set to empty array on error
+          }
+        });
     }
   }
 
@@ -58,7 +62,7 @@ export class FestivitiesComponent implements OnInit, OnChanges{
       6: 'Sáb'
     }
 
-    return statusMap[date.getUTCDay()] + ', '+dateString.split('-')[2];
+    return statusMap[date.getUTCDay()] + ', ' + dateString.split('-')[2];
   }
 
 }

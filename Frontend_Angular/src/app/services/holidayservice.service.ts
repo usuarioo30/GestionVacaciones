@@ -18,6 +18,7 @@ export class HolidayserviceService {
   }
 
   getHolidaysFromAMonth(year: number, month: number): void {
+    //alert("Año " +year+", mes "+(month+1))
     this.getPublicHolidays(year)
     .subscribe({
       next: data => {
@@ -28,8 +29,18 @@ export class HolidayserviceService {
 
         this.holidaySignal.set(andalusianHolidays);
       }
-    })
+    });
+
+    
   }
+
+  // holidaysFromAndalusia(year: number, month: number) {
+  //   this.getPublicHolidays(year)
+  //   .subscribe({
+  //     next: data => this.holidaySignal.set(data),
+  //     error: () => alert("Error")
+  //   })
+  // }
 
   monthHolidays(): Signal<PublicHoliday[]> {
     return this.holidaySignal.asReadonly();
