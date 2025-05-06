@@ -14,9 +14,9 @@ import { Turno } from '../../../interfaces/turno';
   styleUrl: './horario.component.css'
 })
 export class HorarioComponent {
-  turnosArray: { semana: string, usuarios: { nombre: string, horario: any }[] }[] = [];
-  currentSemanaIndex: number = 0; // Índice para la semana actual
-  mesActual: string = ''; // Guardamos el mes actual para mostrarlo en el HTML
+  turnosArray: { semana: string, semanaTexto: string, usuarios: { nombre: string, horario: any }[] }[] = [];
+  currentSemanaIndex: number = 0;
+  mesActual: string = '';
   mesesDisponibles: string[] = [];
 
   usuarios: any[] = [];
@@ -28,7 +28,7 @@ export class HorarioComponent {
   nuevoTurnoSeleccionado: number = 0;
   isCargando: boolean = true;
 
-  turnosDisponibles: any[] = []; // Turnos disponibles para seleccionar
+  turnosDisponibles: any[] = [];
   diaSeleccionado: string = '';
 
   usuarioDeshabilitado: boolean = false;
@@ -167,11 +167,16 @@ export class HorarioComponent {
         this.usuarios = Object.values(usuariosSet);
 
         // Mapear los datos para ser utilizados en el componente
-        this.turnosArray = Object.entries(agrupadoPorSemana).map(([semana, usuarios]) => ({
-          semana,
-          usuarios
-        }));
-
+        this.turnosArray = Object.entries(data).flatMap(([mes, semanasData]) => {
+          return semanasData.semanas.map((entrada: any) => ({
+            semana: entrada.semana,
+            semanaTexto: entrada.semana_texto,
+            usuarios: [{
+              nombre: entrada.usuario,
+              horario: entrada.horario
+            }]
+          }));
+        });
         this.isCargando = false;
       },
       (error) => {
@@ -205,19 +210,19 @@ export class HorarioComponent {
     }
   }
 
-  // Esta función ya no es necesaria si el servidor te proporciona el nombre del mes
   obtenerNombreMes(mes: string): string {
-    // Verificar que el mes esté en el formato "YYYY-MM"
-    const mesRegex = /^\d{4}-\d{2}$/;
+    const mesRegex = /^\d{4}-(0[1-9]|1[0-2])$/;
     if (!mesRegex.test(mes)) {
       console.warn('El formato del mes es inválido:', mes);
-      return 'Mes inválido';  // O cualquier valor predeterminado para indicar error
+      return 'Mes inválido';
     }
 
-    // Aquí ya no necesitas hacer nada más, porque el servidor te envía el nombre del mes
-    // Así que el nombre del mes ya lo obtienes directamente desde el servidor como 'nombre_mes'.
-    return mes;  // Simplemente devuelves el mes tal cual, o el valor de 'nombre_mes' que el servidor te da
+    const [anio, mesNumero] = mes.split('-').map(Number);
+    const fecha = new Date(anio, mesNumero - 1);
+    return fecha.toLocaleString('es-ES', { month: 'long' }).charAt(0).toUpperCase() +
+      fecha.toLocaleString('es-ES', { month: 'long' }).slice(1);
   }
+
 
 
 
@@ -326,31 +331,48 @@ export class HorarioComponent {
   }
 
   setDiaTurno(usuario: any, dia: string): void {
-    // Establecer el usuario seleccionado
     this.usuarioSeleccionado = this.usuarios.find(u => u.nombreCompleto === usuario.nombre)?.id || 0;
     this.diaSeleccionado = dia;
 
     console.log('Usuario seleccionado:', this.diaSeleccionado);
 
-    // Obtener la semana actual y asegurarse de que la fecha de inicio es válida
-    const semanaActual = this.turnosArray[this.currentSemanaIndex].semana; // Formato: '2024-04-15 a 2024-04-21'
-    const fechaInicio = semanaActual.split(' a ')[0]; // '2024-04-15'
+    const semanaActual = this.turnosArray[this.currentSemanaIndex].semana; // Ej: "2025-03-31 a 2025-04-06"
+    const fechaInicioStr = semanaActual.split(' a ')[0]; // "2025-03-31"
+    const fechaInicio = new Date(fechaInicioStr);
 
-    if (!fechaInicio) {
-      console.error('Fecha de inicio de semana inválida');
+    // Obtener el número del día de la semana (lunes = 1 ... domingo = 0 en JS)
+    const diasMap: { [key: string]: number } = {
+      'domingo': 0, 'lunes': 1, 'martes': 2, 'miercoles': 3,
+      'jueves': 4, 'viernes': 5, 'sabado': 6
+    };
+
+    const diaNumero = diasMap[dia.toLowerCase()];
+    if (diaNumero === undefined) {
+      console.error('Día inválido:', dia);
       return;
     }
 
-    this.mesSeleccionado = fechaInicio.slice(0, 7); // '2024-04'
+    const fechaSeleccionada = new Date(fechaInicio);
+    const diaInicio = fechaInicio.getDay() === 0 ? 7 : fechaInicio.getDay(); // Domingo = 7
 
-    // Verificar que el mes seleccionado esté en formato correcto
+    // Diferencia entre el día deseado y el inicio de semana
+    const diff = diaNumero - diaInicio;
+    fechaSeleccionada.setDate(fechaInicio.getDate() + diff);
+
+    const yyyy = fechaSeleccionada.getFullYear();
+    const mm = (fechaSeleccionada.getMonth() + 1).toString().padStart(2, '0');
+    this.mesSeleccionado = `${yyyy}-${mm}`;
+
+    console.log('Mes seleccionado:', this.mesSeleccionado);
+
+    // Validar formato del mes
     const mesRegex = /^\d{4}-\d{2}$/;
     if (!mesRegex.test(this.mesSeleccionado)) {
       console.error('El formato del mes es inválido:', this.mesSeleccionado);
       return;
     }
 
-    // Cargar los turnos disponibles para el mes y semana seleccionados
-    this.cargarTurnosDisponibles(this.mesSeleccionado, this.currentSemanaIndex + 1); // semanas usualmente van de 1 a N
+    this.cargarTurnosDisponibles(this.mesSeleccionado, this.currentSemanaIndex + 1);
   }
+
 }

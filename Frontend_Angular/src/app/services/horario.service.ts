@@ -63,7 +63,9 @@ export class HorarioService {
       turno_id: turnoId
     };
   
-    return this.http.put(`${this.apiUrl}/actualizar_turno_diario`, body);
+    return this.http.put(`${this.apiUrl}/actualizar_turno_diario`, body, {
+      headers: this.getAuthHeaders()
+    });
   }  
 
   obtenerTurnosDisponibles(mes: string, semana: number): Observable<any[]> {

@@ -16,7 +16,9 @@
       <div class="mb-5">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h4 class="mb-0">
-            {{ turnosArray[currentSemanaIndex].semana }}
+            <h4 class="mb-0">
+              {{ turnosArray[currentSemanaIndex].semanaTexto }}
+            </h4>
           </h4>
           <div class="d-flex align-items-center" style="gap: 0.5rem; width: auto;">
             <button class="btn btn-danger me-3" data-bs-toggle="modal" data-bs-target="#modalGenerarPDF">
@@ -32,7 +34,7 @@
             </select>
           </div>
         </div>
-    
+
         <div class="table-responsive">
           <table class="table table-bordered table-striped align-middle text-center">
             <thead class="table-dark">
@@ -50,35 +52,42 @@
             <tbody>
               <tr *ngFor="let usuario of turnosArray[currentSemanaIndex].usuarios">
                 <td class="fw-bold">{{ usuario.nombre }}</td>
-    
+
                 <!-- Celdas de la tabla con los días de la semana -->
-                <td data-bs-toggle="modal" data-bs-target="#modalActualizarTurno" (click)="setDiaTurno(usuario, 'lunes')">
+                <td data-bs-toggle="modal" data-bs-target="#modalActualizarTurno"
+                  (click)="setDiaTurno(usuario, 'lunes')">
                   {{ obtenerTurnoDelDia(usuario.horario, 'lunes') }}
                 </td>
-                <td data-bs-toggle="modal" data-bs-target="#modalActualizarTurno" (click)="setDiaTurno(usuario, 'martes')">
+                <td data-bs-toggle="modal" data-bs-target="#modalActualizarTurno"
+                  (click)="setDiaTurno(usuario, 'martes')">
                   {{ obtenerTurnoDelDia(usuario.horario, 'martes') }}
                 </td>
-                <td data-bs-toggle="modal" data-bs-target="#modalActualizarTurno" (click)="setDiaTurno(usuario, 'miercoles')">
+                <td data-bs-toggle="modal" data-bs-target="#modalActualizarTurno"
+                  (click)="setDiaTurno(usuario, 'miercoles')">
                   {{ obtenerTurnoDelDia(usuario.horario, 'miercoles') }}
                 </td>
-                <td data-bs-toggle="modal" data-bs-target="#modalActualizarTurno" (click)="setDiaTurno(usuario, 'jueves')">
+                <td data-bs-toggle="modal" data-bs-target="#modalActualizarTurno"
+                  (click)="setDiaTurno(usuario, 'jueves')">
                   {{ obtenerTurnoDelDia(usuario.horario, 'jueves') }}
                 </td>
-                <td data-bs-toggle="modal" data-bs-target="#modalActualizarTurno" (click)="setDiaTurno(usuario, 'viernes')">
+                <td data-bs-toggle="modal" data-bs-target="#modalActualizarTurno"
+                  (click)="setDiaTurno(usuario, 'viernes')">
                   {{ obtenerTurnoDelDia(usuario.horario, 'viernes') }}
                 </td>
-                <td data-bs-toggle="modal" data-bs-target="#modalActualizarTurno" (click)="setDiaTurno(usuario, 'sabado')">
+                <td data-bs-toggle="modal" data-bs-target="#modalActualizarTurno"
+                  (click)="setDiaTurno(usuario, 'sabado')">
                   {{ obtenerTurnoDelDia(usuario.horario, 'sabado') }}
                 </td>
-                <td data-bs-toggle="modal" data-bs-target="#modalActualizarTurno" (click)="setDiaTurno(usuario, 'domingo')">
+                <td data-bs-toggle="modal" data-bs-target="#modalActualizarTurno"
+                  (click)="setDiaTurno(usuario, 'domingo')">
                   {{ obtenerTurnoDelDia(usuario.horario, 'domingo') }}
                 </td>
               </tr>
             </tbody>
-    
+
           </table>
         </div>
-    
+
         <div class="d-flex justify-content-between mt-3">
           <button class="btn btn-primary" (click)="semanaAnterior()" [disabled]="currentSemanaIndex === 0">
             Semana Anterior
@@ -89,7 +98,7 @@
           </button>
         </div>
       </div>
-    </div>    
+    </div>
   </div>
 </div>
 
@@ -136,7 +145,8 @@
 </div>
 
 <!-- Modal para Actualizar Turno -->
-<div class="modal fade" id="modalActualizarTurno" tabindex="-1" aria-labelledby="modalActualizarTurnoLabel" aria-hidden="true">
+<div class="modal fade" id="modalActualizarTurno" tabindex="-1" aria-labelledby="modalActualizarTurnoLabel"
+  aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
@@ -153,7 +163,8 @@
         <!-- Día seleccionado -->
         <div class="mb-3">
           <label class="form-label">Día</label>
-          <input type="text" class="form-control" [value]="diaSeleccionado.charAt(0).toUpperCase() + diaSeleccionado.slice(1)" disabled>
+          <input type="text" class="form-control"
+            [value]="diaSeleccionado.charAt(0).toUpperCase() + diaSeleccionado.slice(1)" disabled>
         </div>
 
         <!-- Mes -->
@@ -171,23 +182,24 @@
         <!-- Selección de nuevo turno -->
         <div class="mb-3">
           <label for="nuevoTurnoSelect" class="form-label">Nuevo Turno</label>
-          <select id="nuevoTurnoSelect" class="form-select" [(ngModel)]="nuevoTurnoSeleccionado" [disabled]="!turnosDisponibles?.length">
+          <select id="nuevoTurnoSelect" class="form-select" [(ngModel)]="nuevoTurnoSeleccionado"
+            [disabled]="!turnosDisponibles.length"> <!-- Reemplazado `?.length` por `.length` -->
             <!-- Cuando no hay turnos disponibles, se muestra un mensaje -->
-            <option *ngIf="!turnosDisponibles?.length" disabled>Sin turnos disponibles</option>
+            <option *ngIf="!turnosDisponibles.length" disabled>Sin turnos disponibles</option>
             <option [value]="0" disabled selected>Seleccione un nuevo turno</option>
             <option *ngFor="let turno of turnosDisponibles" [value]="turno.id">
               {{ turno.horario || ('Turno ID: ' + turno.id) }}
             </option>
           </select>
         </div>
-      </div>
 
-      <div class="modal-footer">
-        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-        <button class="btn btn-primary" (click)="actualizarTurno()" [disabled]="!nuevoTurnoSeleccionado">
-          Actualizar Turno
-        </button>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button class="btn btn-primary" (click)="actualizarTurno()" [disabled]="!nuevoTurnoSeleccionado">
+            Actualizar Turno
+          </button>
+        </div>
       </div>
     </div>
   </div>
-</div>

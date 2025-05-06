@@ -289,8 +289,8 @@ def obtener_turnos_semanales_admin():
         fecha = asignacion.fecha
         mes = fecha.strftime('%Y-%m')
 
-        # Obtener nombre del mes completo en español
-        nombre_mes = fecha.strftime('%B').capitalize()  # Aquí se utiliza la localización para obtener el mes en español
+        # Nombre del mes completo en español
+        nombre_mes = fecha.strftime('%B').capitalize()
 
         # Calcular inicio y fin de la semana
         semana_inicio = fecha - timedelta(days=fecha.weekday())
@@ -302,51 +302,53 @@ def obtener_turnos_semanales_admin():
         inicio_real = max(semana_inicio, primer_dia_mes)
         fin_real = min(semana_fin, ultimo_dia_mes)
 
-        # Crear string con el rango de la semana
-        semana_str = f"Semana del {inicio_real.strftime('%d')} al {fin_real.strftime('%d')} de {nombre_mes}"
+        # ✅ Semana en formato lógico y texto amigable
+        semana_id = f"{semana_inicio.strftime('%Y-%m-%d')} a {semana_fin.strftime('%Y-%m-%d')}"  # Para frontend (lógica)
+        semana_texto = f"Semana del {inicio_real.strftime('%d')} al {fin_real.strftime('%d')} de {nombre_mes}"  # Para mostrar
+
         semana_num = fecha.isocalendar()[1]
 
-        # Verificar si el usuario tiene vacaciones en este rango
+        # Verificar si el usuario tiene vacaciones
         vacaciones = checkIfHasVacationsOnDate(usuario.id, semana_inicio, semana_fin)
         esta_de_vacaciones = any(v.fecha_inicio.date() <= fecha <= v.fecha_fin.date() for v in vacaciones)
 
-        # Crear la estructura de datos si no existe
         if mes not in resultado:
             resultado[mes] = {"nombre_mes": nombre_mes, "semanas": {}}
 
-        if (usuario.id, semana_num) not in resultado[mes]["semanas"]:
-            resultado[mes]["semanas"][(usuario.id, semana_num)] = {
-                "semana": semana_str,
+        clave_semana = (usuario.id, semana_num)
+
+        if clave_semana not in resultado[mes]["semanas"]:
+            resultado[mes]["semanas"][clave_semana] = {
+                "semana": semana_id,            # técnico
+                "semana_texto": semana_texto,   # visual
                 "usuario": usuario.nombreCompleto,
                 "horario": {d: "-" for d in ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']},
                 "horas_trabajadas": 0,
                 "semana_num": semana_num
             }
 
-        # Asignar los turnos de cada día de la semana
+        # Día de la semana
         dias_semana = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']
         dia_idx = fecha.weekday()
         dia_nombre_es = dias_semana[dia_idx]
 
-        # Si el usuario está de vacaciones, se marca así en el horario
-        resultado[mes]["semanas"][(usuario.id, semana_num)]["horario"][dia_nombre_es] = "Vacaciones" if esta_de_vacaciones else getattr(turno, f"dia_{dia_nombre_es}")
+        resultado[mes]["semanas"][clave_semana]["horario"][dia_nombre_es] = (
+            "Vacaciones" if esta_de_vacaciones else getattr(turno, f"dia_{dia_nombre_es}")
+        )
 
-        # Sumar las horas trabajadas
         if not esta_de_vacaciones and turno:
-            resultado[mes]["semanas"][(usuario.id, semana_num)]["horas_trabajadas"] += turno.horas / 7
+            resultado[mes]["semanas"][clave_semana]["horas_trabajadas"] += turno.horas / 7
 
     resultado_final = {}
     dias_ordenados = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']
 
-    # Ordenar los datos para cada mes y semana
     for mes, data in resultado.items():
         semanas_ordenadas = []
         for semana in sorted(data["semanas"].values(), key=lambda x: x['semana_num']):
             horario_dict = semana['horario']
-            horario_ordenado = [
+            semana['horario'] = [
                 {"dia": dia, "turno": horario_dict.get(dia, "-")} for dia in dias_ordenados
             ]
-            semana['horario'] = horario_ordenado
             semanas_ordenadas.append(semana)
 
         resultado_final[mes] = {
