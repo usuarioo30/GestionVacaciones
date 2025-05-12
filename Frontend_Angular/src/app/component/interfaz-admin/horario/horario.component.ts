@@ -78,7 +78,7 @@ export class HorarioComponent {
         for (let mes in data) {
           const semanasObj = data[mes].semanas;
           semanasObj.forEach((entrada: any) => {
-            const { semana, usuario, horario, id_usuario } = entrada;  // Usar id_usuario
+            const { semana, usuario, horario, id_usuario } = entrada;
 
             if (!agrupadoPorSemana[semana]) {
               agrupadoPorSemana[semana] = [];
@@ -86,31 +86,51 @@ export class HorarioComponent {
 
             agrupadoPorSemana[semana].push({ nombre: usuario, horario });
 
-            // Usamos id_usuario en lugar de usuario_id
             if (!usuariosSet[id_usuario]) {
               usuariosSet[id_usuario] = {
-                id: id_usuario, // Aseguramos de usar id_usuario
+                id: id_usuario,
                 nombreCompleto: usuario
               };
             }
           });
         }
 
-        // Asignamos los usuarios utilizando los ids reales
         this.usuarios = Object.values(usuariosSet);
 
-        // Actualizar turnosArray con los datos correctos
-        this.turnosArray = Object.entries(data).flatMap(([mes, semanasData]) => {
-          return semanasData.semanas.map((entrada: any) => ({
-            semana: entrada.semana,
-            semanaTexto: entrada.semana_texto,
-            usuarios: [{
-              id: entrada.id_usuario,  // Usamos id_usuario
+        const semanasMap: {
+          [semana: string]: {
+            semana: string,
+            semanaTexto: string,
+            usuarios: {
+              id: number,
+              nombre: string,
+              horario: any
+            }[]
+          }
+        } = {};
+
+        Object.entries(data).forEach(([mes, semanasData]: any) => {
+          semanasData.semanas.forEach((entrada: any) => {
+            const claveSemana = entrada.semana;
+
+            if (!semanasMap[claveSemana]) {
+              semanasMap[claveSemana] = {
+                semana: claveSemana,
+                semanaTexto: entrada.semana_texto,
+                usuarios: []
+              };
+            }
+
+            semanasMap[claveSemana].usuarios.push({
+              id: entrada.id_usuario,
               nombre: entrada.usuario,
               horario: entrada.horario
-            }]
-          }));
+            });
+          });
         });
+
+        this.turnosArray = Object.values(semanasMap);
+
 
         this.isCargando = false;
       },
@@ -120,8 +140,6 @@ export class HorarioComponent {
       }
     );
   }
-
-
 
   obtenerTurnoDelDia(horario: any[], dia: string): string {
     const diaTurno = horario.find(d => d.dia === dia);
@@ -170,9 +188,8 @@ export class HorarioComponent {
 
   get idUsuarioSeleccionado(): number {
     const usuario = this.usuarios.find(u => u.id === this.usuarioSeleccionado);
-    return usuario?.id ?? 0;  // Devuelve el ID del usuario seleccionado
+    return usuario?.id ?? 0;
   }
-
 
   getTurnoSeleccionadoDelDia(): string {
     const usuario = this.usuarios.find(us => us.id === this.usuarioSeleccionado);
@@ -184,41 +201,37 @@ export class HorarioComponent {
     return this.obtenerTurnoDelDia(usuarioSemana.horario || [], this.diaSeleccionado);
   }
 
-
-  generarFechaDesdeMesYDia(mes: string, dia: string): string | null {
+  generarFechaDesdeSemanaYDia(semana: string, dia: string): string | null {
     const diasSemana: { [key: string]: number } = {
+      'domingo': 0,
       'lunes': 1,
       'martes': 2,
       'miercoles': 3,
+      'miércoles': 3,
       'jueves': 4,
       'viernes': 5,
       'sabado': 6,
-      'domingo': 0
+      'sábado': 6,
     };
 
-    const [anio, mesNumero] = mes.split('-').map(Number);
-
-    if (!anio || !mesNumero || mesNumero < 1 || mesNumero > 12) {
-      console.warn('Mes inválido');
-      return null;
-    }
-
-    const fechaInicio = new Date(anio, mesNumero - 1, 1);
-
     const diaNumero = diasSemana[dia.toLowerCase()];
-    if (diaNumero === undefined) return null;
+    if (diaNumero === undefined || !semana) return null;
+
+    const [inicioStr] = semana.split(' a ');
+    const fechaInicio = new Date(inicioStr);
 
     const fechaTurno = new Date(fechaInicio);
-
-    while (fechaTurno.getDay() !== diaNumero) {
+    for (let i = 0; i < 7; i++) {
+      if (fechaTurno.getDay() === diaNumero) {
+        const yyyy = fechaTurno.getFullYear();
+        const mm = (fechaTurno.getMonth() + 1).toString().padStart(2, '0');
+        const dd = fechaTurno.getDate().toString().padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+      }
       fechaTurno.setDate(fechaTurno.getDate() + 1);
     }
 
-    const yyyy = fechaTurno.getFullYear();
-    const mm = (fechaTurno.getMonth() + 1).toString().padStart(2, '0');
-    const dd = fechaTurno.getDate().toString().padStart(2, '0');
-
-    return `${yyyy}-${mm}-${dd}`;
+    return null;
   }
 
   actualizarTurno(): void {
@@ -234,7 +247,7 @@ export class HorarioComponent {
       return;
     }
 
-    const fecha = this.generarFechaDesdeMesYDia(this.mesSeleccionado, this.diaSeleccionado);
+    const fecha = this.generarFechaDesdeSemanaYDia(this.turnosArray[this.currentSemanaIndex].semana, this.diaSeleccionado);
     if (!fecha) {
       console.log('No se pudo generar la fecha válida');
       return;

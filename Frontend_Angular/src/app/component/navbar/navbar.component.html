@@ -31,7 +31,7 @@
               <li *ngIf="isAdmin" class="nav-item mt-2 mb-2 me-3 ms-3 ps-3 pe-3" [routerLinkActive]="'active-link'">
                 <a class="nav-link text-dark" [routerLink]="['/horario']" routerLinkActive="router-link-active"
                   aria-label="Horario">
-                  <i class="bi bi-calendar-month fs-4"></i>&nbsp; Horario
+                  <i class="bi bi-clock-history fs-4"></i>&nbsp; Horario
                 </a>
               </li>
 
@@ -47,7 +47,7 @@
               <li class="nav-item mt-2 mb-2 me-3 ms-3 ps-3 pe-3" [routerLinkActive]="'active-link'">
                 <a class="nav-link text-dark" [routerLink]="isAdmin ? ['/historial-admin'] : ['/historial']"
                   routerLinkActive="router-link-active" aria-label="Historial">
-                  <i class="bi bi-clock fs-4"></i>&nbsp; Historial
+                  <i class="bi bi-journal-text fs-4"></i>&nbsp; Historial
                 </a>
               </li>
 

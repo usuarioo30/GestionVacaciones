@@ -7,3 +7,9 @@
 .header-card {
   background-color: #4CAF50;
 }
+
+.disabled-cell {
+  background-color: #f0f0f0;
+  color: #b0b0b0;
+  cursor: not-allowed;
+}

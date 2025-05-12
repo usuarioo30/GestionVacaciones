@@ -53,34 +53,57 @@
               <tr *ngFor="let usuario of turnosArray[currentSemanaIndex].usuarios">
                 <td class="fw-bold">{{ usuario.nombre }}</td>
 
-                <!-- Celdas de la tabla con los días de la semana -->
-                <td class="editable-cell" data-bs-toggle="modal" data-bs-target="#modalEditarTurno"
-                  (click)="editarTurno(usuario.id, 'lunes')">
+                <td class="editable-cell" *ngIf="obtenerTurnoDelDia(usuario.horario, 'lunes') !== '-'"
+                  data-bs-toggle="modal" data-bs-target="#modalEditarTurno" (click)="editarTurno(usuario.id, 'lunes')">
                   {{ obtenerTurnoDelDia(usuario.horario, 'lunes') }}
                 </td>
-                <td class="editable-cell" data-bs-toggle="modal" data-bs-target="#modalEditarTurno"
-                  (click)="editarTurno(usuario.id, 'martes')">
+                <td class="text-muted disabled-cell" *ngIf="obtenerTurnoDelDia(usuario.horario, 'lunes') === '-'">
+                  -
+                </td>
+                <td class="editable-cell" *ngIf="obtenerTurnoDelDia(usuario.horario, 'martes') !== '-'"
+                  data-bs-toggle="modal" data-bs-target="#modalEditarTurno" (click)="editarTurno(usuario.id, 'martes')">
                   {{ obtenerTurnoDelDia(usuario.horario, 'martes') }}
                 </td>
-                <td class="editable-cell" data-bs-toggle="modal" data-bs-target="#modalEditarTurno"
+                <td class="text-muted disabled-cell" *ngIf="obtenerTurnoDelDia(usuario.horario, 'martes') === '-'">
+                  -
+                </td>
+                <td class="editable-cell" *ngIf="obtenerTurnoDelDia(usuario.horario, 'miercoles') !== '-'"
+                  data-bs-toggle="modal" data-bs-target="#modalEditarTurno"
                   (click)="editarTurno(usuario.id, 'miercoles')">
                   {{ obtenerTurnoDelDia(usuario.horario, 'miercoles') }}
                 </td>
-                <td class="editable-cell" data-bs-toggle="modal" data-bs-target="#modalEditarTurno"
-                  (click)="editarTurno(usuario.id, 'jueves')">
+                <td class="text-muted disabled-cell" *ngIf="obtenerTurnoDelDia(usuario.horario, 'miercoles') === '-'">
+                  -
+                </td>
+                <td class="editable-cell" *ngIf="obtenerTurnoDelDia(usuario.horario, 'jueves') !== '-'"
+                  data-bs-toggle="modal" data-bs-target="#modalEditarTurno" (click)="editarTurno(usuario.id, 'jueves')">
                   {{ obtenerTurnoDelDia(usuario.horario, 'jueves') }}
                 </td>
-                <td class="editable-cell" data-bs-toggle="modal" data-bs-target="#modalEditarTurno"
+                <td class="text-muted disabled-cell" *ngIf="obtenerTurnoDelDia(usuario.horario, 'jueves') === '-'">
+                  -
+                </td>
+                <td class="editable-cell" *ngIf="obtenerTurnoDelDia(usuario.horario, 'viernes') !== '-'"
+                  data-bs-toggle="modal" data-bs-target="#modalEditarTurno"
                   (click)="editarTurno(usuario.id, 'viernes')">
                   {{ obtenerTurnoDelDia(usuario.horario, 'viernes') }}
                 </td>
-                <td class="editable-cell" data-bs-toggle="modal" data-bs-target="#modalEditarTurno"
-                  (click)="editarTurno(usuario.id, 'sabado')">
+                <td class="text-muted disabled-cell" *ngIf="obtenerTurnoDelDia(usuario.horario, 'viernes') === '-'">
+                  -
+                </td>
+                <td class="editable-cell" *ngIf="obtenerTurnoDelDia(usuario.horario, 'sabado') !== '-'"
+                  data-bs-toggle="modal" data-bs-target="#modalEditarTurno" (click)="editarTurno(usuario.id, 'sabado')">
                   {{ obtenerTurnoDelDia(usuario.horario, 'sabado') }}
                 </td>
-                <td class="editable-cell" data-bs-toggle="modal" data-bs-target="#modalEditarTurno"
+                <td class="text-muted disabled-cell" *ngIf="obtenerTurnoDelDia(usuario.horario, 'sabado') === '-'">
+                  -
+                </td>
+                <td class="editable-cell" *ngIf="obtenerTurnoDelDia(usuario.horario, 'domingo') !== '-'"
+                  data-bs-toggle="modal" data-bs-target="#modalEditarTurno"
                   (click)="editarTurno(usuario.id, 'domingo')">
                   {{ obtenerTurnoDelDia(usuario.horario, 'domingo') }}
+                </td>
+                <td class="text-muted disabled-cell" *ngIf="obtenerTurnoDelDia(usuario.horario, 'domingo') === '-'">
+                  -
                 </td>
               </tr>
             </tbody>
