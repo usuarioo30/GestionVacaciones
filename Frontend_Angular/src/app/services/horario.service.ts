@@ -43,33 +43,17 @@ export class HorarioService {
     });
   }
 
-  generarPDF(userId: number, mes: string): Observable<Blob> {
-    return this.http.get(`${this.apiUrl}/generar_pdf/${userId}/${mes}`, {
-      headers: this.getAuthHeaders(),
-      responseType: 'blob'
-    });
-  }
-
-  actualizarTurno(payload: any): Observable<any> {
-    return this.http.put<any>(`${this.apiUrl}/actualizar_turno`, payload, {
+  obtenerTurnosDisponibles(fechaInicio: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/admin/turnos_disponibles`, {
+      params: {
+        fecha_inicio: fechaInicio
+      },
       headers: this.getAuthHeaders()
     });
   }
 
-  actualizarTurnoDiario(usuarioId: number, fecha: string, turnoId: number): Observable<any> {
-    const body = {
-      user_id: usuarioId,
-      fecha: fecha,
-      turno_id: turnoId
-    };
-  
-    return this.http.put(`${this.apiUrl}/actualizar_turno_diario`, body, {
-      headers: this.getAuthHeaders()
-    });
-  }  
-
-  obtenerTurnosDisponibles(mes: string, semana: number): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/turnos_disponibles/${mes}/${semana}`, {
+  actualizarTurnoDiario(data: { user_id: number, fecha: string, turno_id: number }): Observable<any> {
+    return this.http.put(`${this.apiUrl}/actualizar_turno_diario`, data, {
       headers: this.getAuthHeaders()
     });
   }

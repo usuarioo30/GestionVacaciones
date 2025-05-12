@@ -2,10 +2,8 @@ import { Component } from '@angular/core';
 import { HorarioService } from '../../../services/horario.service';
 import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TurnosSemanales } from '../../../interfaces/turnos-semanales';
-import bootstrap from 'bootstrap';
-import { Turno } from '../../../interfaces/turno';
 
 @Component({
   selector: 'app-horario',
@@ -14,7 +12,19 @@ import { Turno } from '../../../interfaces/turno';
   styleUrl: './horario.component.css'
 })
 export class HorarioComponent {
-  turnosArray: { semana: string, semanaTexto: string, usuarios: { nombre: string, horario: any }[] }[] = [];
+
+  turnoForm!: FormGroup;
+
+  turnosArray: {
+    semana: string,
+    semanaTexto: string,
+    usuarios: {
+      id: number,
+      nombre: string,
+      horario: any
+    }[]
+  }[] = [];
+
   currentSemanaIndex: number = 0;
   mesActual: string = '';
   mesesDisponibles: string[] = [];
@@ -36,99 +46,24 @@ export class HorarioComponent {
   diaDeshabilitado: boolean = false;
 
   constructor(
+    private fb: FormBuilder,
     private horarioService: HorarioService,
     private http: HttpClient
-  ) { }
+  ) {
+    this.turnoForm = this.fb.group({
+      usuario: [null, Validators.required],
+      turno: [null, Validators.required]
+    });
+  }
 
   ngOnInit(): void {
     this.cargarTurnosSemanales();
   }
 
-  cargarTurnosDisponibles(mes: string, semana: number): void {
-    // Validar que mes y semana estén definidos y sean correctos
-    if (!mes || !semana) {
-      console.log('Mes y semana son requeridos para cargar los turnos disponibles');
-      return;
-    }
-
-    // Verificar que el mes esté en el formato 'YYYY-MM'
-    const mesRegex = /^\d{4}-\d{2}$/;
-    if (!mesRegex.test(mes)) {
-      console.log('El mes debe estar en el formato "YYYY-MM".');
-      return;
-    }
-
-    // Validar que la semana sea un número entero positivo
-    if (semana <= 0 || !Number.isInteger(semana)) {
-      console.log('La semana debe ser un número entero positivo.');
-      return;
-    }
-
-    console.log(`Cargando turnos para el mes ${mes} y semana ${semana}`);
-
-    // Realizar la llamada al servicio para obtener los turnos disponibles
-    this.horarioService.obtenerTurnosDisponibles(mes, semana).subscribe(
-      (res) => {
-        // Asignar los turnos disponibles a la variable
-        this.turnosDisponibles = res;
-      },
-      (err) => {
-        // Manejar errores y limpiar los turnos disponibles
-        console.error('Error cargando turnos disponibles:', err);
-        this.turnosDisponibles = []; // Limpiar si no hay turnos disponibles
-      }
-    );
-  }
-
-
   cargarMesesDelUsuario(): void {
     this.horarioService.obtenerMesesPorUsuario(this.usuarioSeleccionado).subscribe(
       (meses) => this.mesesUsuario = meses,
       (err) => console.error('Error cargando meses:', err)
-    );
-  }
-
-  descargarPDF(): void {
-    const usuarioId = Number(this.usuarioSeleccionado);
-    const usuario = this.usuarios.find(u => Number(u.id) === usuarioId);
-
-    if (!usuario) {
-      console.error('Usuario no encontrado');
-      alert("No se pudo encontrar el usuario seleccionado.");
-      return;
-    }
-
-    // Obtener el nombre del mes y el año
-    const [anio, mes] = this.mesSeleccionado.split('-');
-    const nombreMes = this.obtenerNombreMes(this.mesSeleccionado);
-
-    // Usamos el nombre (o nombreCompleto, si prefieres) del usuario
-    const nombreUsuario = usuario.nombre || usuario.nombreCompleto || 'usuario';
-
-    // Formatear el nombre del archivo
-    const nombreArchivo = `horario_${nombreUsuario.toLowerCase()}_${nombreMes.toLowerCase()}_${anio}.pdf`;
-
-    // Llamar al servicio para generar el PDF
-    this.horarioService.generarPDF(this.usuarioSeleccionado, this.mesSeleccionado).subscribe(
-      (blob: Blob) => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = nombreArchivo;
-        a.click();
-        window.URL.revokeObjectURL(url);
-
-        // Limpiar el formulario
-        this.usuarioSeleccionado = 0;
-        this.mesSeleccionado = '';
-
-        // Aquí ya no es necesario manipular el modal, Angular se encarga de ello
-        // El modal se cerrará automáticamente porque ya estamos limpiando los valores del formulario.
-      },
-      (err) => {
-        console.error('Error generando el PDF:', err);
-        alert("No se pudo generar el PDF.");
-      }
     );
   }
 
@@ -140,43 +75,43 @@ export class HorarioComponent {
         const agrupadoPorSemana: { [semana: string]: { nombre: string, horario: any[] }[] } = {};
         const usuariosSet: { [id: string]: { id: number, nombreCompleto: string } } = {};
 
-        Object.entries(data).forEach(([mes, semanasObj]) => {
-          // Iterar sobre cada semana en el mes
-          semanasObj.semanas.forEach((entrada: any) => {
-            const { semana, usuario, horario, horas_trabajadas, semana_num } = entrada;
+        for (let mes in data) {
+          const semanasObj = data[mes].semanas;
+          semanasObj.forEach((entrada: any) => {
+            const { semana, usuario, horario, id_usuario } = entrada;  // Usar id_usuario
 
-            // Agrupar turnos por semana
             if (!agrupadoPorSemana[semana]) {
               agrupadoPorSemana[semana] = [];
             }
 
             agrupadoPorSemana[semana].push({ nombre: usuario, horario });
 
-            // Generar ID falso desde el nombre (mismo enfoque de antes)
-            const idUsuario = this.generarIdDesdeNombre(usuario);
-            if (!usuariosSet[idUsuario]) {
-              usuariosSet[idUsuario] = {
-                id: idUsuario,
+            // Usamos id_usuario en lugar de usuario_id
+            if (!usuariosSet[id_usuario]) {
+              usuariosSet[id_usuario] = {
+                id: id_usuario, // Aseguramos de usar id_usuario
                 nombreCompleto: usuario
               };
             }
           });
-        });
+        }
 
-        // Guardar usuarios únicos
+        // Asignamos los usuarios utilizando los ids reales
         this.usuarios = Object.values(usuariosSet);
 
-        // Mapear los datos para ser utilizados en el componente
+        // Actualizar turnosArray con los datos correctos
         this.turnosArray = Object.entries(data).flatMap(([mes, semanasData]) => {
           return semanasData.semanas.map((entrada: any) => ({
             semana: entrada.semana,
             semanaTexto: entrada.semana_texto,
             usuarios: [{
+              id: entrada.id_usuario,  // Usamos id_usuario
               nombre: entrada.usuario,
               horario: entrada.horario
             }]
           }));
         });
+
         this.isCargando = false;
       },
       (error) => {
@@ -186,18 +121,11 @@ export class HorarioComponent {
     );
   }
 
+
+
   obtenerTurnoDelDia(horario: any[], dia: string): string {
     const diaTurno = horario.find(d => d.dia === dia);
     return diaTurno ? diaTurno.turno : '-';
-  }
-
-  generarIdDesdeNombre(nombre: string): number {
-    // Generar ID hash simple desde el nombre
-    let hash = 0;
-    for (let i = 0; i < nombre.length; i++) {
-      hash = nombre.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    return Math.abs(hash);
   }
 
   irAlMesSeleccionado(mes: string): void {
@@ -223,9 +151,6 @@ export class HorarioComponent {
       fecha.toLocaleString('es-ES', { month: 'long' }).slice(1);
   }
 
-
-
-
   siguienteSemana(): void {
     if (this.currentSemanaIndex < this.turnosArray.length - 1) {
       this.currentSemanaIndex++;
@@ -238,51 +163,16 @@ export class HorarioComponent {
     }
   }
 
-  // Actualización en la función `actualizarTurno`:
-  actualizarTurno(): void {
-    if (!this.usuarioSeleccionado || !this.mesSeleccionado || !this.diaSeleccionado || !this.nuevoTurnoSeleccionado) {
-      alert('Complete todos los campos');
-      return;
-    }
-
-    // Generar la fecha completa en formato YYYY-MM-DD
-    const fecha = this.generarFechaDesdeMesYDia(this.mesSeleccionado, this.diaSeleccionado);
-    if (!fecha) {
-      alert('No se pudo generar la fecha correctamente.');
-      return;
-    }
-
-    // Llamar al servicio para actualizar el turno
-    this.horarioService.actualizarTurnoDiario(
-      this.usuarioSeleccionado,
-      fecha, // Asegúrate de enviar el formato correcto de la fecha
-      this.nuevoTurnoSeleccionado
-    ).subscribe({
-      next: () => {
-        this.usuarioSeleccionado = 0;
-        this.mesSeleccionado = '';
-        this.diaSeleccionado = '';
-        this.nuevoTurnoSeleccionado = 0;
-        this.usuarioDeshabilitado = false;
-        this.mesDeshabilitado = false;
-        this.diaDeshabilitado = false;
-
-        alert('Turno actualizado correctamente');
-        this.cargarTurnosSemanales(); // Recarga los turnos después de la actualización
-      },
-      error: err => {
-        console.error('Error al actualizar el turno', err);
-        alert('No se pudo actualizar el turno');
-      }
-    });
-  }
-
-
-
   get nombreUsuarioSeleccionado(): string {
     const usuario = this.usuarios.find(u => u.id === this.usuarioSeleccionado);
     return usuario?.nombreCompleto ?? '';
   }
+
+  get idUsuarioSeleccionado(): number {
+    const usuario = this.usuarios.find(u => u.id === this.usuarioSeleccionado);
+    return usuario?.id ?? 0;  // Devuelve el ID del usuario seleccionado
+  }
+
 
   getTurnoSeleccionadoDelDia(): string {
     const usuario = this.usuarios.find(us => us.id === this.usuarioSeleccionado);
@@ -307,18 +197,19 @@ export class HorarioComponent {
     };
 
     const [anio, mesNumero] = mes.split('-').map(Number);
-    const semana = this.turnosArray[this.currentSemanaIndex]?.semana;
 
-    if (!semana) return null;
+    if (!anio || !mesNumero || mesNumero < 1 || mesNumero > 12) {
+      console.warn('Mes inválido');
+      return null;
+    }
 
-    const fechaInicioStr = semana.split(' al ')[0];
-    const fechaInicio = new Date(fechaInicioStr);
+    const fechaInicio = new Date(anio, mesNumero - 1, 1);
 
-    // Buscar la fecha correspondiente al día
     const diaNumero = diasSemana[dia.toLowerCase()];
     if (diaNumero === undefined) return null;
 
     const fechaTurno = new Date(fechaInicio);
+
     while (fechaTurno.getDay() !== diaNumero) {
       fechaTurno.setDate(fechaTurno.getDate() + 1);
     }
@@ -330,49 +221,85 @@ export class HorarioComponent {
     return `${yyyy}-${mm}-${dd}`;
   }
 
-  setDiaTurno(usuario: any, dia: string): void {
-    this.usuarioSeleccionado = this.usuarios.find(u => u.nombreCompleto === usuario.nombre)?.id || 0;
-    this.diaSeleccionado = dia;
+  actualizarTurno(): void {
+    if (this.turnoForm.invalid) {
+      console.log('Formulario inválido');
+      return;
+    }
 
-    console.log('Usuario seleccionado:', this.diaSeleccionado);
+    const { usuario, turno } = this.turnoForm.value;
 
-    const semanaActual = this.turnosArray[this.currentSemanaIndex].semana; // Ej: "2025-03-31 a 2025-04-06"
-    const fechaInicioStr = semanaActual.split(' a ')[0]; // "2025-03-31"
-    const fechaInicio = new Date(fechaInicioStr);
+    if (!usuario || !turno || !this.diaSeleccionado) {
+      console.log('Faltan datos para actualizar el turno');
+      return;
+    }
 
-    // Obtener el número del día de la semana (lunes = 1 ... domingo = 0 en JS)
-    const diasMap: { [key: string]: number } = {
-      'domingo': 0, 'lunes': 1, 'martes': 2, 'miercoles': 3,
-      'jueves': 4, 'viernes': 5, 'sabado': 6
+    const fecha = this.generarFechaDesdeMesYDia(this.mesSeleccionado, this.diaSeleccionado);
+    if (!fecha) {
+      console.log('No se pudo generar la fecha válida');
+      return;
+    }
+
+    const payload = {
+      user_id: usuario,
+      fecha: fecha,
+      turno_id: turno
     };
 
-    const diaNumero = diasMap[dia.toLowerCase()];
-    if (diaNumero === undefined) {
-      console.error('Día inválido:', dia);
-      return;
-    }
-
-    const fechaSeleccionada = new Date(fechaInicio);
-    const diaInicio = fechaInicio.getDay() === 0 ? 7 : fechaInicio.getDay(); // Domingo = 7
-
-    // Diferencia entre el día deseado y el inicio de semana
-    const diff = diaNumero - diaInicio;
-    fechaSeleccionada.setDate(fechaInicio.getDate() + diff);
-
-    const yyyy = fechaSeleccionada.getFullYear();
-    const mm = (fechaSeleccionada.getMonth() + 1).toString().padStart(2, '0');
-    this.mesSeleccionado = `${yyyy}-${mm}`;
-
-    console.log('Mes seleccionado:', this.mesSeleccionado);
-
-    // Validar formato del mes
-    const mesRegex = /^\d{4}-\d{2}$/;
-    if (!mesRegex.test(this.mesSeleccionado)) {
-      console.error('El formato del mes es inválido:', this.mesSeleccionado);
-      return;
-    }
-
-    this.cargarTurnosDisponibles(this.mesSeleccionado, this.currentSemanaIndex + 1);
+    this.horarioService.actualizarTurnoDiario(payload).subscribe({
+      next: (res) => {
+        console.log('Turno actualizado correctamente', res);
+        this.cargarTurnosSemanales();
+      },
+      error: (err) => {
+        console.error('Error al actualizar el turno:', err);
+      }
+    });
   }
 
+  editarTurno(usuarioId: number, dia: string): void {
+    this.usuarioSeleccionado = usuarioId;
+    this.diaSeleccionado = dia;
+
+    const usuario = this.usuarios.find(u => u.id === usuarioId);
+
+    const turnoActual = this.turnosArray[this.currentSemanaIndex].usuarios
+      .find(u => u.id === usuario?.id)?.horario
+      .find((h: { dia: string, turno: string }) => h.dia === dia);
+
+    this.turnoForm.patchValue({
+      usuario: usuarioId,
+      turno: turnoActual ? turnoActual.turno : null
+    });
+
+    const semanaActual = this.turnosArray[this.currentSemanaIndex]?.semana;
+    if (semanaActual) {
+      const fechaInicio = semanaActual.split(' a ')[0];
+      this.mesSeleccionado = fechaInicio.slice(0, 7);
+    }
+
+    const fechaInicioMes = this.obtenerPrimerDiaDelMes(this.mesSeleccionado);
+
+    this.horarioService.obtenerTurnosDisponibles(fechaInicioMes).subscribe({
+      next: (data) => {
+        const turnosUsuario = data.find((u: any) => u.usuario === usuario?.nombreCompleto);
+
+        if (turnosUsuario && turnosUsuario.turnos_disponibles[this.diaSeleccionado.toLowerCase()]) {
+          this.turnosDisponibles = turnosUsuario.turnos_disponibles[this.diaSeleccionado.toLowerCase()];
+        } else {
+          this.turnosDisponibles = [];
+          console.log('No se encontraron turnos disponibles para el día:', this.diaSeleccionado);
+        }
+      },
+      error: (err) => {
+        console.error('Error al obtener turnos disponibles:', err);
+        this.turnosDisponibles = [];
+      }
+    });
+  }
+
+  obtenerPrimerDiaDelMes(fecha: string): string {
+    const [anio, mes] = fecha.split('-');
+    return `${anio}-${mes}-01`;
+  }
 }

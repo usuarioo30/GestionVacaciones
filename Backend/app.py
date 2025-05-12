@@ -289,10 +289,8 @@ def obtener_turnos_semanales_admin():
         fecha = asignacion.fecha
         mes = fecha.strftime('%Y-%m')
 
-        # Nombre del mes completo en español
         nombre_mes = fecha.strftime('%B').capitalize()
 
-        # Calcular inicio y fin de la semana
         semana_inicio = fecha - timedelta(days=fecha.weekday())
         semana_fin = semana_inicio + timedelta(days=6)
 
@@ -302,13 +300,11 @@ def obtener_turnos_semanales_admin():
         inicio_real = max(semana_inicio, primer_dia_mes)
         fin_real = min(semana_fin, ultimo_dia_mes)
 
-        # ✅ Semana en formato lógico y texto amigable
-        semana_id = f"{semana_inicio.strftime('%Y-%m-%d')} a {semana_fin.strftime('%Y-%m-%d')}"  # Para frontend (lógica)
-        semana_texto = f"Semana del {inicio_real.strftime('%d')} al {fin_real.strftime('%d')} de {nombre_mes}"  # Para mostrar
+        semana_id = f"{semana_inicio.strftime('%Y-%m-%d')} a {semana_fin.strftime('%Y-%m-%d')}"
+        semana_texto = f"Semana del {inicio_real.strftime('%d')} al {fin_real.strftime('%d')} de {nombre_mes}"
 
         semana_num = fecha.isocalendar()[1]
 
-        # Verificar si el usuario tiene vacaciones
         vacaciones = checkIfHasVacationsOnDate(usuario.id, semana_inicio, semana_fin)
         esta_de_vacaciones = any(v.fecha_inicio.date() <= fecha <= v.fecha_fin.date() for v in vacaciones)
 
@@ -319,15 +315,15 @@ def obtener_turnos_semanales_admin():
 
         if clave_semana not in resultado[mes]["semanas"]:
             resultado[mes]["semanas"][clave_semana] = {
-                "semana": semana_id,            # técnico
-                "semana_texto": semana_texto,   # visual
+                "semana": semana_id,
+                "semana_texto": semana_texto,
                 "usuario": usuario.nombreCompleto,
+                "id_usuario": usuario.id,
                 "horario": {d: "-" for d in ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']},
                 "horas_trabajadas": 0,
                 "semana_num": semana_num
             }
 
-        # Día de la semana
         dias_semana = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']
         dia_idx = fecha.weekday()
         dia_nombre_es = dias_semana[dia_idx]
@@ -349,111 +345,79 @@ def obtener_turnos_semanales_admin():
             semana['horario'] = [
                 {"dia": dia, "turno": horario_dict.get(dia, "-")} for dia in dias_ordenados
             ]
-            semanas_ordenadas.append(semana)
+            semanas_ordenadas.append({
+                **semana,
+                "semana_num": semana["semana_num"]
+})
+
 
         resultado_final[mes] = {
             "nombre_mes": data["nombre_mes"],
             "semanas": semanas_ordenadas
         }
 
-    return jsonify(resultado_final)
+    return jsonify(resultado_final), 200
 
-
-@app.route('/api/turnos_disponibles/<mes>/<int:semana>', methods=['GET'])
+@app.route('/api/admin/turnos_disponibles', methods=['GET'])
 @jwt_required()
-def obtener_turnos_disponibles(mes, semana):
+def obtener_turnos_disponibles_semanales():
+    # Recibir fecha de la semana como parámetro, en formato 'YYYY-MM-DD'
+    fecha_inicio_str = request.args.get('fecha_inicio')  # Fecha de inicio de la semana (lunes)
+    if not fecha_inicio_str:
+        return jsonify({"error": "Faltan parámetros, se necesita 'fecha_inicio' en formato 'YYYY-MM-DD'"}), 400
+
     try:
-        # Validación del formato del mes (esperado: 'YYYY-MM')
-        anio, mes_num = map(int, mes.split('-'))
+        fecha_inicio = datetime.strptime(fecha_inicio_str, '%Y-%m-%d').date()
     except ValueError:
-        return jsonify({"error": "El formato del mes debe ser 'YYYY-MM'"}), 400
+        return jsonify({"error": "Formato de fecha inválido"}), 400
 
-    # Subconsulta de turnos ya asignados en ese mes y semana
-    subquery = db.session.query(TurnoDiarioAsignado.turno_id).filter(
-        extract('year', TurnoDiarioAsignado.fecha) == anio,
-        extract('month', TurnoDiarioAsignado.fecha) == mes_num,
-        func.week(TurnoDiarioAsignado.fecha, 3) == semana  # '3' para que la semana inicie en lunes (modo ISO)
-    )
+    # Calcular el fin de semana, sumando 6 días a la fecha de inicio
+    fecha_fin = fecha_inicio + timedelta(days=6)
 
-    # Obtener los turnos que no están en la subconsulta
-    turnos_disponibles = db.session.query(Turno)\
-        .filter(~Turno.id.in_(subquery))\
-        .all()
+    # Obtener todos los turnos disponibles para la semana solicitada
+    turnos_disponibles = Turno.query.all()  # Obtener todos los turnos disponibles de la base de datos
 
-    if not turnos_disponibles:
-        return jsonify({"message": "No hay turnos disponibles para ese mes y semana"}), 404
+    # Organizar los turnos por usuario y día
+    resultados = {}
 
-    turnos_list = [{"id": turno.id} for turno in turnos_disponibles]
-    return jsonify(turnos_list), 200
+    for turno in turnos_disponibles:
+        # Vamos a asumir que 'turno' tiene información sobre qué días están disponibles.
+        for dia_semana in range(7):  # 0=lunes, 1=martes, ... 6=domingo
+            # Para cada día de la semana, verificamos si hay turnos disponibles
+            dia_nombre_es = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'][dia_semana]
 
-@app.route('/api/actualizar_turno', methods=['PUT'])
-@jwt_required()
-def actualizar_turno():
-    data = request.get_json()
+            # Crear una nueva entrada para cada usuario si no existe
+            for usuario in Usuario.query.all():
+                if usuario.id not in resultados:
+                    resultados[usuario.id] = {
+                        "nombre": usuario.nombreCompleto,
+                        "turnos_disponibles": {d: [] for d in ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']},
+                        "vacaciones": set()  # Para almacenar las fechas de vacaciones
+                    }
 
-    user_id = data.get('user_id')
-    mes = data.get('mes')
-    dia = data.get('dia')  # Cambiar de semana a dia
-    nuevo_turno_id = data.get('nuevo_turno_id')
+                # Agregar turno disponible para el día en cuestión
+                resultados[usuario.id]["turnos_disponibles"][dia_nombre_es].append({
+                    "turno_id": turno.id,
+                    "descripcion": getattr(turno, f"dia_{dia_nombre_es}"),  # Se asume que cada 'turno' tiene el horario para cada día
+                    "horario": turno.horas
+                })
 
-    if not user_id or not mes or not dia or not nuevo_turno_id:  # Requerir 'dia' en lugar de 'semana'
-        return jsonify({"error": "Faltan parámetros requeridos"}), 400
+                # Verificar si el usuario tiene vacaciones en ese día
+                vacaciones = checkIfHasVacationsOnDate(usuario.id, fecha_inicio + timedelta(days=dia_semana), fecha_inicio + timedelta(days=dia_semana))
+                if vacaciones:
+                    resultados[usuario.id]["vacaciones"].add(fecha_inicio + timedelta(days=dia_semana))
 
-    asignacion = TurnoAsignado.query.filter_by(
-        user_id=user_id, mes=mes, dia=dia  # Filtrar por 'dia' en lugar de 'semana'
-    ).first()
-    
-    if not asignacion:
-        return jsonify({"error": "No se encontró asignación para ese usuario, mes y día"}), 404
+    # Formatear los resultados para devolver en el frontend
+    turnos_finales = []
 
-    conflicto = TurnoAsignado.query.filter(
-        TurnoAsignado.turno_id == nuevo_turno_id,
-        TurnoAsignado.mes == mes,
-        TurnoAsignado.dia == dia,  # Filtrar por 'dia' en lugar de 'semana'
-        TurnoAsignado.user_id != user_id
-    ).first()
+    for usuario_id, usuario_data in resultados.items():
+        turnos_finales.append({
+            "usuario": usuario_data["nombre"],
+            "turnos_disponibles": usuario_data["turnos_disponibles"],
+            "vacaciones": list(usuario_data["vacaciones"])
+        })
 
-    if conflicto:
-        return jsonify({"error": "Ese turno ya está asignado a otro usuario en ese día"}), 409
-
-    asignacion.turno_id = nuevo_turno_id
-    db.session.commit()
-
-    return jsonify({
-        "message": f"Turno actualizado correctamente para el día {dia} del mes {mes}"
-    }), 200
-
-@app.route('/api/usuario/<int:user_id>/turno/<string:mes>', methods=['GET'])
-@jwt_required()
-def obtener_turno_mensual(user_id, mes):
-    asignado = TurnoAsignado.query.filter_by(user_id=user_id, mes=mes).first()
-    
-    if not asignado or not asignado.turno:
-        return jsonify({"error": "No hay turno asignado para este mes"}), 404
-
-    turno = asignado.turno
-    
-    # Convertir el mes a un nombre completo
-    try:
-        anio, mes_num = map(int, mes.split('-'))
-        nombre_mes = datetime(anio, mes_num, 1).strftime('%B')
-    except ValueError:
-        return jsonify({"error": "Formato de mes incorrecto, usa 'YYYY-MM'"}), 400
-
-    return jsonify({
-        "turno": {
-            "mes": nombre_mes,
-            "dias": {
-                "lunes": turno.dia_lunes,
-                "martes": turno.dia_martes,
-                "miércoles": turno.dia_miercoles,
-                "jueves": turno.dia_jueves,
-                "viernes": turno.dia_viernes,
-                "sábado": turno.dia_sabado,
-                "domingo": turno.dia_domingo
-            }
-        }
-    })
+    return jsonify(turnos_finales), 200
 
 
 def checkIfHasVacationsOnDate(usuario_id, fecha_inicio, fecha_fin):
