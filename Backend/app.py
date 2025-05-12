@@ -288,7 +288,6 @@ def obtener_turnos_semanales_admin():
         turno = asignacion.turno
         fecha = asignacion.fecha
         mes = fecha.strftime('%Y-%m')
-
         nombre_mes = fecha.strftime('%B').capitalize()
 
         semana_inicio = fecha - timedelta(days=fecha.weekday())
@@ -297,13 +296,14 @@ def obtener_turnos_semanales_admin():
         primer_dia_mes = fecha.replace(day=1)
         ultimo_dia_mes = fecha.replace(day=monthrange(fecha.year, fecha.month)[1])
 
+        # Nuevo rango real: restringido al mes actual
         inicio_real = max(semana_inicio, primer_dia_mes)
         fin_real = min(semana_fin, ultimo_dia_mes)
 
-        semana_id = f"{semana_inicio.strftime('%Y-%m-%d')} a {semana_fin.strftime('%Y-%m-%d')}"
+        # Semana ID con rango REAL dentro del mes
+        semana_id = f"{inicio_real.strftime('%Y-%m-%d')} a {fin_real.strftime('%Y-%m-%d')}"
         semana_texto = f"Semana del {inicio_real.strftime('%d')} al {fin_real.strftime('%d')} de {nombre_mes}"
-
-        semana_num = fecha.isocalendar()[1]
+        semana_num = inicio_real.isocalendar()[1]
 
         vacaciones = checkIfHasVacationsOnDate(usuario.id, semana_inicio, semana_fin)
         esta_de_vacaciones = any(v.fecha_inicio.date() <= fecha <= v.fecha_fin.date() for v in vacaciones)
@@ -311,7 +311,8 @@ def obtener_turnos_semanales_admin():
         if mes not in resultado:
             resultado[mes] = {"nombre_mes": nombre_mes, "semanas": {}}
 
-        clave_semana = (usuario.id, semana_num)
+        # Importante: clave de semana debe usar semana_id, no solo número
+        clave_semana = (usuario.id, semana_id)
 
         if clave_semana not in resultado[mes]["semanas"]:
             resultado[mes]["semanas"][clave_semana] = {
@@ -340,7 +341,7 @@ def obtener_turnos_semanales_admin():
 
     for mes, data in resultado.items():
         semanas_ordenadas = []
-        for semana in sorted(data["semanas"].values(), key=lambda x: x['semana_num']):
+        for semana in sorted(data["semanas"].values(), key=lambda x: x['semana']):
             horario_dict = semana['horario']
             semana['horario'] = [
                 {"dia": dia, "turno": horario_dict.get(dia, "-")} for dia in dias_ordenados
@@ -348,8 +349,7 @@ def obtener_turnos_semanales_admin():
             semanas_ordenadas.append({
                 **semana,
                 "semana_num": semana["semana_num"]
-})
-
+            })
 
         resultado_final[mes] = {
             "nombre_mes": data["nombre_mes"],
@@ -361,8 +361,7 @@ def obtener_turnos_semanales_admin():
 @app.route('/api/admin/turnos_disponibles', methods=['GET'])
 @jwt_required()
 def obtener_turnos_disponibles_semanales():
-    # Recibir fecha de la semana como parámetro, en formato 'YYYY-MM-DD'
-    fecha_inicio_str = request.args.get('fecha_inicio')  # Fecha de inicio de la semana (lunes)
+    fecha_inicio_str = request.args.get('fecha_inicio')
     if not fecha_inicio_str:
         return jsonify({"error": "Faltan parámetros, se necesita 'fecha_inicio' en formato 'YYYY-MM-DD'"}), 400
 
@@ -371,43 +370,34 @@ def obtener_turnos_disponibles_semanales():
     except ValueError:
         return jsonify({"error": "Formato de fecha inválido"}), 400
 
-    # Calcular el fin de semana, sumando 6 días a la fecha de inicio
     fecha_fin = fecha_inicio + timedelta(days=6)
 
-    # Obtener todos los turnos disponibles para la semana solicitada
-    turnos_disponibles = Turno.query.all()  # Obtener todos los turnos disponibles de la base de datos
+    turnos_disponibles = Turno.query.all()
 
-    # Organizar los turnos por usuario y día
     resultados = {}
 
     for turno in turnos_disponibles:
-        # Vamos a asumir que 'turno' tiene información sobre qué días están disponibles.
-        for dia_semana in range(7):  # 0=lunes, 1=martes, ... 6=domingo
-            # Para cada día de la semana, verificamos si hay turnos disponibles
+        for dia_semana in range(7):
             dia_nombre_es = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'][dia_semana]
 
-            # Crear una nueva entrada para cada usuario si no existe
             for usuario in Usuario.query.all():
                 if usuario.id not in resultados:
                     resultados[usuario.id] = {
                         "nombre": usuario.nombreCompleto,
                         "turnos_disponibles": {d: [] for d in ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']},
-                        "vacaciones": set()  # Para almacenar las fechas de vacaciones
+                        "vacaciones": set()
                     }
 
-                # Agregar turno disponible para el día en cuestión
                 resultados[usuario.id]["turnos_disponibles"][dia_nombre_es].append({
                     "turno_id": turno.id,
-                    "descripcion": getattr(turno, f"dia_{dia_nombre_es}"),  # Se asume que cada 'turno' tiene el horario para cada día
+                    "descripcion": getattr(turno, f"dia_{dia_nombre_es}"),
                     "horario": turno.horas
                 })
 
-                # Verificar si el usuario tiene vacaciones en ese día
                 vacaciones = checkIfHasVacationsOnDate(usuario.id, fecha_inicio + timedelta(days=dia_semana), fecha_inicio + timedelta(days=dia_semana))
                 if vacaciones:
                     resultados[usuario.id]["vacaciones"].add(fecha_inicio + timedelta(days=dia_semana))
 
-    # Formatear los resultados para devolver en el frontend
     turnos_finales = []
 
     for usuario_id, usuario_data in resultados.items():
