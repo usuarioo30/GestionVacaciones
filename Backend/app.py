@@ -7,7 +7,9 @@ from flask_jwt_extended import JWTManager, create_access_token, get_jwt, jwt_req
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import timedelta
+
 from sqlalchemy import extract, func
+
 from calendar import monthrange
 import locale
 locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
@@ -1486,26 +1488,27 @@ def getAllLocalHolidays():
 def getLocalHolidays():
     try:
 
-        date = request.args.get('date')
-
-        # Obtener el día de la semana
-        dia_semana = datetime.strptime(date, '%Y-%m-%d')
+        year = request.args.get('date').split('-')[0]  # Obtener el año de la fecha
+        month = request.args.get('date').split('-')[1]  # Obtener el mes de la fecha
 
         # Obtener los días festivos locales
         local_holidays = LocalHolidays.query.filter(
-            LocalHolidays.date == dia_semana
+            extract('month', LocalHolidays.date) == int(month),
+            extract('year', LocalHolidays.date) == int(year)
         ).all()
 
         # Crear una lista de días festivos locales
         
+        response = []
+
         if len(local_holidays) == 0:
-            response = {
-                "isHoliday": False,
-            }
             return jsonify(response), 200
-        response = {
-            "isHoliday": True,
-        }
+        for holiday in local_holidays:
+            holiday_json = {
+                "date": holiday.date.strftime('%Y-%m-%d'),
+                "name": holiday.name
+            }
+            response.append(holiday_json)
 
         return jsonify(response), 200
 

@@ -18,9 +18,9 @@
 
         <hr>
 
-        <div *ngIf="localHolidayService.LocalHolidays().length > 0">
+        <div *ngIf="localHolidays.length > 0">
           <h4>Días no laborables</h4>
-          <span class="fw-bold d-block" *ngFor="let localHoliday of localHolidayService.LocalHolidays()">{{localHoliday.name}}: {{formatDateString(localHoliday.date)}}</span>
+          <span class="fw-bold d-block" *ngFor="let localHoliday of localHolidays">{{localHoliday.name}}: {{formatDateString(localHoliday.date)}}</span>
         </div>
 
       </div>

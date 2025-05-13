@@ -1,11 +1,11 @@
 import { Component, computed, inject, Input, OnInit, Signal, SimpleChanges } from '@angular/core';
 import { CalendarRequestService } from '../../../services/calendar-request.service';
 import { Day } from '../../../interfaces/day';
-import { CommonModule, DatePipe } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { SolicitudDescanso } from '../../../interfaces/solicitud-descanso';
 import { SolicitudDescansoService } from '../../../services/solicitud-descanso.service';
-import { catchError, firstValueFrom, map, of } from 'rxjs';
+import { catchError, firstValueFrom, forkJoin, map, of } from 'rxjs';
 import { jwtDecode } from 'jwt-decode';
 import { CreateCalendarService } from '../../../services/createcalendar.service';
 import { RequestResponse } from '../../../interfaces/request-response';
@@ -17,6 +17,7 @@ import { PublicHoliday } from '../../../interfaces/public-holiday';
 import { FestivitiesComponent } from '../../festivities/festivities.component';
 import { NewHolidayComponent } from '../../modal/new-holiday/new-holiday.component';
 import { NewHolidayService } from '../../../services/new-holiday.service';
+import { LocalHoliday } from '../../../interfaces/local-holiday';
 
 
 
@@ -40,13 +41,13 @@ export class CalendarioAdminComponent {
   users!: Signal<Usuariomin[]>;
   selectedUserId: number | null = null;
   holidays: PublicHoliday[] = [];
+  localHolidays: LocalHoliday[] = [];
   openModal: boolean = false;
   selectedDay!: Day;
 
   weeksDaysName: string[] = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
 
   calendar: CreateCalendarService = inject(CreateCalendarService);
-  solicitudSrvc: SolicitudDescansoService = inject(SolicitudDescansoService);
   requestCalendar: CalendarRequestService = inject(CalendarRequestService);
   authService: AuthService = inject(AuthService);
   holidayService: HolidayserviceService = inject(HolidayserviceService);
@@ -80,24 +81,28 @@ export class CalendarioAdminComponent {
         const userId = Number.parseInt(decodedToken.sub);
 
         firstValueFrom(this.requestCalendar.getAcceptedRequest(this.auth))
-          .then(() => {
+        .then(() => {
+          const publicHols$ = this.holidayService.getPublicHolidays(this.year);
+          const mm = String(this.monthNumber + 1).padStart(2, '0');
+          const date = `${this.year}-${mm}`;
+          const localHols$ = this.localHolidayService.checkIfDateIsLocalHoliday(date);
 
-            this.holidayService.getPublicHolidays(this.year).subscribe({
-              next: (response) => {
-                // filtramos los de Andalucía
-                this.holidays = response.filter(h =>
-                  h.global || (h.counties ?? []).includes('ES-AN')
-                );
-                
-          
-                // 3) Con los festivos ya cargados, generamos el calendario
-                this.loadCalendar();
-              },
-              error: (err) => console.error('No se pudieron cargar festivos:', err)
-            });
-
-            this.loadCalendar();
+          forkJoin([publicHols$, localHols$]).subscribe({
+            next: ([publicHols, localHols]) => {
+              // filtras públicos + “ES-AN”
+              this.holidays = publicHols.filter(h => h.global || (h.counties ?? []).includes('ES-AN'));
+              // actualizas tu Signal manualmente si aún la usas:
+              this.localHolidays = localHols;
+              // y YA tienes ambos arrays para generar el calendario
+              this.loadCalendar();
+            },
+            error: err => console.error('Error cargando festivos:', err)
           });
+        })
+        .catch(err => console.error(err));
+
+          //Aquí acaba el firstValueForm
+
         this.authService.getUsers(token);
         this.users = computed(() => this.authService.allUsers());
       }
@@ -182,7 +187,7 @@ export class CalendarioAdminComponent {
       day.isHoliday = this.isHoliday(day);
 
       if (!day.isHoliday) {
-        day.isHoliday = await this.isLocalHoliday(day);
+        day.isHoliday = this.isLocalHoliday(day);
       }
 
       const solicitudParcial: RequestResponse = !solicitudCompleta.estado ? this.isRequested(day) : { estado: false, usuarioId: 0 };
@@ -350,11 +355,16 @@ export class CalendarioAdminComponent {
     });
   }
 
-  private async isLocalHoliday(day: Day): Promise<boolean> {
+  private isLocalHoliday(day: Day): boolean {
 
-    const date = `${day.year}-0${day.monthIndex}-${day.number}`
-    const response = await firstValueFrom(this.localHolidayService.checkIfDateIsLocalHoliday(date))
-    return response.isHoliday;
+    const response = this.localHolidays
+    .some(h => {
+      const [y, m, d] = h.date.split('-').map(Number);
+      // m es 1–12 en la cadena, monthIndex es 0–11
+      return y === day.year && (m - 1) === day.monthIndex && d === day.number;
+    });
+
+    return response;
 
   }
 
