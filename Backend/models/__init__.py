@@ -4,3 +4,5 @@ from .schedule import Schedule
 from .localholidays import LocalHolidays
 from .horario import Horario
 from .turno import Turno
+from .turnodiarioasignado import TurnoDiarioAsignado
+from .scheduleday import ScheduleDay
