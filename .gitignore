@@ -1,2 +1,4 @@
 mysql_data
 venv
+Backend/__pycache__
+Backend/models/__pycache__

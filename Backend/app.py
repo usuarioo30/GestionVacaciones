@@ -27,90 +27,14 @@ from reportlab.lib import colors
 from DayWeeks import DayOfWeek 
 from sqlalchemy import func, case, literal
 
+from models import Usuario, SolicitudDescanso, Schedule, LocalHolidays, Horario, Turno
+from extensions import db, jwt 
 
 # Configuración de la base de datos y otros parámetros
 class Config:
     SQLALCHEMY_DATABASE_URI = 'mysql://root:Usuario1234@localhost/gestionvacaciones'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SECRET_KEY = 'miClave'
-
-# Inicializa la base de datos y JWT
-db = SQLAlchemy()
-jwt = JWTManager()
-
-class Usuario(db.Model):
-    __tablename__ = 'usuario'
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    nombreCompleto = db.Column(db.String(100), nullable=False)
-    password = db.Column(db.String(255), nullable=False)
-    username = db.Column(db.String(50), unique=True, nullable=False)
-    rol = db.Column(db.String(20), nullable=False)
-
-    def __repr__(self):
-        return f'<Usuario {self.username}>'
-
-class SolicitudDescanso(db.Model):
-    __tablename__ = 'solicitudDescanso'
-    id = db.Column(db.Integer, primary_key=True)
-    usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id', ondelete="CASCADE"), nullable=False)
-    fecha_inicio = db.Column(db.DateTime, nullable=False)
-    fecha_fin = db.Column(db.DateTime, nullable=False)
-    fecha_solicitud = db.Column(db.DateTime, default=datetime.utcnow)
-    estado = db.Column(db.Boolean, nullable=True, default=None)
-    motivo = db.Column(db.String(255), nullable=True)
-
-    usuario = db.relationship('Usuario', backref=db.backref('solicitudes', cascade="all, delete-orphan"))
-
-    def __repr__(self):
-        return f'<SolicitudDescanso {self.id}>'
-
-class Schedule(db.Model):
-    __tablename__ = 'schedules'
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id', ondelete='CASCADE'), nullable=False)
-    horas_totales = db.Column(db.Float, nullable=True)
-    inicio_semana = db.Column(db.Date, nullable=False)
-    fin_semana = db.Column(db.Date, nullable=False)
-
-    dias = db.relationship('ScheduleDay', back_populates='schedule', cascade='all, delete-orphan')
-
-    def __repr__(self):
-        return f'<Schedule {self.id} usuario={self.usuario_id}>'
-
-class LocalHolidays(db.Model):
-    __tablename__ = 'local_holidays'
-
-    date = db.Column(db.Date, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-
-    def __repr__(self):
-        return f'<LocalHoliday {self.number} {self.year}>'
-
-
-class Horario(db.Model):
-    __tablename__ = 'horario'
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
-    start = db.Column(db.DateTime, nullable=False)
-    end = db.Column(db.DateTime, nullable=False)
-    user = db.relationship('Usuario', backref='horario')
-
-class Turno(db.Model):
-    __tablename__ = 'turno'
-    id = db.Column(db.Integer, primary_key=True)
-    dia_lunes = db.Column(db.String(50), nullable=False)
-    dia_martes = db.Column(db.String(50), nullable=False)
-    dia_miercoles = db.Column(db.String(50), nullable=False)
-    dia_jueves = db.Column(db.String(50), nullable=False)
-    dia_viernes = db.Column(db.String(50), nullable=False)
-    dia_sabado = db.Column(db.String(50), nullable=False)
-    dia_domingo = db.Column(db.String(50), nullable=False)
-    horas = db.Column(db.Integer, nullable=False)
-    horas_debe = db.Column(db.Integer, nullable=False)
-
-    def __repr__(self):
-        return f'<Turno {self.id}>'
 
 class TurnoDiarioAsignado(db.Model):
     __tablename__ = 'turno_diario_asignado'
