@@ -16,18 +16,17 @@
       <div class="mb-5">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h4 class="mb-0">
-            {{ turnosArray[currentSemanaIndex].semana }}
+            <h4 class="mb-0">
+              {{ turnosArray[currentSemanaIndex].semanaTexto }}
+            </h4>
           </h4>
           <div class="d-flex align-items-center" style="gap: 0.5rem; width: auto;">
             <button class="btn btn-danger me-3" data-bs-toggle="modal" data-bs-target="#modalGenerarPDF">
               <i class="bi bi-file-pdf"></i>
             </button>
-            <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#modalActualizarTurno">
-              <i class="bi bi-pencil-square"></i> Actualizar Turno
-            </button>
             <label for="selectMes" class="form-label fw-bold mb-0">Ir al mes:</label>
-            <select id="selectMes" class="form-select form-select-sm" #mesSelect
-              (change)="irAlMesSeleccionado(mesSelect.value)" style="width: auto; min-width: 10rem;">
+            <select id="selectMes" class="form-select form-select-sm" [(ngModel)]="mesSeleccionado"
+              (change)="irAlMesSeleccionado(mesSeleccionado)" style="width: auto; min-width: 10rem;">
               <option value="" disabled selected>Selecciona un mes</option>
               <option *ngFor="let mes of mesesDisponibles" [value]="mes">
                 {{ obtenerNombreMes(mes) }}
@@ -53,15 +52,62 @@
             <tbody>
               <tr *ngFor="let usuario of turnosArray[currentSemanaIndex].usuarios">
                 <td class="fw-bold">{{ usuario.nombre }}</td>
-                <td>{{ usuario.horario.lunes }}</td>
-                <td>{{ usuario.horario.martes }}</td>
-                <td>{{ usuario.horario.miercoles }}</td>
-                <td>{{ usuario.horario.jueves }}</td>
-                <td>{{ usuario.horario.viernes }}</td>
-                <td>{{ usuario.horario.sabado }}</td>
-                <td>{{ usuario.horario.domingo }}</td>
+
+                <td class="editable-cell" *ngIf="obtenerTurnoDelDia(usuario.horario, 'lunes') !== '-'"
+                  data-bs-toggle="modal" data-bs-target="#modalEditarTurno" (click)="editarTurno(usuario.id, 'lunes')">
+                  {{ obtenerTurnoDelDia(usuario.horario, 'lunes') }}
+                </td>
+                <td class="text-muted disabled-cell" *ngIf="obtenerTurnoDelDia(usuario.horario, 'lunes') === '-'">
+                  -
+                </td>
+                <td class="editable-cell" *ngIf="obtenerTurnoDelDia(usuario.horario, 'martes') !== '-'"
+                  data-bs-toggle="modal" data-bs-target="#modalEditarTurno" (click)="editarTurno(usuario.id, 'martes')">
+                  {{ obtenerTurnoDelDia(usuario.horario, 'martes') }}
+                </td>
+                <td class="text-muted disabled-cell" *ngIf="obtenerTurnoDelDia(usuario.horario, 'martes') === '-'">
+                  -
+                </td>
+                <td class="editable-cell" *ngIf="obtenerTurnoDelDia(usuario.horario, 'miercoles') !== '-'"
+                  data-bs-toggle="modal" data-bs-target="#modalEditarTurno"
+                  (click)="editarTurno(usuario.id, 'miercoles')">
+                  {{ obtenerTurnoDelDia(usuario.horario, 'miercoles') }}
+                </td>
+                <td class="text-muted disabled-cell" *ngIf="obtenerTurnoDelDia(usuario.horario, 'miercoles') === '-'">
+                  -
+                </td>
+                <td class="editable-cell" *ngIf="obtenerTurnoDelDia(usuario.horario, 'jueves') !== '-'"
+                  data-bs-toggle="modal" data-bs-target="#modalEditarTurno" (click)="editarTurno(usuario.id, 'jueves')">
+                  {{ obtenerTurnoDelDia(usuario.horario, 'jueves') }}
+                </td>
+                <td class="text-muted disabled-cell" *ngIf="obtenerTurnoDelDia(usuario.horario, 'jueves') === '-'">
+                  -
+                </td>
+                <td class="editable-cell" *ngIf="obtenerTurnoDelDia(usuario.horario, 'viernes') !== '-'"
+                  data-bs-toggle="modal" data-bs-target="#modalEditarTurno"
+                  (click)="editarTurno(usuario.id, 'viernes')">
+                  {{ obtenerTurnoDelDia(usuario.horario, 'viernes') }}
+                </td>
+                <td class="text-muted disabled-cell" *ngIf="obtenerTurnoDelDia(usuario.horario, 'viernes') === '-'">
+                  -
+                </td>
+                <td class="editable-cell" *ngIf="obtenerTurnoDelDia(usuario.horario, 'sabado') !== '-'"
+                  data-bs-toggle="modal" data-bs-target="#modalEditarTurno" (click)="editarTurno(usuario.id, 'sabado')">
+                  {{ obtenerTurnoDelDia(usuario.horario, 'sabado') }}
+                </td>
+                <td class="text-muted disabled-cell" *ngIf="obtenerTurnoDelDia(usuario.horario, 'sabado') === '-'">
+                  -
+                </td>
+                <td class="editable-cell" *ngIf="obtenerTurnoDelDia(usuario.horario, 'domingo') !== '-'"
+                  data-bs-toggle="modal" data-bs-target="#modalEditarTurno"
+                  (click)="editarTurno(usuario.id, 'domingo')">
+                  {{ obtenerTurnoDelDia(usuario.horario, 'domingo') }}
+                </td>
+                <td class="text-muted disabled-cell" *ngIf="obtenerTurnoDelDia(usuario.horario, 'domingo') === '-'">
+                  -
+                </td>
               </tr>
             </tbody>
+
           </table>
         </div>
 
@@ -86,90 +132,38 @@
   </div>
 </div>
 
-<!-- Modal -->
-<div class="modal fade" id="modalGenerarPDF" tabindex="-1" aria-labelledby="modalGenerarPDFLabel" aria-hidden="true">
+<!-- Modal para editar turno -->
+<div class="modal fade" id="modalEditarTurno" tabindex="-1" aria-labelledby="modalEditarTurnoLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
+
       <div class="modal-header">
-        <h5 class="modal-title" id="modalGenerarPDFLabel">Generar PDF de Horario</h5>
+        <h5 class="modal-title" id="modalEditarTurnoLabel">Editar Turno</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
       </div>
+
       <div class="modal-body">
-        <div class="mb-3">
-          <label for="usuarioSelect" class="form-label">Seleccionar Usuario</label>
-          <select id="usuarioSelect" class="form-select" [(ngModel)]="usuarioSeleccionado"
-            (change)="cargarMesesDelUsuario()">
-            <option [value]="0" disabled selected>Seleccione un usuario</option>
-            <option *ngFor="let usuario of usuarios" [value]="usuario.id">{{ usuario.nombreCompleto }}
-            </option>
-          </select>
-        </div>
+        <form [formGroup]="turnoForm" (ngSubmit)="actualizarTurno()">
 
-        <div class="mb-3">
-          <label for="mesSelect" class="form-label">Seleccionar Mes</label>
-          <select id="mesSelect" class="form-select" [(ngModel)]="mesSeleccionado">
-            <option *ngFor="let mes of mesesUsuario" [value]="mes">{{ obtenerNombreMes(mes) }}</option>
-          </select>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-primary" (click)="descargarPDF()" [disabled]="!usuarioSeleccionado || !mesSeleccionado">
-          Descargar PDF
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-<!-- Modal para Actualizar Turno -->
-<div class="modal fade" id="modalActualizarTurno" tabindex="-1" aria-labelledby="modalActualizarTurnoLabel"
-  aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="modalActualizarTurnoLabel">Actualizar Turno</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-      </div>
-      <div class="modal-body">
-        <div class="mb-3">
-          <label for="usuarioSelect" class="form-label">Seleccionar Usuario</label>
-          <select id="usuarioSelect" class="form-select" [(ngModel)]="usuarioSeleccionado"
-            (change)="cargarMesesDelUsuario()">
-            <option [value]="0" disabled selected>Seleccione un usuario</option>
-            <option *ngFor="let usuario of usuarios" [value]="usuario.id">{{ usuario.nombreCompleto }}</option>
-          </select>
-        </div>
+          <!-- Mostrar el ID del usuario seleccionado -->
+          <p><strong>ID Usuario:</strong> {{ idUsuarioSeleccionado }}</p>
+          <p><strong>Día:</strong> {{ diaSeleccionado }}</p>
 
-        <div class="mb-3">
-          <label for="mesSelect" class="form-label">Seleccionar Mes</label>
-          <select id="mesSelect" class="form-select" [(ngModel)]="mesSeleccionado">
-            <option *ngFor="let mes of mesesUsuario" [value]="mes">{{ obtenerNombreMes(mes) }}</option>
-          </select>
-        </div>
+          <!-- Campo para seleccionar el turno -->
+          <div class="mb-3">
+            <label for="turno" class="form-label">Nuevo Turno</label>
+            <select id="turno" class="form-select" formControlName="turno">
+              <option *ngFor="let turno of turnosDisponibles" [value]="turno.turno_id">
+                {{ turno.descripcion }} - {{ turno.horario }} horas
+              </option>
+            </select>
+          </div>
 
-        <div class="mb-3">
-          <label for="semanaSelect" class="form-label">Seleccionar Semana</label>
-          <select id="semanaSelect" class="form-select" [(ngModel)]="semanaSeleccionada">
-            <option [ngValue]="0" disabled>Seleccione una semana</option>
-            <option *ngFor="let turno of turnosArray; let i = index" [ngValue]="i + 1">
-              {{ turno.semana }}
-            </option>
-          </select>
-        </div>
-
-        <div class="mb-3">
-          <label for="nuevoTurnoSelect" class="form-label">Seleccionar Nuevo Turno</label>
-          <select id="nuevoTurnoSelect" class="form-select" [(ngModel)]="nuevoTurnoSeleccionado">
-            <option *ngFor="let turno of turnosDisponibles" [value]="turno.id">
-              {{ turno.id }}
-            </option>
-          </select>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-primary" data-bs-dismiss="modal" (click)="actualizarTurno()"
-          [disabled]="!usuarioSeleccionado || !mesSeleccionado || !semanaSeleccionada || !nuevoTurnoSeleccionado">
-          Actualizar Turno
-        </button>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary" [disabled]="turnoForm.invalid">Guardar</button>
+          </div>
+        </form>
       </div>
     </div>
   </div>

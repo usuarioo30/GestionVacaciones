@@ -2,12 +2,10 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
-
 @Injectable({
   providedIn: 'root'
 })
 export class HorarioService {
-
   private apiUrl = 'http://localhost:5000/api';
 
   constructor(private http: HttpClient) { }
@@ -19,6 +17,14 @@ export class HorarioService {
     });
   }
 
+  obtenerTurnosPorDia(userId: number, mes: string): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/usuario/${userId}/turnos_dia/${mes}`);
+  }
+
+  /**
+   * Obtiene los turnos semanales para todos los usuarios, tal como lo devuelve el backend actualizado.
+   * La estructura es un diccionario por mes, luego por semana, luego los turnos por día.
+   */
   obtenerTurnosSemanales(): Observable<any> {
     return this.http.get<any>(`${this.apiUrl}/admin/turnos_semanales`, {
       headers: this.getAuthHeaders()
@@ -31,30 +37,24 @@ export class HorarioService {
     });
   }
 
-
   obtenerMesesPorUsuario(userId: number): Observable<string[]> {
     return this.http.get<string[]>(`${this.apiUrl}/usuario/${userId}/meses_disponibles`, {
       headers: this.getAuthHeaders()
     });
   }
 
-  generarPDF(userId: number, mes: string): Observable<Blob> {
-    return this.http.get(`${this.apiUrl}/generar_pdf/${userId}/${mes}`, {
-      headers: this.getAuthHeaders(),
-      responseType: 'blob'
-    });
-  }
-
-  actualizarTurno(payload: any): Observable<any> {
-    return this.http.put<any>(`${this.apiUrl}/actualizar_turno`, payload, {
-      headers: this.getAuthHeaders()
-    });
-  }
-  
-  obtenerTurnosDisponibles(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/turnos_disponibles`, {
+  obtenerTurnosDisponibles(fechaInicio: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/admin/turnos_disponibles`, {
+      params: {
+        fecha_inicio: fechaInicio
+      },
       headers: this.getAuthHeaders()
     });
   }
 
+  actualizarTurnoDiario(data: { user_id: number, fecha: string, turno_id: number }): Observable<any> {
+    return this.http.put(`${this.apiUrl}/actualizar_turno_diario`, data, {
+      headers: this.getAuthHeaders()
+    });
+  }
 }
