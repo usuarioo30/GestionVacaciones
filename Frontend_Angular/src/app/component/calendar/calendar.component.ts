@@ -98,7 +98,7 @@ export class CalendarComponent implements OnInit {
   
 
   loadUsers(): void {
-    this.usuarioService.getAllUsers().subscribe(
+    this.usuarioService.getUsersList().subscribe(
       (response) => {
         this.usuarios = response.users;
   
