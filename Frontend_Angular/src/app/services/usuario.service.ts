@@ -51,15 +51,15 @@ export class UsuarioService {
     return this.http.get(`${this.apiUrl}/list`, { headers });
   }
 
-  getAllUsers(): Observable<any> {
+  // getAllUsers(): Observable<any> {
 
-    const token = localStorage.getItem('access_token');
-    const headers = new HttpHeaders({
-      'Authorization': `Bearer ${token}`
-    });
+  //   const token = localStorage.getItem('access_token');
+  //   const headers = new HttpHeaders({
+  //     'Authorization': `Bearer ${token}`
+  //   });
 
-    return this.http.get(`${this.apiUrl}/users`, { headers });
-  }
+  //   return this.http.get(`${this.apiUrl}/users`, { headers });
+  // }
 
   getUsuarioActual(): any {
     const token = localStorage.getItem('access_token');
