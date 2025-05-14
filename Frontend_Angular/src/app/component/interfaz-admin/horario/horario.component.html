@@ -21,9 +21,11 @@
             </h4>
           </h4>
           <div class="d-flex align-items-center" style="gap: 0.5rem; width: auto;">
-            <button class="btn btn-danger me-3" data-bs-toggle="modal" data-bs-target="#modalGenerarPDF">
+            <button class="btn btn-danger me-3" data-bs-toggle="modal" data-bs-target="#modalSeleccionarUsuarioYMes">
               <i class="bi bi-file-pdf"></i>
             </button>
+
+
             <label for="selectMes" class="form-label fw-bold mb-0">Ir al mes:</label>
             <select id="selectMes" class="form-select form-select-sm" [(ngModel)]="mesSeleccionado"
               (change)="irAlMesSeleccionado(mesSeleccionado)" style="width: auto; min-width: 10rem;">
@@ -129,6 +131,51 @@
 <div class="container mt-4" *ngIf="!isCargando && turnosArray.length === 0">
   <div class="alert alert-info text-center" role="alert">
     No se encontraron turnos para mostrar.
+  </div>
+</div>
+
+<!-- Modal para elegir usuario y mes -->
+<div class="modal fade" id="modalSeleccionarUsuarioYMes" tabindex="-1"
+  aria-labelledby="modalSeleccionarUsuarioYMesLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalSeleccionarUsuarioYMesLabel">Seleccionar Usuario y Mes</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Formulario para seleccionar usuario y mes -->
+        <form [formGroup]="seleccionUsuarioForm" (ngSubmit)="descargarPDFTurnos()">
+          <!-- Selector de Usuario -->
+          <div class="mb-3">
+            <label for="usuarioSeleccionado" class="form-label">Selecciona Usuario</label>
+            <select id="usuarioSeleccionado" class="form-select" formControlName="usuario"
+              (change)="onUsuarioSeleccionado()" required>
+              <option *ngFor="let usuario of usuarios" [value]="usuario.id">
+                {{ usuario.nombreCompleto }}
+              </option>
+            </select>
+
+          </div>
+
+          <!-- Selector de Mes -->
+          <div class="mb-3">
+            <label for="mesSeleccionado" class="form-label">Selecciona Mes</label>
+            <select id="mesSeleccionado" class="form-select" formControlName="mes" required>
+              <option *ngFor="let mes of mesesUsuario" [value]="mes">
+                {{ obtenerNombreMes(mes) }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Botones de acción -->
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary" [disabled]="seleccionUsuarioForm.invalid">Generar PDF</button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 </div>
 

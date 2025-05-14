@@ -493,30 +493,40 @@ def get_horas_turno():
 @app.route('/api/usuario/<int:user_id>/meses_disponibles', methods=['GET'])
 @jwt_required()
 def obtener_meses_disponibles_por_usuario(user_id):
-    meses = db.session.query(TurnoAsignado.mes).filter_by(user_id=user_id).distinct().all()
-    meses_list = [m[0] for m in meses]
-    return jsonify(meses_list)
+    turnos = db.session.query(TurnoDiarioAsignado.fecha).filter_by(user_id=user_id).distinct().all()
+    if not turnos:
+        return jsonify([]), 200
+    
+    meses = {turno[0].strftime('%Y-%m') for turno in turnos}
+    return jsonify(sorted(list(meses))), 200
 
 @app.route('/api/generar_pdf/<int:user_id>/<string:mes>', methods=['GET'])
 @jwt_required()
 def generar_pdf_turnos(user_id, mes):
-
-    usuario = Usuario.query.get(user_id) # Obtener el usuario
+    usuario = Usuario.query.get(user_id)
     if not usuario:
         return {"error": "Usuario no encontrado"}, 404
 
-    turnos = TurnoAsignado.query.filter_by(user_id=user_id, mes=mes).order_by(TurnoAsignado.semana).all() # Obtener y validar los turnos
-    if not turnos:
-        return {"error": "No hay turnos asignados para este mes"}, 404
-
     try:
-        anio, mes_num = map(int, mes.split('-')) # Parseo de año y mes y cálculo de días del mes
+        anio, mes_num = map(int, mes.split('-'))
         dias_en_mes = monthrange(anio, mes_num)[1]
     except ValueError:
         return {"error": "Formato de mes incorrecto, usa 'YYYY-MM'"}, 400
 
-    buffer = BytesIO() #Prepara el buffer y la fuente tipografica
+    fecha_inicio = datetime(anio, mes_num, 1).date()
+    fecha_fin = datetime(anio, mes_num, dias_en_mes).date()
 
+    turnos = TurnoDiarioAsignado.query.filter(
+        TurnoDiarioAsignado.user_id == user_id,
+        TurnoDiarioAsignado.fecha >= fecha_inicio,
+        TurnoDiarioAsignado.fecha <= fecha_fin
+    ).all()
+
+    if not turnos:
+        return {"error": "No hay turnos asignados para este mes"}, 404
+
+    # Preparar buffer y fuente
+    buffer = BytesIO()
     font_path = os.path.join("fonts", "Montserrat-Regular.ttf")
     if os.path.exists(font_path):
         pdfmetrics.registerFont(TTFont("Montserrat", font_path))
@@ -524,8 +534,7 @@ def generar_pdf_turnos(user_id, mes):
     else:
         font_name = "Helvetica"
 
-    # Título para el documento PDF (usado internamente, evita 'anonymous')
-    nombre_mes = datetime(anio, mes_num, 1).strftime('%B')  # Ej: 'abril'
+    nombre_mes = datetime(anio, mes_num, 1).strftime('%B')
     pdf_title = f"horario_{usuario.username}_{nombre_mes.capitalize()}_{anio}"
 
     doc = SimpleDocTemplate(
@@ -535,10 +544,8 @@ def generar_pdf_turnos(user_id, mes):
         rightMargin=40,
         topMargin=40,
         bottomMargin=40,
-        title=pdf_title  # << ESTA ES LA LÍNEA CLAVE
+        title=pdf_title
     )
-
-    elements = []
 
     styles = getSampleStyleSheet()
     title_style = styles["Title"]
@@ -549,6 +556,7 @@ def generar_pdf_turnos(user_id, mes):
     subtitle_style.fontName = font_name
     subtitle_style.fontSize = 14
 
+    elements = []
     elements.append(Paragraph("Horario de Turnos", title_style))
     elements.append(Spacer(1, 6))
     elements.append(Paragraph(f"<b>Empleado:</b> {usuario.nombreCompleto}", subtitle_style))
@@ -558,14 +566,13 @@ def generar_pdf_turnos(user_id, mes):
     encabezado = ['Semana', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
     table_data = [encabezado]
 
-    turnos_por_semana = {t.semana: t.turno for t in turnos}
-    primer_dia = datetime(anio, mes_num, 1)
-    ultimo_dia = datetime(anio, mes_num, dias_en_mes)
-    dia_actual = primer_dia
+    # Agrupar turnos por semana
+    dias_turnos = {t.fecha: t for t in turnos}
     semanas = []
     semana_actual = []
+    dia_actual = fecha_inicio
 
-    while dia_actual <= ultimo_dia:
+    while dia_actual <= fecha_fin:
         if dia_actual.weekday() == 0 and semana_actual:
             semanas.append(semana_actual)
             semana_actual = []
@@ -574,35 +581,26 @@ def generar_pdf_turnos(user_id, mes):
     if semana_actual:
         semanas.append(semana_actual)
 
-    for i, semana in enumerate(semanas):
-        turno = turnos_por_semana.get(i + 1)
+    for semana in semanas:
+        inicio = semana[0]
+        fin = semana[-1]
+        etiqueta_semana = f"{inicio.day:02d}-{fin.day:02d}"
+
         fila = ["-" for _ in range(7)]
+        vacaciones = checkIfHasVacationsOnDate(user_id, inicio, fin)
 
-        semana_inicio = semana[0].day
-        semana_fin = semana[-1].day
-        etiqueta_semana = f"{semana_inicio:02d}-{semana_fin:02d}"
+        for dia in semana:
+            if dia.month != mes_num:
+                continue
 
-        if turno:
+            idx = dia.weekday()
+            if vacaciones and any(v.fecha_inicio.date() <= dia <= v.fecha_fin.date() for v in vacaciones):
+                fila[idx] = "Vacaciones"
+            elif dia in dias_turnos:
+                turno = dias_turnos[dia].turno
+                dia_nombre = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'][idx]
+                fila[idx] = getattr(turno, f"dia_{dia_nombre}")
 
-            vacations = checkIfHasVacationsOnDate(usuario.id, semana[0], semana[-1]) # Verifica si tiene vacaciones en esa semana
-
-            if len(vacations) == 0: # Si tiene vacaciones asigna "VACACIONES" a la semana
-
-                valores = [
-                    turno.dia_lunes,
-                    turno.dia_martes,
-                    turno.dia_miercoles,
-                    turno.dia_jueves,
-                    turno.dia_viernes,
-                    turno.dia_sabado,
-                    turno.dia_domingo
-                ]
-            else:
-                valores = ["Vacaciones" for _ in range(7)]
-            for dia in semana:
-                if dia.month == mes_num:
-                    fila[dia.weekday()] = f"{valores[dia.weekday()]}"
-        
         table_data.append([etiqueta_semana] + fila)
 
     table = Table(table_data, repeatRows=1, colWidths=[90] + [100]*7)
@@ -628,7 +626,6 @@ def generar_pdf_turnos(user_id, mes):
         canvas.restoreState()
 
     doc.build(elements, onFirstPage=add_page_number, onLaterPages=add_page_number)
-
     buffer.seek(0)
 
     return send_file(
