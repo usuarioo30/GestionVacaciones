@@ -78,7 +78,11 @@ export class HorarioComponent {
         const agrupadoPorSemana: { [semana: string]: { nombre: string, horario: any[] }[] } = {};
         const usuariosSet: { [id: string]: { id: number, nombreCompleto: string } } = {};
 
+        const mesesSet: Set<string> = new Set(); // <-- NUEVO
+
         for (let mes in data) {
+          mesesSet.add(mes); // <-- NUEVO
+
           const semanasObj = data[mes].semanas;
           semanasObj.forEach((entrada: any) => {
             const { semana, usuario, horario, id_usuario } = entrada;
@@ -134,6 +138,15 @@ export class HorarioComponent {
 
         this.turnosArray = Object.values(semanasMap);
 
+        // ORDENAR LAS SEMANAS POR FECHA PARA CORRECTO INDICE
+        this.turnosArray.sort((a, b) => {
+          const fechaA = new Date(a.semana.split(' a ')[0]);
+          const fechaB = new Date(b.semana.split(' a ')[0]);
+          return fechaA.getTime() - fechaB.getTime();
+        });
+
+        // <-- NUEVO: Convertir Set a Array y asignar a `mesesDisponibles`
+        this.mesesDisponibles = Array.from(mesesSet).sort();
 
         this.isCargando = false;
       },
@@ -144,18 +157,23 @@ export class HorarioComponent {
     );
   }
 
+
   obtenerTurnoDelDia(horario: any[], dia: string): string {
     const diaTurno = horario.find(d => d.dia === dia);
     return diaTurno ? diaTurno.turno : '-';
   }
 
   irAlMesSeleccionado(mes: string): void {
-    const index = this.turnosArray.findIndex(turno =>
-      turno.usuarios.some(usuario => usuario.horario?.mes === mes)
-    );
+    // Buscar el índice de la primera semana que empiece en el mes seleccionado
+    const index = this.turnosArray.findIndex(turno => {
+      const fechaInicio = turno.semana.split(' a ')[0]; // formato YYYY-MM-DD
+      return fechaInicio.startsWith(mes);
+    });
 
     if (index !== -1) {
       this.currentSemanaIndex = index;
+    } else {
+      console.warn('No se encontró una semana para el mes seleccionado:', mes);
     }
   }
 
