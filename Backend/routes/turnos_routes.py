@@ -20,13 +20,13 @@ def changeDailyTurnos():
 def getDailyTurnosAdmin():
     return turnos.obtener_turnos_semanales_admin()
 
-@turnos_bp.route('/api/admin/turnos_disponibles', methods=['GET'])
+@turnos_bp.route('/admin/turnos_disponibles', methods=['GET'])
 @jwt_required()
 def getAvailableDailyTurnos():
     fecha_inicio_str = request.args.get('fecha_inicio')
     return turnos.obtener_turnos_disponibles_semanales(fecha_inicio_str)
 
-@turnos_bp.route('/api/horas_turno', methods=['GET'])
+@turnos_bp.route('/horas_turno', methods=['GET'])
 @jwt_required()
 def getTurnoHours():
     user_id = request.args.get('user_id')

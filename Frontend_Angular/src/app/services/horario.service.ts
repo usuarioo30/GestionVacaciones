@@ -57,4 +57,13 @@ export class HorarioService {
       headers: this.getAuthHeaders()
     });
   }
+
+  descargarPDF(userId: number, mes: string): Observable<Blob> {
+    const headers = this.getAuthHeaders();
+    return this.http.get(`${this.apiUrl}/generar_pdf/${userId}/${mes}`, {
+      headers,
+      responseType: 'blob'
+    });
+  }
+
 }

@@ -1,5 +1,4 @@
 from extensions import *
-from extensions import *
 from flask import jsonify
 # from flask_jwt_extended import get_jwt, get_jwt_identity
 from models import Turno, Usuario, TurnoDiarioAsignado, SolicitudDescanso

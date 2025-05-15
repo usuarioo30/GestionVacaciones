@@ -45,6 +45,9 @@ export class HorarioComponent {
   mesDeshabilitado: boolean = false;
   diaDeshabilitado: boolean = false;
 
+  seleccionUsuarioForm!: FormGroup;
+
+
   constructor(
     private fb: FormBuilder,
     private horarioService: HorarioService,
@@ -54,17 +57,17 @@ export class HorarioComponent {
       usuario: [null, Validators.required],
       turno: [null, Validators.required]
     });
+
+    this.seleccionUsuarioForm = this.fb.group({
+      usuario: [null, Validators.required],
+      mes: [null, Validators.required]
+    });
+
   }
 
   ngOnInit(): void {
+    this.cargarMesesDelUsuario();
     this.cargarTurnosSemanales();
-  }
-
-  cargarMesesDelUsuario(): void {
-    this.horarioService.obtenerMesesPorUsuario(this.usuarioSeleccionado).subscribe(
-      (meses) => this.mesesUsuario = meses,
-      (err) => console.error('Error cargando meses:', err)
-    );
   }
 
   cargarTurnosSemanales(): void {
@@ -75,7 +78,11 @@ export class HorarioComponent {
         const agrupadoPorSemana: { [semana: string]: { nombre: string, horario: any[] }[] } = {};
         const usuariosSet: { [id: string]: { id: number, nombreCompleto: string } } = {};
 
+        const mesesSet: Set<string> = new Set(); // <-- NUEVO
+
         for (let mes in data) {
+          mesesSet.add(mes); // <-- NUEVO
+
           const semanasObj = data[mes].semanas;
           semanasObj.forEach((entrada: any) => {
             const { semana, usuario, horario, id_usuario } = entrada;
@@ -131,6 +138,15 @@ export class HorarioComponent {
 
         this.turnosArray = Object.values(semanasMap);
 
+        // ORDENAR LAS SEMANAS POR FECHA PARA CORRECTO INDICE
+        this.turnosArray.sort((a, b) => {
+          const fechaA = new Date(a.semana.split(' a ')[0]);
+          const fechaB = new Date(b.semana.split(' a ')[0]);
+          return fechaA.getTime() - fechaB.getTime();
+        });
+
+        // <-- NUEVO: Convertir Set a Array y asignar a `mesesDisponibles`
+        this.mesesDisponibles = Array.from(mesesSet).sort();
 
         this.isCargando = false;
       },
@@ -141,18 +157,23 @@ export class HorarioComponent {
     );
   }
 
+
   obtenerTurnoDelDia(horario: any[], dia: string): string {
     const diaTurno = horario.find(d => d.dia === dia);
     return diaTurno ? diaTurno.turno : '-';
   }
 
   irAlMesSeleccionado(mes: string): void {
-    const index = this.turnosArray.findIndex(turno =>
-      turno.usuarios.some(usuario => usuario.horario?.mes === mes)
-    );
+    // Buscar el índice de la primera semana que empiece en el mes seleccionado
+    const index = this.turnosArray.findIndex(turno => {
+      const fechaInicio = turno.semana.split(' a ')[0]; // formato YYYY-MM-DD
+      return fechaInicio.startsWith(mes);
+    });
 
     if (index !== -1) {
       this.currentSemanaIndex = index;
+    } else {
+      console.warn('No se encontró una semana para el mes seleccionado:', mes);
     }
   }
 
@@ -315,4 +336,50 @@ export class HorarioComponent {
     const [anio, mes] = fecha.split('-');
     return `${anio}-${mes}-01`;
   }
+
+  cargarMesesDelUsuario(): void {
+    this.horarioService.obtenerMesesPorUsuario(this.usuarioSeleccionado).subscribe(
+      (meses) => {
+        this.mesesUsuario = meses;
+        if (this.mesesUsuario.length > 0) {
+          this.mesSeleccionado = this.mesesUsuario[0];
+        }
+      },
+      (err) => console.error('Error cargando meses:', err)
+    );
+  }
+
+  descargarPDFTurnos(): void {
+    const { usuario, mes } = this.seleccionUsuarioForm.value;
+
+    if (!usuario || !mes) {
+      console.warn('Usuario o mes no seleccionados');
+      return;
+    }
+
+    this.horarioService.descargarPDF(usuario, mes).subscribe({
+      next: (pdfBlob) => {
+        const url = window.URL.createObjectURL(pdfBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        const nombreMes = this.obtenerNombreMes(mes).replace(/\s/g, '_');
+        a.download = `horario_usuario_${usuario}_${nombreMes}_${mes.slice(0, 4)}.pdf`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+      },
+      error: (err) => {
+        console.error('Error al descargar el PDF:', err);
+        alert('No se pudo generar el PDF. Verifica que el usuario tenga turnos asignados para el mes seleccionado.');
+      }
+    });
+  }
+
+  onUsuarioSeleccionado(): void {
+    const usuarioId = this.seleccionUsuarioForm.get('usuario')?.value;
+    if (usuarioId) {
+      this.usuarioSeleccionado = usuarioId;
+      this.cargarMesesDelUsuario();
+    }
+  }
+
 }
