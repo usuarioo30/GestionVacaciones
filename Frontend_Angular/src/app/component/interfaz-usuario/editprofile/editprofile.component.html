@@ -1,55 +1,68 @@
-<div class="container d-flex justify-content-center align-items-center mt-0 vh-100">
-    <div class="card shadow-lg p-4" style="max-width: 400px; width: 100%;">
-      <h2 class="text-center mb-2 mt-4">Apeiroo Rooms</h2>
-      <h5 class="text-center mb-4 mt-4">Editar perfil</h5>
-      <form [formGroup]="editUser" (ngSubmit)="editUserSubmit()">
-        <div class="mb-3">
-            <label class="form-label" for="">Correo electrónico</label>
-            <input class="form-control" type="email" id="email" formControlName="email" readonly>
-            
+<div class="container d-flex justify-content-center align-items-center mt-5 mb-4">
+  <div class="card shadow-lg p-4" style="max-width: 400px; width: 100%;">
+    <h2 class="text-center mb-2 mt-4">Apeiroo Rooms</h2>
+    <h5 class="text-center mb-4 mt-4">Editar Perfil</h5>
+    <form [formGroup]="userForm" (ngSubmit)="editUser()">
+      <!-- Nombre Completo -->
+      <div class="mb-3">
+        <label for="nombreCompleto" class="form-label">Nombre Completo</label>
+        <input id="nombreCompleto" formControlName="nombreCompleto" type="text" class="form-control"
+          placeholder="Ingresa el nombre completo"
+          [ngClass]="{'is-invalid': userForm.get('nombreCompleto')?.invalid && userForm.get('nombreCompleto')?.touched}" />
+        <div *ngIf="userForm.get('nombreCompleto')?.invalid && userForm.get('nombreCompleto')?.touched"
+          class="text-danger">
+          El nombre completo es obligatorio.
         </div>
-        <div class="mb-3">
-            <label for="">Nombre de usuario</label>
-            <input class="form-control" type="text" formControlName="username" id="username">
-            <span class="text-danger" *ngIf="inValidField('username')">Rellene este campo</span>
-            <span class="text-danger" *ngIf="editUser.get('username')?.touched && !validUsername">El nombre de usuario escogido ya pertenece a otro usuario</span>
-            
+      </div>
+
+      <!-- Nombre de Usuario -->
+      <div class="mb-3">
+        <label for="username" class="form-label">Nombre de Usuario</label>
+        <input id="username" formControlName="username" type="text" class="form-control"
+          placeholder="Ingresa tu nombre de usuario"
+          [ngClass]="{'is-invalid': userForm.get('username')?.invalid && userForm.get('username')?.touched}" />
+        <div *ngIf="userForm.get('username')?.invalid && userForm.get('username')?.touched" class="text-danger">
+          El nombre de usuario es obligatorio.
         </div>
-        <div class="mb-3">
-            <label for="">Cambiar Contraseña</label>
-            <input class="form-control" type="password" formControlName="password" id="password">
+      </div>
+
+      <!-- Correo Electrónico -->
+      <div class="mb-3">
+        <label for="email" class="form-label">Correo Electrónico</label>
+        <input id="email" formControlName="email" type="email" class="form-control"
+          placeholder="Ingresa tu correo electrónico"
+          [ngClass]="{'is-invalid': userForm.get('email')?.invalid && userForm.get('email')?.touched}" />
+        <div *ngIf="userForm.get('email')?.invalid && userForm.get('email')?.touched" class="text-danger">
+          Ingresa un correo electrónico válido.
         </div>
-        <div class="mb-3">
-            <label for="">Confirmar Contraseña</label>
-            <input class="form-control" type="password" formControlName="confirmPassword" id="confirmPassword">
-            <span class="text-danger" *ngIf="editUser.controls['confirmPassword']?.touched && editUser.get('confirmPassword')?.value === '' || editUser.hasError('passNoCoinciden')">
-                ⚠ Las contraseñas no coinciden.
-            </span>
-              
+      </div>
+
+      <!-- Contraseña -->
+      <div class="mb-3">
+        <label for="password" class="form-label">Contraseña (opcional)</label>
+        <input id="password" formControlName="password" type="password" class="form-control"
+          placeholder="*****************"
+          [ngClass]="{'is-invalid': userForm.get('password')?.invalid && userForm.get('password')?.touched}" />
+        <div *ngIf="userForm.get('password')?.invalid && userForm.get('password')?.touched" class="text-danger">
+          La contraseña debe tener al menos 6 caracteres.
         </div>
-    
-        <div class="d-flex justify-content-between gap-2">
-            <button
-              type="button"
-              class="btn btn-secondary w-50"
-              [routerLink]="['/reservas']"
-              [queryParams]="{ sala: 'upper' }"
-              routerLinkActive="router-link-active"
-            >
-              Volver atrás
-            </button>
-            <button
-              type="submit"
-              class="btn btn-primary w-50"
-            >
-              Confirmar Edición
-            </button>
-          </div>
-    
+      </div>
+
+      <!-- Botón para guardar cambios -->
+      <div class="d-flex justify-content-between gap-2">
+        <button type="button" class="btn btn-secondary w-50" [routerLink]="['/calendario']">
+          Volver atrás
+        </button>
+        <button type="submit" class="btn btn-primary w-50" [disabled]="loading || userForm.invalid">
+          <span *ngIf="loading">Cargando...</span>
+          <span *ngIf="!loading">Guardar Cambios</span>
+        </button>
+      </div>
+
+      <!-- Mensaje de error -->
+      <div *ngIf="errorMessage" class="alert alert-danger mt-3">
+        {{ errorMessage }}
+      </div>
     </form>
-    </div>
   </div>
-  
-
-
-
+</div>

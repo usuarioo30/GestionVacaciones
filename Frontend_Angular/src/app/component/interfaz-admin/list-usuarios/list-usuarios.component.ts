@@ -1,103 +1,87 @@
 import { Component, OnInit } from '@angular/core';
 import { Usuario } from '../../../interfaces/usuario';
 import { AuthService } from '../../../services/auth.service';
-import { Router } from '@angular/router';
-import { NgFor, NgIf } from '@angular/common';
+import { Router, RouterLink } from '@angular/router';
+import { CommonModule, NgFor, NgIf } from '@angular/common';
 import Swal from 'sweetalert2';
+import { UsuarioService } from '../../../services/usuario.service';
+import { ReactiveFormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-list-usuarios',
-  imports: [NgIf, NgFor],
+  imports: [ReactiveFormsModule, CommonModule, RouterLink],
   templateUrl: './list-usuarios.component.html',
   styleUrl: './list-usuarios.component.css'
 })
 export class ListUsuariosComponent implements OnInit {
 
-  //Lista de usuarios existentes
-  usuarios: Usuario[] = [];
-
-  //Boolean para comprobar si tiene acceso
-  tieneAcceso: boolean = true;
-
-  //Usuario seleccionado
-  usuario!: Usuario;
+  usuarios: any[] = [];
+  isLoading: boolean = true;
+  usuario_actual: any;
 
   constructor(
-    private authService: AuthService,
+    private usuarioService: UsuarioService,
     private router: Router
-  ) {}
+  ) { }
 
-  ngOnInit() {
-    const token = localStorage.getItem('access_token');
+  ngOnInit(): void {
+    this.usuario_actual = this.usuarioService.getUsuarioActual();
+    this.listaUsuario();
+  }
 
-    this.authService.getRole().then(role => {
-      console.log('User Role:', role);
+  listaUsuario() {
+    this.usuarioService.getUsersList().subscribe({
+      next: (response) => {
+        this.usuarios = response.users || [];
+        this.isLoading = false;
+      },
+      error: (err) => {
+        console.error('Error al obtener los usuarios', err);
+        this.isLoading = false;
+      }
+    });
+  }
 
-      if (role !== 'admin') {
-        this.tieneAcceso = false;
-      } else {
-        this.authService.getUsers().then(usuarios => {
-          this.usuarios = usuarios;
+  deleteUser(userId: number) {
+    // Mostrar alerta de confirmación de eliminación
+    Swal.fire({
+      title: '¿Estás seguro?',
+      text: 'Esta acción no se puede deshacer',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // Si el usuario confirma la eliminación, proceder
+        this.usuarioService.deleteUser(userId).subscribe(
+          response => {
+            console.log('Usuario eliminado con éxito:', response);
 
-          if (token) {
-            this.authService.getUserByMail(this.authService.decodeToken(token).email).then(usuario => {
-              this.usuario = usuario;
-            }).catch(error => {
-              console.error('Error al obtener el usuario:', error);
+            // Eliminar el usuario de la lista directamente (sin recargar la página)
+            this.usuarios = this.usuarios.filter(user => user.id !== userId);
+
+            // Mostrar alerta de éxito
+            Swal.fire({
+              title: 'Eliminado',
+              text: 'El usuario ha sido eliminado con éxito',
+              icon: 'success',
+              confirmButtonText: 'Aceptar'
+            });
+          },
+          error => {
+            console.error('Error al eliminar el usuario:', error);
+
+            // Mostrar alerta de error si algo sale mal
+            Swal.fire({
+              title: 'Error',
+              text: 'Hubo un problema al eliminar el usuario',
+              icon: 'error',
+              confirmButtonText: 'Aceptar'
             });
           }
-        }).catch(error => {
-          console.error('Error al obtener los usuarios:', error);
-        });
+        );
       }
-    }).catch(error => {
-      console.error('Error al obtener el rol:', error);
     });
   }
-
-
-  async eliminarUsuario(id: number) {
-    const confirmacion = await Swal.fire({
-      title: "¿Estás seguro?",
-      text: "No podrás revertir esta acción.",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "#3085d6",
-      confirmButtonText: "Sí, eliminar",
-      cancelButtonText: "Cancelar"
-    });
-
-    if (!confirmacion.isConfirmed) {
-      return;
-    }
-
-    try {
-      await this.authService.deleteUser(id);
-
-      this.usuarios = this.usuarios.filter(usuario => usuario.id !== id);
-
-      await Swal.fire({
-        title: '¡Usuario eliminado!',
-        text: 'El usuario ha sido eliminado exitosamente.',
-        icon: 'success',
-        confirmButtonColor: '#3085d6',
-      });
-
-    } catch (error) {
-      console.error("Error al eliminar el usuario:", error);
-      await Swal.fire({
-        title: 'Error',
-        text: 'Hubo un problema al intentar eliminar el usuario.',
-        icon: 'error',
-        confirmButtonColor: '#d33',
-      });
-    }
-  }
-
-  //Método para redirigir al usuario
-  volverAReservas(): void {
-    this.router.navigate(['/reservas']);
-  }
-
 }

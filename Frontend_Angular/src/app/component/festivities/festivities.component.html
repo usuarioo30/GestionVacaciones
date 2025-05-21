@@ -1,0 +1,28 @@
+  <!-- Leyenda de Festivos -->
+  <div class="card shadow-lg mt-5 ms-5 me-5" style="max-width: 400px; background-color: #f8f9fa;">
+    <div class="card-header text-center header-card bg-success text-white">
+      <h3 class="mb-0">Festividades</h3>
+    </div>
+  
+    <div class="card-body">
+      <div class="user-legend-item ms-2" style="cursor: pointer;">
+
+        <div *ngIf="holidayService.monthHolidays()().length === 0" class="user-text">
+          <span class="fw-bold d-block">No hay festivos este mes</span>
+        </div>
+
+        <div *ngIf="holidayService.monthHolidays()().length > 0" class="user-text">
+          <h4>Festividades Autonómicas y Nacionales</h4>
+          <span class="fw-bold d-block" *ngFor="let holiday of holidayService.monthHolidays()()">{{holiday.localName}}: {{formatDateString(holiday.date)}}</span>
+        </div>
+
+        <hr>
+
+        <div *ngIf="localHolidays.length > 0">
+          <h4>Días no laborables</h4>
+          <span class="fw-bold d-block" *ngFor="let localHoliday of localHolidays">{{localHoliday.name}}: {{formatDateString(localHoliday.date)}}</span>
+        </div>
+
+      </div>
+    </div>
+  </div>

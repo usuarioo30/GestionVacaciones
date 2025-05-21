@@ -1,4 +1,4 @@
-import { Component, OnInit, Renderer2 } from '@angular/core';
+import { Component, computed, inject, OnInit, Renderer2 } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
@@ -6,6 +6,7 @@ import { loadGapiInsideDOM, gapi } from 'gapi-script';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule } from '@angular/forms';
 import Swal from 'sweetalert2';
+import { jwtDecode } from 'jwt-decode';
 
 @Component({
   imports: [CommonModule, ReactiveFormsModule],
@@ -16,12 +17,14 @@ import Swal from 'sweetalert2';
 export class LoginComponent implements OnInit {
   loginForm!: FormGroup;
   isDarkTheme = false;
+  isLogged = computed(() => this.authService.isLogued());
+  private authService: AuthService = inject(AuthService);
 
   constructor(
-      private fb: FormBuilder,
-      private authService: AuthService,
-      private router: Router,
-      private renderer: Renderer2
+    private fb: FormBuilder,
+
+    private router: Router,
+    private renderer: Renderer2
   ) {
     this.initLoginForm();
   }
@@ -41,8 +44,16 @@ export class LoginComponent implements OnInit {
   }
 
   private redirectIfAuthenticated(): void {
-    if (localStorage.getItem('access_token')) {
-      this.router.navigate(['/reservas']);
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      const rol: any = jwtDecode(token)
+
+      if (rol.rol === 'admin') {
+        this.router.navigate(['/calendario-admin']);
+      } else {
+        this.router.navigate(['/calendario']);
+      }
+
     }
   }
 
@@ -62,19 +73,34 @@ export class LoginComponent implements OnInit {
     document.body.appendChild(script);
   }
 
-  async onSubmit() {
+  onSubmit() {
     if (this.loginForm.invalid) return;
 
     const { username, password } = this.loginForm.value;
     try {
-      const response = await this.authService.logIn(username, password);
-      if (!response.ok) throw new Error('Credenciales incorrectas');
+      this.authService.logIn(username, password)
+        .subscribe({
+          next: response => {
+            Swal.fire({
+              title: "Login correcto",
+              text: "Has iniciado sesión",
+              icon: 'success',
+              confirmButtonText: 'Aceptar'
+            }).then(() => {
+              // Recargar la página después de mostrar el mensaje
+              window.location.reload();
+            });
 
-      const { access_token } = await response.json();
-      localStorage.setItem('access_token', JSON.stringify(access_token));
-      Swal.fire('Éxito', 'Sesión iniciada con éxito. Redirigiendo...', 'success');
+          },
+          error: err => Swal.fire({
+            title: 'Error!',
+            text: "Credenciales incorrectas",
+            icon: 'error',
+            confirmButtonText: 'Aceptar',
+          })
+        });
 
-      setTimeout(() => this.router.navigate(['/reservas']), 2000);
+      setTimeout(() => this.redirectIfAuthenticated(), 2000);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Error desconocido';
       Swal.fire('Error', message, 'error');
@@ -83,14 +109,17 @@ export class LoginComponent implements OnInit {
 
   handleCredentialResponse(response: any): void {
     this.authService.loginWithGoogle(response.credential)
-        .then(() => {
-          Swal.fire('Éxito', 'Inicio de sesión con Google exitoso', 'success');
+      .then(() => {
+        Swal.fire('Éxito', 'Inicio de sesión con Google exitoso', 'success').then(() => {
+          // Guardar el token y recargar la página
           localStorage.setItem('access_token', JSON.stringify(response.credential));
-          this.router.navigate(['/reservas']);
-        })
-        .catch(err => {
-          console.error('Error al iniciar sesión con Google:', err);
+          window.location.reload(); // Recargar la página
         });
+        this.router.navigate(['/reservas']);
+      })
+      .catch(err => {
+        console.error('Error al iniciar sesión con Google:', err);
+      });
   }
 
   private initializeGoogleAuth(): void {
@@ -105,7 +134,7 @@ export class LoginComponent implements OnInit {
     this.isDarkTheme = !this.isDarkTheme;
     localStorage.setItem('theme', this.isDarkTheme ? 'dark' : 'light');
     this.isDarkTheme
-        ? this.renderer.addClass(document.body, 'dark-theme')
-        : this.renderer.removeClass(document.body, 'dark-theme');
+      ? this.renderer.addClass(document.body, 'dark-theme')
+      : this.renderer.removeClass(document.body, 'dark-theme');
   }
 }
